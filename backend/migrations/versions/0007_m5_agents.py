@@ -21,7 +21,7 @@ down_revision: str | None = "0004_m5_agent_runtime"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-TENANT_TABLES = ("pursuits",)
+TENANT_TABLES = ("pursuits", "requirements")
 # plan_limits rows added by this milestone (0001 seeds PLAN_DEFAULTS on a fresh database,
 # so the insert is idempotent for databases migrated before this revision existed).
 NEW_RESOURCES = (Resource.AGENT_BUDGET_USD_MONTH,)
@@ -114,6 +114,26 @@ def upgrade() -> None:
         ["id"],
         ondelete="SET NULL",
     )
+
+    # --- requirements extractor (M5-04) ---------------------------------------------
+    op.create_table(
+        "requirements",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        sa.Column("req_id", sa.String(16), nullable=False),
+        sa.Column("text", sa.Text(), nullable=False),
+        _fk("document_id", "opportunity_documents.id", ondelete="CASCADE", nullable=False),
+        sa.Column("page", sa.Integer(), nullable=False),
+        sa.Column("type", sa.String(16), nullable=False),
+        sa.Column("volume", sa.Text()),
+        sa.Column("quote", sa.Text(), nullable=False),
+        sa.Column("confidence", sa.Numeric(4, 3)),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("pursuit_id", "req_id", name="uq_requirements_req_id"),
+    )
+    for col in ("tenant_id", "pursuit_id", "document_id"):
+        op.create_index(f"ix_requirements_{col}", "requirements", [col])
 
     for table in TENANT_TABLES:
         grant_app(op, table)

@@ -32,6 +32,7 @@ from app.models.profile_proof import (
     Vehicle,
 )
 from app.models.pursuit import Pursuit
+from app.models.requirements import Requirement
 from app.models.sources import Source, SourceRun
 from app.models.spend import AgencySpendStat
 from app.models.tenancy import Membership, Tenant, User
@@ -62,6 +63,7 @@ __all__ = [
     "Pursuit",
     "RateCardEntry",
     "Registration",
+    "Requirement",
     "ServiceLine",
     "Source",
     "SourceRun",

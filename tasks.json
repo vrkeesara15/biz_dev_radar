@@ -1488,7 +1488,7 @@
       "Prompt treats solicitation text as untrusted data; injection fixture must not alter output",
       "Golden eval: recall >= 90% and precision >= 85% on the labelled set"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-05",
