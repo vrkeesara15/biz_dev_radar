@@ -1113,7 +1113,7 @@
       "Ineligible set-aside is kept, capped at 30 and labelled 'Ineligible: set-aside'",
       "Table-driven unit tests for each filter"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-02",

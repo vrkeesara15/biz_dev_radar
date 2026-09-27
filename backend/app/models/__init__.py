@@ -5,6 +5,7 @@ from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import PlanLimit, UsageLedger
 from app.models.files import File
+from app.models.matching import Match, MatchBand
 from app.models.notify import UserNotificationPrefs
 from app.models.opportunities import (
     AwardsEnrichment,
@@ -48,6 +49,8 @@ __all__ = [
     "DocumentChunk",
     "File",
     "Insurance",
+    "Match",
+    "MatchBand",
     "Membership",
     "Opportunity",
     "OpportunityDocument",
