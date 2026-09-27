@@ -34,10 +34,18 @@ These rules come from SPEC.md §13.3 and are binding for every iteration.
   keyed on `current_setting('app.tenant_id')`. Use `TenantMixin`. The
   isolation test enumerates `information_schema` and fails on any tenant
   table without RLS.
-- Alembic: one migration per milestone, hand-numbered
-  `0001_m0_foundation.py`, `0002_m1_profile.py`, … so heads never fork.
-  Revision ids are the file stem. Later tasks in the same milestone edit
-  that milestone's migration in place until the milestone is done.
+- Alembic: one migration per milestone, hand-numbered `000N_<milestone>_<name>.py`
+  so heads never fork. Revision ids are the file stem. Later tasks in the same
+  milestone edit that milestone's migration in place until the milestone is done.
+  N follows MERGE ORDER into main, not milestone number (e.g. an M5 runtime
+  migration merged before M3 gets the lower number). `tests/unit/test_migration_drift`
+  requires models and migrations to match exactly.
+- Parallel milestones run in git worktrees on branch `<milestone>` with their own
+  databases (`TEST_DATABASE_URL`/`TEST_DATABASE_URL_OWNER` env, dev
+  `DATABASE_URL*`). A worktree agent logs to `PROGRESS.<branch>.md` (same
+  format, own "Open questions" list) instead of `PROGRESS.md`, and only flips
+  its own milestone's entries in `tasks.json`; the orchestrator folds the log
+  into `PROGRESS.md` and fixes the migration chain at merge time.
 - Config: `backend/app/core/config.py` (`pydantic-settings`). All model IDs,
   provider choices and quotas live there and in `.env.example`, never in code.
 - LLM calls go through `backend/app/agents/llm.py` (Anthropic SDK, JSON-schema
