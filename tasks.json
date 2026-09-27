@@ -1132,7 +1132,7 @@
       "Band High >= 70, Medium 50-69, Low < 50; breakdown jsonb lists each signal's raw and weighted value",
       "Unit tests reach 100% of core/matching"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-03",
