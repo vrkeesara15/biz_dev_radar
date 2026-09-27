@@ -47,6 +47,7 @@ from app.models.profile_proof import (
 )
 from app.models.pursuit import Pursuit
 from app.models.push import PushSubscription
+from app.models.reminders import Reminder
 from app.models.requirements import Requirement
 from app.models.sources import Source, SourceRun
 from app.models.spend import AgencySpendStat
@@ -100,6 +101,7 @@ __all__ = [
     "PushSubscription",
     "RateCardEntry",
     "Registration",
+    "Reminder",
     "Requirement",
     "ServiceLine",
     "Source",

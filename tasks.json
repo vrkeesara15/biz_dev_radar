@@ -1812,7 +1812,7 @@
       "Times computed in the user's tz; tests cover US and IST users, DST transition and a deadline moved by amendment",
       "Beat task runs every 5 min and is idempotent"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-04",

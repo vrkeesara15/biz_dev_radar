@@ -9,6 +9,7 @@ from app.celery_app import (
     ROLL_STATUS_TASK,
     RUN_SOURCE_TASK,
     SEND_DIGESTS_TASK,
+    SEND_REMINDERS_TASK,
     build_beat_schedule,
     celery_app,
     create_celery,
@@ -49,6 +50,8 @@ def test_beat_schedule_from_registry_skips_disabled_and_adds_status() -> None:
         # M4-13: the notification beat
         "notify:digests",
         "notify:flush",
+        # M6-03: the deadline reminder ladder
+        "pursuits:reminders",
     }
     weekly = schedule["source:weekly"]
     assert weekly["task"] == RUN_SOURCE_TASK and weekly["args"] == ("weekly",)
@@ -59,6 +62,8 @@ def test_beat_schedule_from_registry_skips_disabled_and_adds_status() -> None:
     assert schedule["notify:digests"]["schedule"] == crontab(minute="*/15")
     assert schedule["notify:flush"]["task"] == FLUSH_SCHEDULED_TASK
     assert schedule["notify:flush"]["schedule"] == crontab(minute="*/5")
+    assert schedule["pursuits:reminders"]["task"] == SEND_REMINDERS_TASK
+    assert schedule["pursuits:reminders"]["schedule"] == crontab(minute="*/5")
 
 
 def test_default_schedule_covers_every_enabled_builtin_adapter() -> None:

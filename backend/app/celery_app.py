@@ -21,6 +21,7 @@ from app.adapters import registry
 from app.adapters.registry import load_builtin_adapters
 from app.core.config import Settings, get_settings
 from app.jobs.notify import DIGEST_SCHEDULE, FLUSH_SCHEDULE
+from app.jobs.reminders import SCHEDULE as REMINDERS_SCHEDULE
 from app.observability import configure_observability
 from app.services.status_job import SCHEDULE as STATUS_SCHEDULE
 
@@ -32,6 +33,7 @@ RUN_AGENTS_TASK = "bidradar.run_agents"
 INDEX_PROFILE_TASK = "bidradar.index_profile"
 TENANT_EXPORT_TASK = "bidradar.tenant_export"
 TENANT_DELETE_TASK = "bidradar.tenant_delete"
+SEND_REMINDERS_TASK = "bidradar.send_reminders"
 
 
 def cron_to_crontab(expression: str) -> crontab:
@@ -79,6 +81,13 @@ def build_beat_schedule(adapters: dict[str, type[Any]] | None = None) -> dict[st
     schedule["notify:flush"] = {
         "task": FLUSH_SCHEDULED_TASK,
         "schedule": cron_to_crontab(FLUSH_SCHEDULE),
+        "options": {"expires": 300},
+    }
+    # SPEC 9: the deadline ladder is checked every five minutes; the job is idempotent
+    # per rung, so an overlapping tick sends nothing twice.
+    schedule["pursuits:reminders"] = {
+        "task": SEND_REMINDERS_TASK,
+        "schedule": cron_to_crontab(REMINDERS_SCHEDULE),
         "options": {"expires": 300},
     }
     return schedule
@@ -167,3 +176,11 @@ def tenant_delete_task(self: Any, tenant_id: str, request_id: str) -> dict[str, 
     from app.jobs.privacy import tenant_delete_sync
 
     return tenant_delete_sync(tenant_id, request_id)
+
+
+@celery_app.task(name=SEND_REMINDERS_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def send_reminders_task(self: Any) -> dict[str, Any]:
+    """Send every deadline reminder whose rung has come due (SPEC 9, M6-03)."""
+    from app.jobs.reminders import run_send_reminders
+
+    return run_send_reminders()

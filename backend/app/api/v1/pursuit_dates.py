@@ -35,6 +35,7 @@ from app.models import Opportunity, PursuitDate, User
 from app.services import calendar as calendar_svc
 from app.services import key_dates as key_date_svc
 from app.services import pursuits as pursuit_svc
+from app.services import reminders as reminder_svc
 from app.services.audit import AuditHint
 
 router = APIRouter(prefix="/pursuits", tags=["pursuits"])
@@ -177,6 +178,7 @@ async def create_date(
     )
     session.add(row)
     await session.flush()
+    await reminder_svc.generate_for_date(session, row)
     await calendar_svc.sync_date(session, settings, row)
     request.state.audit = AuditHint(
         action="pursuit.date_created",
@@ -214,6 +216,8 @@ async def update_date(
     row.sequence += 1  # RFC 5545: a calendar only accepts a higher SEQUENCE (M6-04)
     await session.flush()
     await session.refresh(row)
+    if "at" in meta:  # the date moved: re-derive the unsent rungs of its ladder
+        await reminder_svc.regenerate_for_date(session, row)
     await calendar_svc.sync_date(session, settings, row)
     request.state.audit = AuditHint(
         action="pursuit.date_updated",

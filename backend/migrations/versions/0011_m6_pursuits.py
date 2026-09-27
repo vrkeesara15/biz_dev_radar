@@ -11,7 +11,7 @@ M6-01 extends `pursuits` (stage CHECK, watch, pass_reason, submitted_at, decided
 decided_at). M6-02 adds `pursuit_dates`; M6-07 adds `pursuit_tasks` and
 `pursuit_comments`; M6-04 adds `calendar_connections`, `calendar_events` and
 `user_notification_prefs.calendar_token`; M6-05 adds `users.phone_e164` /
-`users.phone_verified_at`.
+`users.phone_verified_at`; M6-03 adds `reminders`.
 """
 
 from collections.abc import Sequence
@@ -30,6 +30,7 @@ from app.core.collab import (
 )
 from app.core.key_dates import KIND_CUSTOM, KINDS, SOURCE_AUTO, SOURCES
 from app.core.pursuit_stages import STAGES
+from app.core.reminders import LABELS as REMINDER_LABELS
 from app.models.calendar import CALENDAR_PROVIDERS
 from migrations.rls import enable_rls, grant_app
 from sqlalchemy.dialects import postgresql
@@ -49,8 +50,11 @@ TARGET_TYPE_LIST = ", ".join(f"'{value}'" for value in TARGET_TYPES)
 
 CALENDAR_PROVIDER_LIST = ", ".join(f"'{value}'" for value in CALENDAR_PROVIDERS)
 
+REMINDER_LABEL_LIST = ", ".join(f"'{label}'" for label in REMINDER_LABELS)
+
 TENANT_TABLES = (
     "pursuit_dates",
+    "reminders",
     "pursuit_tasks",
     "pursuit_comments",
     "calendar_connections",
@@ -71,6 +75,7 @@ def upgrade() -> None:
     _upgrade_collab()
     _upgrade_calendar()
     _upgrade_whatsapp()
+    _upgrade_reminders()
     for table in TENANT_TABLES:
         grant_app(op, table)
         enable_rls(op, table)
@@ -345,3 +350,40 @@ def _upgrade_calendar() -> None:
 def _upgrade_whatsapp() -> None:
     op.add_column("users", sa.Column("phone_e164", sa.String(20)))
     op.add_column("users", _ts("phone_verified_at"))
+
+
+# --- M6-03 the reminder ladder ---------------------------------------------------------------
+
+
+def _upgrade_reminders() -> None:
+    op.create_table(
+        "reminders",
+        _uuid_pk(),
+        _tenant_id(),
+        sa.Column(
+            "pursuit_date_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("pursuit_dates.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column("offset_label", sa.String(8), nullable=False),
+        _ts("due_at", nullable=False),
+        _ts("sent_at"),
+        sa.Column("skipped_reason", sa.Text()),
+        sa.Column(
+            "delivery_notification_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("notifications.id", ondelete="SET NULL"),
+        ),
+        sa.Column("escalation_level", sa.Integer(), nullable=False, server_default=sa.text("0")),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint(
+            "pursuit_date_id", "offset_label", "due_at", name="uq_reminders_date_label_due"
+        ),
+        sa.CheckConstraint(
+            f"offset_label IN ({REMINDER_LABEL_LIST})", name="ck_reminders_offset_label"
+        ),
+    )
+    op.create_index("ix_reminders_tenant_id", "reminders", ["tenant_id"])
+    op.create_index("ix_reminders_pursuit_date_id", "reminders", ["pursuit_date_id"])
+    op.create_index("ix_reminders_pending", "reminders", ["sent_at", "due_at"])

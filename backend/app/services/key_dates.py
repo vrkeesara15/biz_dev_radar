@@ -35,6 +35,7 @@ from app.core.key_dates import (
 )
 from app.models import Opportunity, Pursuit, PursuitDate
 from app.services import pursuits as pursuit_svc
+from app.services import reminders as reminder_svc
 from app.services.events import OPPORTUNITY_AMENDED, Event, EventBus
 
 log = structlog.get_logger(__name__)
@@ -139,6 +140,11 @@ async def sync_auto_dates(
 
     pursuit.internal_due_at = pursuit_svc.internal_due_at(opportunity.response_due_at)
     await session.flush()
+    # SPEC 9: every key date carries a reminder ladder, re-derived when the date moves
+    for row in result.created:
+        await reminder_svc.generate_for_date(session, row, now=moment)
+    for row in result.moved:
+        await reminder_svc.regenerate_for_date(session, row, now=moment)
     if calendar_push:
         for row in (*result.created, *result.moved):
             await push_calendar(session, row)
