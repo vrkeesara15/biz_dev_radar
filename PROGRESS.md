@@ -16,3 +16,4 @@ Format per entry: task id · what changed · how verified.
 - OQ-10 Local dev machine has no ClamAV or Tesseract binaries; both are behind pluggable interfaces with a no-op/fake in tests and real implementations in the Docker image.
 
 ## Log
+- M0-01 · backend/pyproject.toml (uv, hatchling, ruff/mypy/pytest config) + uv.lock; package layout per SPEC 13.1; app/core/config.py Settings (all model ids, providers, region, storage, keys); app/core/roles.py permission matrix; root Makefile (lint/format/test/eval/up/down/db-reset/seed/migrate/isolation/smoke/acceptance); .env.example in sync with Settings · make lint (ruff format --check, ruff check, mypy strict) clean; make test 46 passed, app/core coverage 100% with --cov-fail-under=85

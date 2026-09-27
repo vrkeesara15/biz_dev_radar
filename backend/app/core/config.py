@@ -1,0 +1,139 @@
+"""Application settings.
+
+Every model ID, provider choice, quota and secret is read from the environment
+here and nowhere else (CLAUDE.md). `.env.example` must list every field.
+"""
+
+from __future__ import annotations
+
+import json
+from enum import StrEnum
+from functools import lru_cache
+from typing import Annotated, Any
+
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+
+class Region(StrEnum):
+    US = "us"
+    IN = "in"
+
+
+class StorageBackend(StrEnum):
+    LOCAL = "local"
+    S3 = "s3"
+    GCS = "gcs"
+
+
+class EmbeddingProviderName(StrEnum):
+    VOYAGE = "voyage"
+    FAKE = "fake"
+
+
+# The only place a Claude model id literal may appear (tests enforce this).
+DEFAULT_OPUS_CLASS = "claude-opus-5"
+DEFAULT_SONNET_CLASS = "claude-sonnet-5"
+DEFAULT_HAIKU_CLASS = "claude-haiku-4-5-20251001"
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # runtime
+    app_env: str = "local"
+    app_version: str = "0.1.0"
+    log_level: str = "INFO"
+    cors_origins: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["http://localhost:3000"]
+    )
+
+    # database / cache
+    database_url: str = "postgresql+asyncpg://bidradar_app:bidradar_app@localhost:5433/bidradar"
+    database_url_owner: str = "postgresql+asyncpg://bidradar:bidradar@localhost:5433/bidradar"
+    redis_url: str = "redis://localhost:6380/0"
+
+    # files
+    storage_backend: StorageBackend = StorageBackend.LOCAL
+    s3_endpoint_url: str = "http://localhost:9000"
+    s3_access_key: str = "minioadmin"
+    s3_secret_key: str = "minioadmin"
+    s3_bucket: str = "bidradar-local"
+
+    # tenancy / residency
+    region: Region = Region.US
+
+    # auth & crypto
+    auth_secret: str = "dev-only-change-me"
+    field_encryption_key: str = "dev-only-32-byte-key-change-me!!"
+    auth_rate_limit_per_minute: int = 20
+
+    # contact / compliance
+    contact_email: str = "ops@example.com"
+
+    # third-party keys (never committed)
+    sam_api_key: str = ""
+    anthropic_api_key: str = ""
+
+    # LLM model classes (SPEC section 8); ids live here only
+    llm_model_opus_class: str = DEFAULT_OPUS_CLASS
+    llm_model_sonnet_class: str = DEFAULT_SONNET_CLASS
+    llm_model_haiku_class: str = DEFAULT_HAIKU_CLASS
+    llm_model_rationale: str = DEFAULT_SONNET_CLASS
+
+    # embeddings
+    embedding_provider: EmbeddingProviderName = EmbeddingProviderName.VOYAGE
+    embedding_model: str = "voyage-3"
+    embedding_dim: int = 1024
+
+    # money
+    fx_rates: Annotated[dict[str, float], NoDecode] = Field(
+        default_factory=lambda: {"USD": 1.0, "INR": 0.012}
+    )
+
+    # seed
+    seed_admin_email: str = "admin@example.com"
+
+    # observability
+    sentry_dsn: str = ""
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "https://cloud.langfuse.com"
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _split_origins(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped.startswith("["):
+                return json.loads(stripped)
+            return [part.strip() for part in stripped.split(",") if part.strip()]
+        return value
+
+    @field_validator("fx_rates", mode="before")
+    @classmethod
+    def _parse_fx(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return json.loads(value)
+        return value
+
+    @field_validator("embedding_dim")
+    @classmethod
+    def _dim_positive(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("EMBEDDING_DIM must be positive")
+        return value
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env == "production"
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()

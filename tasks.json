@@ -3,7 +3,11 @@
     "id": "M0-01",
     "milestone": "M0",
     "title": "Repo scaffold, Makefile, lint/test tooling",
-    "spec_refs": ["13.1", "13.3", "10.1"],
+    "spec_refs": [
+      "13.1",
+      "13.3",
+      "10.1"
+    ],
     "depends_on": [],
     "acceptance": [
       "Directory layout matches SPEC 13.1 (backend/app/{api,core,models,services,agents,adapters,notify}, backend/migrations, backend/tests/{unit,adapters/fixtures,integration,isolation,evals}, frontend, infra/{terraform,cloudrun}, evals/golden/{us,in}, .github/workflows)",
@@ -14,14 +18,19 @@
       ".gitignore excludes .env, .venv, node_modules, logs/*.jsonl, __pycache__",
       ".env.example lists every setting consumed by app/core/config.py"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-02",
     "milestone": "M0",
     "title": "Docker Compose local stack",
-    "spec_refs": ["12", "10.1"],
-    "depends_on": ["M0-01"],
+    "spec_refs": [
+      "12",
+      "10.1"
+    ],
+    "depends_on": [
+      "M0-01"
+    ],
     "acceptance": [
       "infra/docker-compose.yml defines postgres (pgvector/pgvector:pg16), redis, minio, mailpit with healthchecks and named volumes",
       "docker compose -f infra/docker-compose.yml config validates",
@@ -34,8 +43,14 @@
     "id": "M0-03",
     "milestone": "M0",
     "title": "FastAPI skeleton, settings, health and OpenAPI",
-    "spec_refs": ["10.1", "10.3", "8"],
-    "depends_on": ["M0-01"],
+    "spec_refs": [
+      "10.1",
+      "10.3",
+      "8"
+    ],
+    "depends_on": [
+      "M0-01"
+    ],
     "acceptance": [
       "GET /healthz returns 200 {status:'ok', version}",
       "All business routes mount under /api/v1 and openapi.json lists them",
@@ -49,8 +64,15 @@
     "id": "M0-04",
     "milestone": "M0",
     "title": "SQLAlchemy 2 async engine, Alembic baseline, extensions, TenantMixin",
-    "spec_refs": ["10.1", "10.2", "11"],
-    "depends_on": ["M0-02", "M0-03"],
+    "spec_refs": [
+      "10.1",
+      "10.2",
+      "11"
+    ],
+    "depends_on": [
+      "M0-02",
+      "M0-03"
+    ],
     "acceptance": [
       "alembic upgrade head on an empty database creates extensions vector and pg_trgm",
       "alembic downgrade base leaves no application tables",
@@ -64,8 +86,13 @@
     "id": "M0-05",
     "milestone": "M0",
     "title": "Tenancy tables: tenants, users, memberships, plan_limits, usage_ledger, audit_log",
-    "spec_refs": ["3", "10.2"],
-    "depends_on": ["M0-04"],
+    "spec_refs": [
+      "3",
+      "10.2"
+    ],
+    "depends_on": [
+      "M0-04"
+    ],
     "acceptance": [
       "Migration 0001 creates tenants(id, name, slug, region us|in, plan free|pro|enterprise, is_internal bool, data_residency, created_at)",
       "users(id, email unique, name, tz, locale) and memberships(user_id, tenant_id, role) with role enum platform_admin|tenant_owner|bid_manager|writer|reviewer|viewer",
@@ -79,8 +106,13 @@
     "id": "M0-06",
     "milestone": "M0",
     "title": "Row-level security on every tenant table",
-    "spec_refs": ["3", "11"],
-    "depends_on": ["M0-05"],
+    "spec_refs": [
+      "3",
+      "11"
+    ],
+    "depends_on": [
+      "M0-05"
+    ],
     "acceptance": [
       "Helper enable_rls(table) in migrations creates policy USING tenant_id = current_setting('app.tenant_id')::uuid and FORCE ROW LEVEL SECURITY",
       "Application DB role is not table owner and cannot bypass RLS",
@@ -94,8 +126,14 @@
     "id": "M0-07",
     "milestone": "M0",
     "title": "Auth: Auth.js-compatible JWT verification, current user, tenant from token, RBAC",
-    "spec_refs": ["3", "10.1", "11"],
-    "depends_on": ["M0-05"],
+    "spec_refs": [
+      "3",
+      "10.1",
+      "11"
+    ],
+    "depends_on": [
+      "M0-05"
+    ],
     "acceptance": [
       "Bearer JWT (HS256 shared secret AUTH_SECRET, Auth.js claims sub/email/tenant_id/role) verified by dependency get_current_user",
       "Missing or invalid token returns 401; expired token returns 401",
@@ -109,8 +147,14 @@
     "id": "M0-08",
     "milestone": "M0",
     "title": "Audit log service and middleware",
-    "spec_refs": ["11", "10.2"],
-    "depends_on": ["M0-05", "M0-07"],
+    "spec_refs": [
+      "11",
+      "10.2"
+    ],
+    "depends_on": [
+      "M0-05",
+      "M0-07"
+    ],
     "acceptance": [
       "Every POST/PUT/PATCH/DELETE under /api/v1 writes an audit_log row with user, tenant, action, object, IP and request id",
       "audit(action, object) helper is callable from services for reads that must be logged (draft and export reads)",
@@ -123,8 +167,13 @@
     "id": "M0-09",
     "milestone": "M0",
     "title": "Seed script for internal tenant and platform admin",
-    "spec_refs": ["3"],
-    "depends_on": ["M0-05", "M0-06"],
+    "spec_refs": [
+      "3"
+    ],
+    "depends_on": [
+      "M0-05",
+      "M0-06"
+    ],
     "acceptance": [
       "make seed creates tenant slug 'internal' with is_internal=true, plan enterprise, region us",
       "Creates platform admin user from SEED_ADMIN_EMAIL env and membership role platform_admin",
@@ -137,8 +186,14 @@
     "id": "M0-10",
     "milestone": "M0",
     "title": "CI workflow: lint, tests with Postgres and Redis services, coverage gate",
-    "spec_refs": ["10.1", "12"],
-    "depends_on": ["M0-01", "M0-04"],
+    "spec_refs": [
+      "10.1",
+      "12"
+    ],
+    "depends_on": [
+      "M0-01",
+      "M0-04"
+    ],
     "acceptance": [
       ".github/workflows/ci.yml runs on push and pull_request",
       "Jobs: backend-lint, backend-test (services pgvector/pgvector:pg16 and redis:7), frontend-lint-build",
@@ -151,8 +206,15 @@
     "id": "M0-11",
     "milestone": "M0",
     "title": "Tenant isolation test harness over every route",
-    "spec_refs": ["11", "12"],
-    "depends_on": ["M0-06", "M0-07", "M0-08"],
+    "spec_refs": [
+      "11",
+      "12"
+    ],
+    "depends_on": [
+      "M0-06",
+      "M0-07",
+      "M0-08"
+    ],
     "acceptance": [
       "tests/isolation/test_cross_tenant.py creates tenants A and B with one owner each and sample objects for A",
       "Harness discovers every route from app.openapi() and, for each path with an {id} param, calls it as B with A's ids",
@@ -166,8 +228,13 @@
     "id": "M0-12",
     "milestone": "M0",
     "title": "Plan limits enforcement service",
-    "spec_refs": ["3"],
-    "depends_on": ["M0-05", "M0-09"],
+    "spec_refs": [
+      "3"
+    ],
+    "depends_on": [
+      "M0-05",
+      "M0-09"
+    ],
     "acceptance": [
       "PlanService.check(tenant, resource, requested=1) reads plan_limits and current usage",
       "Exceeding a limit raises PlanLimitExceeded mapped to HTTP 402 with the limit name",
@@ -180,8 +247,14 @@
     "id": "M0-13",
     "milestone": "M0",
     "title": "Frontend scaffold with Auth.js and generated API client",
-    "spec_refs": ["10.1", "10.4"],
-    "depends_on": ["M0-03", "M0-07"],
+    "spec_refs": [
+      "10.1",
+      "10.4"
+    ],
+    "depends_on": [
+      "M0-03",
+      "M0-07"
+    ],
     "acceptance": [
       "frontend/ is Next.js 15 App Router + TypeScript + Tailwind + shadcn/ui, pnpm build passes",
       "Auth.js configured with email magic link, Google and Microsoft providers reading secrets from env; session JWT carries tenant_id and role",
@@ -195,8 +268,15 @@
     "id": "M1-01",
     "milestone": "M1",
     "title": "company_profiles table with identity and registrations (4.1) and field-level encryption",
-    "spec_refs": ["4.1", "11", "10.2"],
-    "depends_on": ["M0-06", "M0-08"],
+    "spec_refs": [
+      "4.1",
+      "11",
+      "10.2"
+    ],
+    "depends_on": [
+      "M0-06",
+      "M0-08"
+    ],
     "acceptance": [
       "Migration 0002 creates company_profiles with every 4.1 field, region flag and addresses jsonb array",
       "EIN, PAN, GSTIN, TAN and bank details are AES-GCM encrypted via a KMS-style EncryptedString type keyed from FIELD_ENCRYPTION_KEY",
@@ -210,8 +290,12 @@
     "id": "M1-02",
     "milestone": "M1",
     "title": "Size, finance and socio-economic status (4.2)",
-    "spec_refs": ["4.2"],
-    "depends_on": ["M1-01"],
+    "spec_refs": [
+      "4.2"
+    ],
+    "depends_on": [
+      "M1-01"
+    ],
     "acceptance": [
       "Fields: employee counts by country, annual revenue last 3 FY (currency, fiscal year), net worth, solvency cert flag, audited FY list, bonding/BG limit",
       "certifications table stores socio-economic certs (8a, hubzone, wosb, edwosb, sdvosb, vosb, sdb) with cert number and expiry",
@@ -224,8 +308,13 @@
     "id": "M1-03",
     "milestone": "M1",
     "title": "What we sell: profile_codes, profile_keywords, service_lines (4.3)",
-    "spec_refs": ["4.3", "10.2"],
-    "depends_on": ["M1-01"],
+    "spec_refs": [
+      "4.3",
+      "10.2"
+    ],
+    "depends_on": [
+      "M1-01"
+    ],
     "acceptance": [
       "profile_codes(profile_id, scheme naics|psc|aln|gem|india_category, code, is_primary)",
       "NAICS codes validated against a bundled 2022 NAICS table (backend/app/core/data/naics_2022.csv); unknown code returns 422",
@@ -239,8 +328,13 @@
     "id": "M1-04",
     "milestone": "M1",
     "title": "Where and how big: geography, buyers, value range, notice and contract types, teaming (4.4)",
-    "spec_refs": ["4.4", "10.2"],
-    "depends_on": ["M1-01"],
+    "spec_refs": [
+      "4.4",
+      "10.2"
+    ],
+    "depends_on": [
+      "M1-01"
+    ],
     "acceptance": [
       "Fields: target countries, US states, Indian states/UTs, cities, remote_ok, target buyers, blocked buyers",
       "Value range min/max per currency USD and INR",
@@ -254,8 +348,13 @@
     "id": "M1-05",
     "milestone": "M1",
     "title": "Proof for drafting: past performance, personnel, security, insurance, boilerplate, files, vehicles, registrations (4.5)",
-    "spec_refs": ["4.5", "10.2"],
-    "depends_on": ["M1-01"],
+    "spec_refs": [
+      "4.5",
+      "10.2"
+    ],
+    "depends_on": [
+      "M1-01"
+    ],
     "acceptance": [
       "past_performance with every 4.5 column incl. public/confidential flag and CPARS rating",
       "personnel(name, role, years, clearances, certifications, education, resume_file_id)",
@@ -270,8 +369,14 @@
     "id": "M1-06",
     "milestone": "M1",
     "title": "Preferences: notification prefs, thresholds, bid/no-bid weights, languages (4.6)",
-    "spec_refs": ["4.6", "6", "7"],
-    "depends_on": ["M1-01"],
+    "spec_refs": [
+      "4.6",
+      "6",
+      "7"
+    ],
+    "depends_on": [
+      "M1-01"
+    ],
     "acceptance": [
       "user_notification_prefs(user_id, tenant_id, channels_by_event jsonb, quiet_hours_start/end, tz, digest_time, min_score_instant default 70, min_score_digest default 50)",
       "Profile-level scoring weights jsonb defaulting to SPEC 6 weights and validated to sum to 100",
@@ -284,8 +389,13 @@
     "id": "M1-07",
     "milestone": "M1",
     "title": "SBA small-business status auto-computed per NAICS",
-    "spec_refs": ["4.2"],
-    "depends_on": ["M1-02", "M1-03"],
+    "spec_refs": [
+      "4.2"
+    ],
+    "depends_on": [
+      "M1-02",
+      "M1-03"
+    ],
     "acceptance": [
       "Bundled SBA size standards table (NAICS -> receipts or employee threshold) in core/data",
       "core.eligibility.small_business_status(naics, avg_receipts, employees) returns small|other_than_small|unknown",
@@ -298,8 +408,16 @@
     "id": "M1-08",
     "milestone": "M1",
     "title": "Profile completeness score",
-    "spec_refs": ["4.6"],
-    "depends_on": ["M1-02", "M1-03", "M1-04", "M1-05", "M1-06"],
+    "spec_refs": [
+      "4.6"
+    ],
+    "depends_on": [
+      "M1-02",
+      "M1-03",
+      "M1-04",
+      "M1-05",
+      "M1-06"
+    ],
     "acceptance": [
       "core.profile.completeness(profile) returns 0-100 with a per-section breakdown",
       "matching_enabled is true at >= 40; drafting_enabled requires >= 70 and >= 3 past performance records",
@@ -312,8 +430,13 @@
     "id": "M1-09",
     "milestone": "M1",
     "title": "Profile REST API with sub-resources",
-    "spec_refs": ["10.3"],
-    "depends_on": ["M1-08", "M0-12"],
+    "spec_refs": [
+      "10.3"
+    ],
+    "depends_on": [
+      "M1-08",
+      "M0-12"
+    ],
     "acceptance": [
       "GET/PUT /api/v1/profiles/{id}; POST /api/v1/profiles creates within plan limits",
       "Sub-resources CRUD: codes, keywords, service-lines, past-performance, personnel, certifications, registrations, files, boilerplate, teaming-partners",
@@ -327,8 +450,14 @@
     "id": "M1-10",
     "milestone": "M1",
     "title": "Profile autofill from website, capability PDF and UEI",
-    "spec_refs": ["4", "10.3"],
-    "depends_on": ["M1-09", "M2-12"],
+    "spec_refs": [
+      "4",
+      "10.3"
+    ],
+    "depends_on": [
+      "M1-09",
+      "M2-12"
+    ],
     "acceptance": [
       "POST /api/v1/profiles/{id}/autofill accepts website_url, capability_file_id, uei and returns suggestions[] with field, value, source, confidence; it never writes the profile",
       "Website path fetches the page politely (adapters/http) and extracts with the Haiku-class model via JSON schema",
@@ -342,8 +471,13 @@
     "id": "M1-11",
     "milestone": "M1",
     "title": "File upload service: allow-list, size cap, virus scan hook, storage abstraction",
-    "spec_refs": ["11", "10.1"],
-    "depends_on": ["M1-01"],
+    "spec_refs": [
+      "11",
+      "10.1"
+    ],
+    "depends_on": [
+      "M1-01"
+    ],
     "acceptance": [
       "Storage protocol with implementations local (tests), S3-compatible (MinIO) and GCS; per-region bucket chosen from tenant.data_residency",
       "Uploads over 50 MB or outside the allow-list (pdf, docx, xlsx, pptx, png, jpg, txt, csv) return 413/415",
@@ -357,8 +491,16 @@
     "id": "M1-12",
     "milestone": "M1",
     "title": "Tenant knowledge base: kb_chunks with embeddings and EmbeddingProvider",
-    "spec_refs": ["4.3", "8", "10.1"],
-    "depends_on": ["M1-05", "M1-11", "M2-12"],
+    "spec_refs": [
+      "4.3",
+      "8",
+      "10.1"
+    ],
+    "depends_on": [
+      "M1-05",
+      "M1-11",
+      "M2-12"
+    ],
     "acceptance": [
       "EmbeddingProvider protocol (embed(texts) -> list[1024 floats]); VoyageProvider default, FakeEmbeddings deterministic in tests",
       "kb_chunks(tenant_id, profile_id, source_type, source_id, chunk_index, text, page, embedding vector(1024))",
@@ -371,8 +513,15 @@
     "id": "M1-13",
     "milestone": "M1",
     "title": "Frontend onboarding wizard (7 steps) with autofill and completeness meter",
-    "spec_refs": ["4", "10.4"],
-    "depends_on": ["M0-13", "M1-09", "M1-10"],
+    "spec_refs": [
+      "4",
+      "10.4"
+    ],
+    "depends_on": [
+      "M0-13",
+      "M1-09",
+      "M1-10"
+    ],
     "acceptance": [
       "Steps: 1 Identity & registrations, 2 Size & status, 3 What we sell, 4 Where & how big, 5 Proof, 6 Preferences, 7 Review",
       "Region choice at sign-up hides fields for the other region",
@@ -386,8 +535,13 @@
     "id": "M2-01",
     "milestone": "M2",
     "title": "Adapter framework: SourceAdapter protocol, types, registry, sources and source_runs",
-    "spec_refs": ["5.1", "10.2"],
-    "depends_on": ["M0-06"],
+    "spec_refs": [
+      "5.1",
+      "10.2"
+    ],
+    "depends_on": [
+      "M0-06"
+    ],
     "acceptance": [
       "adapters/base.py defines SourceAdapter Protocol exactly as SPEC 5.1, RawRecord, DocumentRef, OpportunityIn (Pydantic), AdapterHealth",
       "Registry maps source_id -> adapter class; sources table rows created on startup for each registered adapter",
@@ -401,8 +555,14 @@
     "id": "M2-02",
     "milestone": "M2",
     "title": "Polite HTTP client: rate limits, backoff, robots.txt, raw payload archive",
-    "spec_refs": ["5.1", "11"],
-    "depends_on": ["M2-01", "M1-11"],
+    "spec_refs": [
+      "5.1",
+      "11"
+    ],
+    "depends_on": [
+      "M2-01",
+      "M1-11"
+    ],
     "acceptance": [
       "Token-bucket limiter per host; default 1 req/s for .gov.in hosts and configurable quota for api.sam.gov",
       "Exponential backoff with jitter on 429/5xx up to 5 attempts; Retry-After honoured",
@@ -417,8 +577,13 @@
     "id": "M2-03",
     "milestone": "M2",
     "title": "Canonical opportunity tables",
-    "spec_refs": ["5.3", "10.2"],
-    "depends_on": ["M2-01"],
+    "spec_refs": [
+      "5.3",
+      "10.2"
+    ],
+    "depends_on": [
+      "M2-01"
+    ],
     "acceptance": [
       "Migration 0003 creates opportunities with every 5.3 column, unique (source_id, external_id), embedding vector(1024), trigram index on title, GIN full-text index",
       "opportunity_versions(opportunity_id, version, diff jsonb, content_hash, created_at)",
@@ -432,8 +597,16 @@
     "id": "M2-04",
     "milestone": "M2",
     "title": "SAM.gov opportunities adapter with incremental watermark",
-    "spec_refs": ["5.1", "5.2", "5.3"],
-    "depends_on": ["M2-01", "M2-02", "M2-03"],
+    "spec_refs": [
+      "5.1",
+      "5.2",
+      "5.3"
+    ],
+    "depends_on": [
+      "M2-01",
+      "M2-02",
+      "M2-03"
+    ],
     "acceptance": [
       "fetch() paginates with limit=1000 and offset until totalRecords reached",
       "postedFrom = watermark - 2 days, MM/dd/yyyy format; window never exceeds 1 year",
@@ -447,8 +620,12 @@
     "id": "M2-05",
     "milestone": "M2",
     "title": "SAM.gov description and resourceLinks documents",
-    "spec_refs": ["5.2"],
-    "depends_on": ["M2-04"],
+    "spec_refs": [
+      "5.2"
+    ],
+    "depends_on": [
+      "M2-04"
+    ],
     "acceptance": [
       "fetch_detail pulls the description link and stores description_text",
       "fetch_documents returns a DocumentRef per resourceLinks entry with file name inferred from headers or URL",
@@ -461,8 +638,15 @@
     "id": "M2-06",
     "milestone": "M2",
     "title": "Grants.gov adapter",
-    "spec_refs": ["2", "5.2"],
-    "depends_on": ["M2-01", "M2-02", "M2-03"],
+    "spec_refs": [
+      "2",
+      "5.2"
+    ],
+    "depends_on": [
+      "M2-01",
+      "M2-02",
+      "M2-03"
+    ],
     "acceptance": [
       "search2 POST paginates posted and forecasted opportunities; schedule every 2h",
       "fetchOpportunity enriches eligibility, award ceiling/floor, close date, ALN codes",
@@ -475,8 +659,14 @@
     "id": "M2-07",
     "milestone": "M2",
     "title": "USAspending adapter and agency spend statistics",
-    "spec_refs": ["2", "5.2"],
-    "depends_on": ["M2-01", "M2-02"],
+    "spec_refs": [
+      "2",
+      "5.2"
+    ],
+    "depends_on": [
+      "M2-01",
+      "M2-02"
+    ],
     "acceptance": [
       "POST /api/v2/search/spending_by_award/ paged with page size 100 and stops at 50,000 results",
       "Weekly job aggregates obligations by agency x NAICS x PSC for the last 3 FY into agency_spend_stats",
@@ -489,8 +679,14 @@
     "id": "M2-08",
     "milestone": "M2",
     "title": "SAM.gov contract awards adapter and opportunity enrichment",
-    "spec_refs": ["2", "5.2"],
-    "depends_on": ["M2-03", "M2-04"],
+    "spec_refs": [
+      "2",
+      "5.2"
+    ],
+    "depends_on": [
+      "M2-03",
+      "M2-04"
+    ],
     "acceptance": [
       "Daily fetch of awards by NAICS list via SAM API key; nothing references FPDS",
       "Enrichment links awards to opportunities by solicitation number or NAICS+agency and fills incumbent, prior_award_value, prior_pop_end, num_offers",
@@ -503,8 +699,14 @@
     "id": "M2-09",
     "milestone": "M2",
     "title": "Normalization pipeline: upsert, content_hash, versions, amendment events",
-    "spec_refs": ["5", "5.4"],
-    "depends_on": ["M2-03", "M2-04"],
+    "spec_refs": [
+      "5",
+      "5.4"
+    ],
+    "depends_on": [
+      "M2-03",
+      "M2-04"
+    ],
     "acceptance": [
       "ingest(opportunity_in) upserts by (source_id, external_id) and stores raw_ref",
       "content_hash over normalized fields + document hashes; unchanged record does not create a version",
@@ -518,8 +720,12 @@
     "id": "M2-10",
     "milestone": "M2",
     "title": "Dedupe: exact, cross-source and fuzzy trigram merge",
-    "spec_refs": ["5.4"],
-    "depends_on": ["M2-09"],
+    "spec_refs": [
+      "5.4"
+    ],
+    "depends_on": [
+      "M2-09"
+    ],
     "acceptance": [
       "Cross-source key = normalized solicitation/tender reference + normalized buyer",
       "Fuzzy: pg_trgm similarity(title) >= 0.9 AND same buyer AND response_due within 1 day -> duplicate_of set to the richer record",
@@ -532,8 +738,12 @@
     "id": "M2-11",
     "milestone": "M2",
     "title": "Status job: open -> closing_soon -> closed, cancellations and awards",
-    "spec_refs": ["5.4"],
-    "depends_on": ["M2-09"],
+    "spec_refs": [
+      "5.4"
+    ],
+    "depends_on": [
+      "M2-09"
+    ],
     "acceptance": [
       "Celery beat task every 15 min sets closing_soon when response_due_at <= now + 7d and closed when past",
       "Cancellation and award notices update the parent opportunity status",
@@ -546,8 +756,13 @@
     "id": "M2-12",
     "milestone": "M2",
     "title": "Document parsing: PDF, DOCX, XLSX, OCR fallback, page-numbered sections",
-    "spec_refs": ["8", "10.1"],
-    "depends_on": ["M1-11"],
+    "spec_refs": [
+      "8",
+      "10.1"
+    ],
+    "depends_on": [
+      "M1-11"
+    ],
     "acceptance": [
       "core/parsing parses PDF (PyMuPDF with pdfplumber fallback), DOCX (python-docx), XLSX (openpyxl) into pages/sections with page numbers",
       "OCR protocol with Tesseract (eng+hin) implementation and FakeOCR in tests; used when a PDF page has no text layer",
@@ -561,8 +776,14 @@
     "id": "M2-13",
     "milestone": "M2",
     "title": "summary_ai: five-line LLM summary with caching",
-    "spec_refs": ["5.3", "8"],
-    "depends_on": ["M2-09", "M5-01"],
+    "spec_refs": [
+      "5.3",
+      "8"
+    ],
+    "depends_on": [
+      "M2-09",
+      "M5-01"
+    ],
     "acceptance": [
       "Haiku-class model produces exactly 5 lines from title + description + first pages of docs",
       "Cached per (opportunity_id, version); no re-call on unchanged versions",
@@ -575,8 +796,16 @@
     "id": "M2-14",
     "milestone": "M2",
     "title": "Adapter contract test framework and nightly smoke workflow",
-    "spec_refs": ["5.1", "12"],
-    "depends_on": ["M2-04", "M2-06", "M2-07", "M2-08"],
+    "spec_refs": [
+      "5.1",
+      "12"
+    ],
+    "depends_on": [
+      "M2-04",
+      "M2-06",
+      "M2-07",
+      "M2-08"
+    ],
     "acceptance": [
       "tests/adapters/contract.py parametrizes every registered adapter over its fixtures dir: normal page, malformed page, layout-change page",
       "Malformed page yields AdapterHealth degraded with error, never an exception escaping fetch()",
@@ -589,8 +818,13 @@
     "id": "M2-15",
     "milestone": "M2",
     "title": "Opportunities API: search with filters, detail with versions and documents",
-    "spec_refs": ["10.3"],
-    "depends_on": ["M2-09", "M2-10"],
+    "spec_refs": [
+      "10.3"
+    ],
+    "depends_on": [
+      "M2-09",
+      "M2-10"
+    ],
     "acceptance": [
       "GET /api/v1/opportunities?q=&region=&type=&naics=&due_before=&min_score=&status=&page= with keyset or offset pagination and total",
       "q uses Postgres full-text search over title + description",
@@ -604,8 +838,14 @@
     "id": "M2-16",
     "milestone": "M2",
     "title": "Scheduling: Celery beat, per-adapter job entrypoints, admin run endpoint",
-    "spec_refs": ["10.1", "10.3"],
-    "depends_on": ["M2-01", "M2-09"],
+    "spec_refs": [
+      "10.1",
+      "10.3"
+    ],
+    "depends_on": [
+      "M2-01",
+      "M2-09"
+    ],
     "acceptance": [
       "Celery app with Redis broker; beat schedule built from each adapter's schedule string",
       "python -m app.jobs.run_source <source_id> entrypoint for Cloud Run jobs writes a source_runs row",
@@ -618,8 +858,13 @@
     "id": "M2-17",
     "milestone": "M2",
     "title": "Documented adapter stubs: defense.gov awards, SLED, IREPS/defproc, paid feeds",
-    "spec_refs": ["2", "5.1"],
-    "depends_on": ["M2-01"],
+    "spec_refs": [
+      "2",
+      "5.1"
+    ],
+    "depends_on": [
+      "M2-01"
+    ],
     "acceptance": [
       "Stub adapters registered with enabled=false and health() reporting 'not_implemented'",
       "PaidFeedAdapter base takes a tenant-supplied licence key from Secret Manager reference; HigherGov, GovSpend, BidNet, TenderTiger, Tender247, BidAssist subclasses documented",
@@ -632,8 +877,13 @@
     "id": "M2-18",
     "milestone": "M2",
     "title": "Frontend: opportunity search and detail screens",
-    "spec_refs": ["10.4"],
-    "depends_on": ["M0-13", "M2-15"],
+    "spec_refs": [
+      "10.4"
+    ],
+    "depends_on": [
+      "M0-13",
+      "M2-15"
+    ],
     "acceptance": [
       "Search page: filter sidebar, TanStack results table (score, title, buyer, value, due, type, source), saved-search bar",
       "Detail page: summary, fit score breakdown placeholder, eligibility checks, documents viewer, versions/diff, Pursue/Watch/Pass actions",
@@ -646,8 +896,13 @@
     "id": "M3-01",
     "milestone": "M3",
     "title": "India date, time zone and money utilities",
-    "spec_refs": ["12", "5.3"],
-    "depends_on": ["M0-01"],
+    "spec_refs": [
+      "12",
+      "5.3"
+    ],
+    "depends_on": [
+      "M0-01"
+    ],
     "acceptance": [
       "core.dates.parse_in parses DD-MM-YYYY, DD/MM/YYYY and '17-Jul-2026 08:23 PM' as IST and returns UTC with source tz kept",
       "core.money.parse_inr parses '₹12,50,000', 'Rs. 1.2 Cr', '12.5 Lakh' to Decimal; format_inr renders lakh/crore grouping",
@@ -660,8 +915,15 @@
     "id": "M3-02",
     "milestone": "M3",
     "title": "CPPP adapter over captcha-free listing pages",
-    "spec_refs": ["2", "5.2"],
-    "depends_on": ["M2-02", "M2-09", "M3-01"],
+    "spec_refs": [
+      "2",
+      "5.2"
+    ],
+    "depends_on": [
+      "M2-02",
+      "M2-09",
+      "M3-01"
+    ],
     "acceptance": [
       "Reads only 'Latest active tenders' and 'Tenders by Organisation' pages; no search form, no archive, no CAPTCHA endpoints",
       "Parses tender id, reference no., title, organisation, published/closing/opening dates, corrigendum flag, detail and document links when captcha-free",
@@ -675,8 +937,15 @@
     "id": "M3-03",
     "milestone": "M3",
     "title": "GeM adapter: ongoing bid listing and bid PDF download",
-    "spec_refs": ["2", "5.2"],
-    "depends_on": ["M2-02", "M2-09", "M3-01"],
+    "spec_refs": [
+      "2",
+      "5.2"
+    ],
+    "depends_on": [
+      "M2-02",
+      "M2-09",
+      "M3-01"
+    ],
     "acceptance": [
       "Reads the public bid listing (recorded JSON/HTML fixture) without login",
       "Each bid yields OpportunityIn with notice_type gem_bid or reverse_auction, bid number, ministry/department, end date IST",
@@ -689,8 +958,16 @@
     "id": "M3-04",
     "milestone": "M3",
     "title": "GeM bid PDF extraction with LLM and page citations",
-    "spec_refs": ["5.2", "5.3", "8"],
-    "depends_on": ["M3-03", "M2-12", "M5-01"],
+    "spec_refs": [
+      "5.2",
+      "5.3",
+      "8"
+    ],
+    "depends_on": [
+      "M3-03",
+      "M2-12",
+      "M5-01"
+    ],
     "acceptance": [
       "Extractor returns eligibility jsonb: item/service, quantity, estimated value, EMD, turnover criterion, experience criterion, MSE/startup exemptions, bid end date, consignee locations, each with page citation",
       "Opus-class model via JSON schema; invalid output retried up to 2x then flagged",
@@ -703,8 +980,13 @@
     "id": "M3-05",
     "milestone": "M3",
     "title": "GePNIC generic adapter with Telangana, Karnataka and Maharashtra configs",
-    "spec_refs": ["2", "5.2"],
-    "depends_on": ["M3-02"],
+    "spec_refs": [
+      "2",
+      "5.2"
+    ],
+    "depends_on": [
+      "M3-02"
+    ],
     "acceptance": [
       "One GePNICAdapter class parameterized by config (base_url, org list pages, date formats, source_id gepnic_ts|gepnic_ka|gepnic_mh)",
       "Configs in backend/app/adapters/gepnic_configs.yaml; adding a state is config only",
@@ -717,8 +999,15 @@
     "id": "M3-06",
     "milestone": "M3",
     "title": "India dedupe: CPPP mirrors and transliterated organisation names",
-    "spec_refs": ["5.4", "12"],
-    "depends_on": ["M2-10", "M3-02", "M3-05"],
+    "spec_refs": [
+      "5.4",
+      "12"
+    ],
+    "depends_on": [
+      "M2-10",
+      "M3-02",
+      "M3-05"
+    ],
     "acceptance": [
       "Organisation normalizer maps common transliterations and abbreviations (e.g. 'Govt.'/'Government', 'Dept'/'Department', 'Nigam'/'Corporation') before comparison",
       "CPPP record mirroring a state or GeM tender merges with duplicate_of pointing to the richer record and both links kept",
@@ -730,8 +1019,13 @@
     "id": "M3-07",
     "milestone": "M3",
     "title": "Hindi and bilingual content handling",
-    "spec_refs": ["12"],
-    "depends_on": ["M2-12", "M3-01"],
+    "spec_refs": [
+      "12"
+    ],
+    "depends_on": [
+      "M2-12",
+      "M3-01"
+    ],
     "acceptance": [
       "Devanagari titles and PDFs pass through parsing, hashing and chunking without errors (fixtures)",
       "OCR language set eng+hin for IN region documents",
@@ -743,8 +1037,16 @@
     "id": "M3-08",
     "milestone": "M3",
     "title": "India eligibility rules: turnover, EMD, MSME/Udyam and Startup exemptions",
-    "spec_refs": ["4.1", "4.2", "6", "12"],
-    "depends_on": ["M1-02", "M3-01"],
+    "spec_refs": [
+      "4.1",
+      "4.2",
+      "6",
+      "12"
+    ],
+    "depends_on": [
+      "M1-02",
+      "M3-01"
+    ],
     "acceptance": [
       "core.eligibility.evaluate_in(profile, criteria) returns pass/fail/unknown per criterion with reasons",
       "Udyam-registered MSE gets EMD exemption and turnover/experience relaxation when criteria allow",
@@ -758,8 +1060,16 @@
     "id": "M3-09",
     "milestone": "M3",
     "title": "India fixtures, contract tests and live smoke",
-    "spec_refs": ["12", "13.2"],
-    "depends_on": ["M3-02", "M3-03", "M3-05", "M2-14"],
+    "spec_refs": [
+      "12",
+      "13.2"
+    ],
+    "depends_on": [
+      "M3-02",
+      "M3-03",
+      "M3-05",
+      "M2-14"
+    ],
     "acceptance": [
       "Recorded fixtures for cppp, gem, gepnic_ts, gepnic_ka, gepnic_mh including malformed and layout-change pages",
       "Contract tests green for all India adapters",
@@ -771,8 +1081,13 @@
     "id": "M3-10",
     "milestone": "M3",
     "title": "Source attribution, link-back and disclaimers for India records",
-    "spec_refs": ["11"],
-    "depends_on": ["M2-15", "M3-02"],
+    "spec_refs": [
+      "11"
+    ],
+    "depends_on": [
+      "M2-15",
+      "M3-02"
+    ],
     "acceptance": [
       "Every IN opportunity response includes attribution text naming the portal and the official link",
       "Exports and emails carry the same attribution and the verify-on-portal disclaimer",
@@ -784,8 +1099,14 @@
     "id": "M4-01",
     "milestone": "M4",
     "title": "matches table and stage 1 hard filters",
-    "spec_refs": ["6", "10.2"],
-    "depends_on": ["M1-09", "M2-09"],
+    "spec_refs": [
+      "6",
+      "10.2"
+    ],
+    "depends_on": [
+      "M1-09",
+      "M2-09"
+    ],
     "acceptance": [
       "Migration creates matches(tenant_id, profile_id, opportunity_id, opportunity_version, profile_version, score, band, breakdown jsonb, rationale jsonb, filtered_reason, created_at) unique per (profile, opportunity, versions)",
       "core.matching.hard_filters drops on region, notice type, blocked buyer, past response date (unless recompete watch) and exclusion keywords",
@@ -798,8 +1119,12 @@
     "id": "M4-02",
     "milestone": "M4",
     "title": "Stage 2 weighted score with per-profile weights",
-    "spec_refs": ["6"],
-    "depends_on": ["M4-01"],
+    "spec_refs": [
+      "6"
+    ],
+    "depends_on": [
+      "M4-01"
+    ],
     "acceptance": [
       "Eight signals with default weights 25/25/10/15/5/5/5/10 and profile overrides",
       "Code match: exact NAICS/PSC/ALN/GeM = 1.0, same 4-digit NAICS = 0.6",
@@ -813,8 +1138,14 @@
     "id": "M4-03",
     "milestone": "M4",
     "title": "Semantic similarity, keyword BM25 and past-performance relevance signals",
-    "spec_refs": ["6"],
-    "depends_on": ["M4-02", "M1-12", "M2-12"],
+    "spec_refs": [
+      "6"
+    ],
+    "depends_on": [
+      "M4-02",
+      "M1-12",
+      "M2-12"
+    ],
     "acceptance": [
       "Opportunity embedding computed on title + summary + requirements at ingest (batch)",
       "Semantic signal = max cosine vs profile service-line embeddings (pgvector <=> operator)",
@@ -828,8 +1159,15 @@
     "id": "M4-04",
     "milestone": "M4",
     "title": "Eligibility signal from extracted criteria",
-    "spec_refs": ["6", "5.3"],
-    "depends_on": ["M4-02", "M1-07", "M3-08"],
+    "spec_refs": [
+      "6",
+      "5.3"
+    ],
+    "depends_on": [
+      "M4-02",
+      "M1-07",
+      "M3-08"
+    ],
     "acceptance": [
       "Compares turnover, experience years, certifications, registrations and size status against opportunity.eligibility",
       "Missing data on either side scores 0.5 and is reported as unknown",
@@ -842,8 +1180,14 @@
     "id": "M4-05",
     "milestone": "M4",
     "title": "Stage 3 LLM rationale as strict JSON with caching",
-    "spec_refs": ["6", "8"],
-    "depends_on": ["M4-02", "M5-01"],
+    "spec_refs": [
+      "6",
+      "8"
+    ],
+    "depends_on": [
+      "M4-02",
+      "M5-01"
+    ],
     "acceptance": [
       "Only scores >= 50 call the model (LLM_MODEL_RATIONALE setting)",
       "Output schema: fit_summary (3 bullets), matched_capabilities[], gaps[] each with suggested_fix, eligibility_risks[] with page citations, recommended_action pursue|watch|pass, confidence 0-1",
@@ -856,8 +1200,16 @@
     "id": "M4-06",
     "milestone": "M4",
     "title": "Match trigger and batch scoring job",
-    "spec_refs": ["6", "12"],
-    "depends_on": ["M4-03", "M4-04", "M4-05", "M2-16"],
+    "spec_refs": [
+      "6",
+      "12"
+    ],
+    "depends_on": [
+      "M4-03",
+      "M4-04",
+      "M4-05",
+      "M2-16"
+    ],
     "acceptance": [
       "opportunity.created/amended events enqueue scoring against every active profile in the region with completeness >= 40",
       "Profile change re-scores open opportunities for that profile",
@@ -870,8 +1222,13 @@
     "id": "M4-07",
     "milestone": "M4",
     "title": "Match feedback and weekly keyword re-tune suggestions",
-    "spec_refs": ["6", "10.3"],
-    "depends_on": ["M4-06"],
+    "spec_refs": [
+      "6",
+      "10.3"
+    ],
+    "depends_on": [
+      "M4-06"
+    ],
     "acceptance": [
       "POST /api/v1/opportunities/{id}/feedback stores match_feedback(thumb up|down, reason text)",
       "Weekly job computes keyword lift from feedback and writes keyword_suggestions(profile_id, term, kind, delta_weight, evidence)",
@@ -884,8 +1241,14 @@
     "id": "M4-08",
     "milestone": "M4",
     "title": "Saved searches and alert rules",
-    "spec_refs": ["6", "10.3"],
-    "depends_on": ["M2-15", "M4-06"],
+    "spec_refs": [
+      "6",
+      "10.3"
+    ],
+    "depends_on": [
+      "M2-15",
+      "M4-06"
+    ],
     "acceptance": [
       "GET/POST /api/v1/saved-searches stores the filter set; each saved search creates an alert_rules row",
       "GET/POST /api/v1/alert-rules with min_score, channels, instant|digest",
@@ -898,8 +1261,14 @@
     "id": "M4-09",
     "milestone": "M4",
     "title": "Notification core: events, idempotency, deliveries, retries and fallback",
-    "spec_refs": ["7", "10.2"],
-    "depends_on": ["M1-06", "M0-08"],
+    "spec_refs": [
+      "7",
+      "10.2"
+    ],
+    "depends_on": [
+      "M1-06",
+      "M0-08"
+    ],
     "acceptance": [
       "notifications(tenant_id, user_id, event_type, opportunity_id, pursuit_id, version, payload jsonb, created_at) and notification_deliveries(channel, status queued|sent|failed|opened, idempotency_key unique, attempts, error)",
       "Idempotency key = (user, event_type, opportunity_id, version); duplicate events are no-ops",
@@ -913,8 +1282,12 @@
     "id": "M4-10",
     "milestone": "M4",
     "title": "Email channel: SES/SendGrid providers, templates, unsubscribe",
-    "spec_refs": ["7"],
-    "depends_on": ["M4-09"],
+    "spec_refs": [
+      "7"
+    ],
+    "depends_on": [
+      "M4-09"
+    ],
     "acceptance": [
       "EmailProvider protocol with SES (region from tenant residency, ap-south-1 for IN), SendGrid and SMTP (Mailpit) implementations",
       "Templates (Jinja2 HTML + text) render title, buyer, value, due date in user tz with countdown, fit score + 3-bullet rationale, top gap, links",
@@ -927,8 +1300,13 @@
     "id": "M4-11",
     "milestone": "M4",
     "title": "Slack channel: incoming webhook and interactive actions",
-    "spec_refs": ["7", "10.3"],
-    "depends_on": ["M4-09"],
+    "spec_refs": [
+      "7",
+      "10.3"
+    ],
+    "depends_on": [
+      "M4-09"
+    ],
     "acceptance": [
       "Block Kit message with Pursue / Pass / Assign buttons and the opportunity link",
       "POST /api/v1/integrations/slack/actions verifies Slack signing secret and timestamp, maps action to pursue/pass/assign",
@@ -941,8 +1319,12 @@
     "id": "M4-12",
     "milestone": "M4",
     "title": "Microsoft Teams webhook, in-app bell and web push",
-    "spec_refs": ["7"],
-    "depends_on": ["M4-09"],
+    "spec_refs": [
+      "7"
+    ],
+    "depends_on": [
+      "M4-09"
+    ],
     "acceptance": [
       "Teams Adaptive Card via incoming webhook",
       "In-app channel writes to notifications and GET /api/v1/me/notifications lists unread with mark-read",
@@ -955,8 +1337,12 @@
     "id": "M4-13",
     "milestone": "M4",
     "title": "Quiet hours, daily digest and weekly roll-up",
-    "spec_refs": ["7"],
-    "depends_on": ["M4-10"],
+    "spec_refs": [
+      "7"
+    ],
+    "depends_on": [
+      "M4-10"
+    ],
     "acceptance": [
       "Instant notification inside quiet hours is queued to the next morning unless response due < 72h",
       "Daily digest at the user's digest_time in their tz collects Medium matches and queued items",
@@ -969,8 +1355,15 @@
     "id": "M4-14",
     "milestone": "M4",
     "title": "Event router: which event goes to which channel and when",
-    "spec_refs": ["7"],
-    "depends_on": ["M4-11", "M4-12", "M4-13", "M2-16"],
+    "spec_refs": [
+      "7"
+    ],
+    "depends_on": [
+      "M4-11",
+      "M4-12",
+      "M4-13",
+      "M2-16"
+    ],
     "acceptance": [
       "Routing table per SPEC 7: high match instant in-app+email+slack/teams; medium digest; amendment on tracked instant with field diff; draft ready to assignee; registration expiring to owner; adapter failing > 2 runs to ops channel",
       "Per-user overrides from user_notification_prefs applied",
@@ -983,8 +1376,14 @@
     "id": "M4-15",
     "milestone": "M4",
     "title": "Integration test: ingest -> match -> notify end-to-end",
-    "spec_refs": ["12", "13.2"],
-    "depends_on": ["M4-14", "M4-08"],
+    "spec_refs": [
+      "12",
+      "13.2"
+    ],
+    "depends_on": [
+      "M4-14",
+      "M4-08"
+    ],
     "acceptance": [
       "Test seeds a profile, ingests a SAM fixture that matches, runs scoring and delivery synchronously",
       "Asserts an email in Mailpit and a Slack webhook call (mock) within the fake 5-minute window",
@@ -996,8 +1395,14 @@
     "id": "M4-16",
     "milestone": "M4",
     "title": "Frontend: home dashboard, alerts inbox, notification prefs, saved searches",
-    "spec_refs": ["10.4"],
-    "depends_on": ["M2-18", "M4-08", "M4-12"],
+    "spec_refs": [
+      "10.4"
+    ],
+    "depends_on": [
+      "M2-18",
+      "M4-08",
+      "M4-12"
+    ],
     "acceptance": [
       "Home shows today's High-fit matches, due this week, pipeline value and alerts inbox",
       "Bell with unread count and mark-read",
@@ -1010,8 +1415,15 @@
     "id": "M5-01",
     "milestone": "M5",
     "title": "Agent runtime: durable runs/steps, validated outputs, model routing, caching, tracing",
-    "spec_refs": ["8", "10.1", "10.2"],
-    "depends_on": ["M0-06", "M0-12"],
+    "spec_refs": [
+      "8",
+      "10.1",
+      "10.2"
+    ],
+    "depends_on": [
+      "M0-06",
+      "M0-12"
+    ],
     "acceptance": [
       "agent_runs(tenant_id, pursuit_id, status, started_at, finished_at, cost_usd, tokens) and agent_steps(run_id, agent, attempt, input_ref, output jsonb, tokens_in/out, cost, status, error)",
       "agents/llm.py wraps the Anthropic SDK: JSON-schema tool outputs validated with Pydantic, retry up to 2x on invalid output then step status flagged, prompt caching on solicitation text and profile blocks",
@@ -1025,8 +1437,12 @@
     "id": "M5-02",
     "milestone": "M5",
     "title": "Cost guard: tenant monthly budget and per-pursuit cap",
-    "spec_refs": ["8"],
-    "depends_on": ["M5-01"],
+    "spec_refs": [
+      "8"
+    ],
+    "depends_on": [
+      "M5-01"
+    ],
     "acceptance": [
       "Per-tenant monthly token/USD budget from plan_limits; per-pursuit cap default USD 15 configurable per tenant",
       "Runner checks the projected cost before each step and pauses the run with status needs_approval when exceeded",
@@ -1039,8 +1455,14 @@
     "id": "M5-03",
     "milestone": "M5",
     "title": "Agent 1: document collector",
-    "spec_refs": ["8"],
-    "depends_on": ["M5-01", "M2-12", "M1-11"],
+    "spec_refs": [
+      "8"
+    ],
+    "depends_on": [
+      "M5-01",
+      "M2-12",
+      "M1-11"
+    ],
     "acceptance": [
       "Downloads every opportunity document, hashes, scans (Scanner protocol), converts to text with page numbers, splits into sections",
       "Skips already-collected unchanged hashes; records manual-download items for captcha-gated sources",
@@ -1053,8 +1475,13 @@
     "id": "M5-04",
     "milestone": "M5",
     "title": "Agent 2: requirements extractor with page citations",
-    "spec_refs": ["8", "12"],
-    "depends_on": ["M5-03"],
+    "spec_refs": [
+      "8",
+      "12"
+    ],
+    "depends_on": [
+      "M5-03"
+    ],
     "acceptance": [
       "requirements(pursuit_id, req_id, text, doc_id, page, type shall|must|should|eligibility|format|submission|evaluation, volume)",
       "Opus-class model over page-tagged chunks; every requirement must carry doc + page or it is rejected by the validator",
@@ -1067,8 +1494,12 @@
     "id": "M5-05",
     "milestone": "M5",
     "title": "Agent 3: compliance matrix and submission checklist",
-    "spec_refs": ["8"],
-    "depends_on": ["M5-04"],
+    "spec_refs": [
+      "8"
+    ],
+    "depends_on": [
+      "M5-04"
+    ],
     "acceptance": [
       "compliance_items(requirement_id, section, owner_user_id, status, notes) generated for every requirement",
       "Format rules extracted: page limits, fonts, file naming, portal, copies",
@@ -1081,8 +1512,15 @@
     "id": "M5-06",
     "milestone": "M5",
     "title": "Agent 4: bid/no-bid analyst and Gate 1",
-    "spec_refs": ["8", "9"],
-    "depends_on": ["M5-05", "M2-08", "M4-04"],
+    "spec_refs": [
+      "8",
+      "9"
+    ],
+    "depends_on": [
+      "M5-05",
+      "M2-08",
+      "M4-04"
+    ],
     "acceptance": [
       "Scorecard: fit, eligibility, capacity, competition/incumbent (from awards enrichment), value, win_probability 0-100, gaps, teaming suggestions, recommendation with reasons",
       "Weights from profile bid/no-bid preferences",
@@ -1095,8 +1533,12 @@
     "id": "M5-07",
     "milestone": "M5",
     "title": "Agent 5: outline and win-theme writer",
-    "spec_refs": ["8"],
-    "depends_on": ["M5-06"],
+    "spec_refs": [
+      "8"
+    ],
+    "depends_on": [
+      "M5-06"
+    ],
     "acceptance": [
       "Outline mirrors evaluation criteria (Section L/M for US; technical/financial covers for India) and maps every compliance item to a section",
       "3-5 win themes and discriminators grounded in profile records with citations",
@@ -1108,8 +1550,13 @@
     "id": "M5-08",
     "milestone": "M5",
     "title": "Agent 6: parallel section drafters with RAG grounding",
-    "spec_refs": ["8"],
-    "depends_on": ["M5-07", "M1-12"],
+    "spec_refs": [
+      "8"
+    ],
+    "depends_on": [
+      "M5-07",
+      "M1-12"
+    ],
     "acceptance": [
       "One drafter per volume runs in parallel (Celery group) with Sonnet-class model and RAG over kb_chunks of the pursuit's tenant only",
       "Sections: cover letter, executive summary, technical approach, management plan, staffing + résumés, past performance write-ups, capability one-pager, RFI answers, India technical bid forms as applicable",
@@ -1122,8 +1569,13 @@
     "id": "M5-09",
     "milestone": "M5",
     "title": "Agent 7: pricing template builder",
-    "spec_refs": ["8", "1"],
-    "depends_on": ["M5-05"],
+    "spec_refs": [
+      "8",
+      "1"
+    ],
+    "depends_on": [
+      "M5-05"
+    ],
     "acceptance": [
       "Produces an XLSX with labour categories/man-months from the rate card and placeholder cells for every price",
       "Never fills a price not present in the rate card; test asserts placeholders",
@@ -1135,8 +1587,13 @@
     "id": "M5-10",
     "milestone": "M5",
     "title": "Agent 8: red-team reviewer, single auto-revision, Gate 2",
-    "spec_refs": ["8"],
-    "depends_on": ["M5-08", "M5-09"],
+    "spec_refs": [
+      "8"
+    ],
+    "depends_on": [
+      "M5-08",
+      "M5-09"
+    ],
     "acceptance": [
       "Scores each section against evaluation criteria and lists non-compliant or unsupported claims, missing requirements and page-limit overruns",
       "Drafts auto-revised exactly once; remaining issues become review comments",
@@ -1149,8 +1606,12 @@
     "id": "M5-11",
     "milestone": "M5",
     "title": "Grounding validator and citation resolver",
-    "spec_refs": ["8"],
-    "depends_on": ["M5-08"],
+    "spec_refs": [
+      "8"
+    ],
+    "depends_on": [
+      "M5-08"
+    ],
     "acceptance": [
       "core.grounding.validate(body, citations, tenant_records) flags sentences with numbers, names, certifications or past-performance claims lacking a resolvable citation",
       "Flags are stored on draft_versions and rendered red in the UI; count exposed on the pursuit",
@@ -1162,8 +1623,14 @@
     "id": "M5-12",
     "milestone": "M5",
     "title": "LLM safety: untrusted input handling, read-only tools, prompt-injection evals",
-    "spec_refs": ["11", "8"],
-    "depends_on": ["M5-04", "M5-08"],
+    "spec_refs": [
+      "11",
+      "8"
+    ],
+    "depends_on": [
+      "M5-04",
+      "M5-08"
+    ],
     "acceptance": [
       "Agent tool set limited to retrieval (kb search, document read) and writes scoped to the pursuit's own records; test asserts no tool can write outside the pursuit",
       "Solicitation and portal text wrapped as data blocks; system prompts instruct to ignore embedded instructions",
@@ -1176,8 +1643,15 @@
     "id": "M5-13",
     "milestone": "M5",
     "title": "Exports: DOCX in tenant template, PDF, XLSX, ZIP with naming rules",
-    "spec_refs": ["8", "11", "12"],
-    "depends_on": ["M5-10", "M5-11"],
+    "spec_refs": [
+      "8",
+      "11",
+      "12"
+    ],
+    "depends_on": [
+      "M5-10",
+      "M5-11"
+    ],
     "acceptance": [
       "POST /api/v1/pursuits/{id}/export?format=docx|pdf|xlsx|zip produces a file via the storage service and an exports row",
       "DOCX uses the tenant's uploaded .docx template (python-docx) or a default; PDF rendered from the DOCX; XLSX contains matrix and pricing sheets",
@@ -1191,8 +1665,12 @@
     "id": "M5-14",
     "milestone": "M5",
     "title": "Submission packet data",
-    "spec_refs": ["8"],
-    "depends_on": ["M5-05"],
+    "spec_refs": [
+      "8"
+    ],
+    "depends_on": [
+      "M5-05"
+    ],
     "acceptance": [
       "GET /api/v1/pursuits/{id}/packet returns what to upload where, portal link, required signatures/DSC steps and the final deadline in buyer and user time zones",
       "India packet includes EMD/BG and DSC steps; US includes SAM login note",
@@ -1204,8 +1682,15 @@
     "id": "M5-15",
     "milestone": "M5",
     "title": "Golden-set evals and make eval",
-    "spec_refs": ["12", "13.2"],
-    "depends_on": ["M5-04", "M5-10", "M3-04"],
+    "spec_refs": [
+      "12",
+      "13.2"
+    ],
+    "depends_on": [
+      "M5-04",
+      "M5-10",
+      "M3-04"
+    ],
     "acceptance": [
       "evals/golden/us has 10 solicitations (including an IRS sources-sought pattern) and evals/golden/in has 10 tenders (CPPP, GeM, state) with labelled requirements and eligibility fields",
       "make eval reports requirement recall/precision, eligibility exact match, fabricated-fact count and citation coverage",
@@ -1218,8 +1703,13 @@
     "id": "M5-16",
     "milestone": "M5",
     "title": "Pursuit workspace API: drafts, agent runs, comments",
-    "spec_refs": ["10.3"],
-    "depends_on": ["M5-08", "M5-02"],
+    "spec_refs": [
+      "10.3"
+    ],
+    "depends_on": [
+      "M5-08",
+      "M5-02"
+    ],
     "acceptance": [
       "GET/PUT /api/v1/pursuits/{id}/drafts/{section} with optimistic versioning",
       "POST /api/v1/pursuits/{id}/agents/run with body {step: <agent>|all}",
@@ -1232,8 +1722,12 @@
     "id": "M5-17",
     "milestone": "M5",
     "title": "Human edit diffs saved as drafting feedback",
-    "spec_refs": ["8"],
-    "depends_on": ["M5-16"],
+    "spec_refs": [
+      "8"
+    ],
+    "depends_on": [
+      "M5-16"
+    ],
     "acceptance": [
       "Saving a draft computes a unified diff vs the agent version and stores draft_feedback(pursuit_id, section, diff, edited_by)",
       "Feedback is retrievable per tenant for future prompt examples; never shared across tenants",
@@ -1245,8 +1739,14 @@
     "id": "M5-18",
     "milestone": "M5",
     "title": "Frontend: pursuit workspace",
-    "spec_refs": ["10.4"],
-    "depends_on": ["M4-16", "M5-16", "M5-13"],
+    "spec_refs": [
+      "10.4"
+    ],
+    "depends_on": [
+      "M4-16",
+      "M5-16",
+      "M5-13"
+    ],
     "acceptance": [
       "Tabs: Bid/no-bid, Compliance matrix, Drafts, Pricing, Checklist, Tasks, Activity",
       "Drafts tab uses TipTap with comments and a citations panel; unsupported claims highlighted red; [NEEDS INPUT] chips link to tasks",
@@ -1259,8 +1759,14 @@
     "id": "M6-01",
     "milestone": "M6",
     "title": "Pursuits: stages, stage rules, decision and actions",
-    "spec_refs": ["9", "10.3"],
-    "depends_on": ["M4-01", "M0-08"],
+    "spec_refs": [
+      "9",
+      "10.3"
+    ],
+    "depends_on": [
+      "M4-01",
+      "M0-08"
+    ],
     "acceptance": [
       "pursuits(tenant_id, profile_id, opportunity_id, stage, owner_user_id, decision, internal_due_at, created_by)",
       "Stages: identified, qualifying, bid_decision, drafting, in_review, final_approval, submitted, awarded, lost, cancelled, no_bid",
@@ -1273,8 +1779,13 @@
     "id": "M6-02",
     "milestone": "M6",
     "title": "Key dates auto-created per pursuit",
-    "spec_refs": ["9"],
-    "depends_on": ["M6-01", "M3-01"],
+    "spec_refs": [
+      "9"
+    ],
+    "depends_on": [
+      "M6-01",
+      "M3-01"
+    ],
     "acceptance": [
       "pursuit_dates(pursuit_id, kind, at, source auto|user, acknowledged_by, acknowledged_at)",
       "Auto kinds: questions_due, prebid_meeting, internal_draft (due-5d), internal_review (due-3d), internal_final (due-48h), portal_submission",
@@ -1287,8 +1798,14 @@
     "id": "M6-03",
     "milestone": "M6",
     "title": "Reminder ladder scheduler with escalation",
-    "spec_refs": ["9", "7"],
-    "depends_on": ["M6-02", "M4-14"],
+    "spec_refs": [
+      "9",
+      "7"
+    ],
+    "depends_on": [
+      "M6-02",
+      "M4-14"
+    ],
     "acceptance": [
       "reminders(pursuit_date_id, offset, due_at, sent_at, channel) generated for 7d, 3d, 24h, 4h, 1h before and every 4h overdue until submitted/passed/cancelled",
       "Escalation: unacknowledged at 24h notifies the bid manager; at 4h notifies the tenant owner",
@@ -1301,8 +1818,13 @@
     "id": "M6-04",
     "milestone": "M6",
     "title": "Calendar: iCal feed and Google/Outlook event push",
-    "spec_refs": ["9", "10.3"],
-    "depends_on": ["M6-02"],
+    "spec_refs": [
+      "9",
+      "10.3"
+    ],
+    "depends_on": [
+      "M6-02"
+    ],
     "acceptance": [
       "GET /api/v1/calendar.ics?token= returns a valid VCALENDAR of the user's key dates with buyer tz in the description",
       "CalendarProvider protocol with Google and Microsoft Graph implementations (mocked) and a per-user connection table",
@@ -1315,8 +1837,13 @@
     "id": "M6-05",
     "milestone": "M6",
     "title": "WhatsApp Business channel via BSP with templates",
-    "spec_refs": ["7", "12"],
-    "depends_on": ["M4-09"],
+    "spec_refs": [
+      "7",
+      "12"
+    ],
+    "depends_on": [
+      "M4-09"
+    ],
     "acceptance": [
       "WhatsAppProvider protocol with Gupshup and Twilio implementations using pre-approved template names from settings",
       "Only deadline reminders and high-fit alerts for IN users with a verified number are sent",
@@ -1329,8 +1856,15 @@
     "id": "M6-06",
     "milestone": "M6",
     "title": "Recurring checks: registration expiry, stale pursuits, amended-after-drafting",
-    "spec_refs": ["9", "4.1", "7"],
-    "depends_on": ["M6-03", "M1-05"],
+    "spec_refs": [
+      "9",
+      "4.1",
+      "7"
+    ],
+    "depends_on": [
+      "M6-03",
+      "M1-05"
+    ],
     "acceptance": [
       "Daily job emails the tenant owner 60/30/7 days before SAM, DSC, certification and insurance expiry; expired SAM or DSC marks the profile blocked_for_bids",
       "Pursuits with no activity for 5 days notify the owner",
@@ -1343,8 +1877,14 @@
     "id": "M6-07",
     "milestone": "M6",
     "title": "Tasks and comments on pursuits",
-    "spec_refs": ["8", "9", "10.2"],
-    "depends_on": ["M6-01"],
+    "spec_refs": [
+      "8",
+      "9",
+      "10.2"
+    ],
+    "depends_on": [
+      "M6-01"
+    ],
     "acceptance": [
       "tasks(pursuit_id, title, assignee, due_at, status, source agent|user, ref) and comments(pursuit_id, target_type, target_id, body, author)",
       "[NEEDS INPUT] placeholders create tasks automatically",
@@ -1356,8 +1896,13 @@
     "id": "M6-08",
     "milestone": "M6",
     "title": "Dashboard KPIs endpoint",
-    "spec_refs": ["9"],
-    "depends_on": ["M6-01", "M4-07"],
+    "spec_refs": [
+      "9"
+    ],
+    "depends_on": [
+      "M6-01",
+      "M4-07"
+    ],
     "acceptance": [
       "GET /api/v1/dashboard returns open pursuits by stage, due in next 7 days, pipeline value by stage in USD and INR, win rate, avg hours saved per package, alert precision from feedback",
       "Values computed with SQL aggregates scoped by RLS",
@@ -1369,8 +1914,15 @@
     "id": "M6-09",
     "milestone": "M6",
     "title": "Frontend: pipeline board, table and calendar view",
-    "spec_refs": ["10.4", "9"],
-    "depends_on": ["M5-18", "M6-08", "M6-04"],
+    "spec_refs": [
+      "10.4",
+      "9"
+    ],
+    "depends_on": [
+      "M5-18",
+      "M6-08",
+      "M6-04"
+    ],
     "acceptance": [
       "Kanban with drag-to-move enforcing stage rules (server 409 surfaced) and table view with filters owner, due, value, region, stage",
       "Calendar view of all key dates with dual time zones",
@@ -1382,8 +1934,13 @@
     "id": "M6-10",
     "milestone": "M6",
     "title": "Dual time zone rendering helpers shared by API, email and UI",
-    "spec_refs": ["9", "7"],
-    "depends_on": ["M3-01"],
+    "spec_refs": [
+      "9",
+      "7"
+    ],
+    "depends_on": [
+      "M3-01"
+    ],
     "acceptance": [
       "API date fields include both UTC and buyer_tz; email and UI helpers render 'Oct 14, 2:00 PM EDT = 11:30 PM IST'",
       "Countdown helper returns humanized remaining time",
@@ -1395,8 +1952,14 @@
     "id": "M7-01",
     "milestone": "M7",
     "title": "Container images and Cloud Run service/job definitions",
-    "spec_refs": ["10.1", "12"],
-    "depends_on": ["M2-16", "M0-13"],
+    "spec_refs": [
+      "10.1",
+      "12"
+    ],
+    "depends_on": [
+      "M2-16",
+      "M0-13"
+    ],
     "acceptance": [
       "backend/Dockerfile (multi-stage, uv, Tesseract eng+hin, ClamAV) and frontend/Dockerfile build",
       "infra/cloudrun/ holds service YAML for api, worker, beat and one job per adapter",
@@ -1409,8 +1972,14 @@
     "id": "M7-02",
     "milestone": "M7",
     "title": "Terraform for dev, staging-in, prod-us, prod-in",
-    "spec_refs": ["12", "10.1", "11"],
-    "depends_on": ["M7-01"],
+    "spec_refs": [
+      "12",
+      "10.1",
+      "11"
+    ],
+    "depends_on": [
+      "M7-01"
+    ],
     "acceptance": [
       "Modules: cloud_sql (Postgres 16, pgvector, PITR 7 days, daily backups), memorystore redis, gcs buckets with CMEK per region, secret manager, cloud run services/jobs, cloud scheduler per adapter",
       "Environments as tfvars: dev (us-east1), staging-in (asia-south1), prod-us, prod-in",
@@ -1423,8 +1992,14 @@
     "id": "M7-03",
     "milestone": "M7",
     "title": "Deploy pipeline and preview environments",
-    "spec_refs": ["12", "13.1"],
-    "depends_on": ["M7-01", "M0-10"],
+    "spec_refs": [
+      "12",
+      "13.1"
+    ],
+    "depends_on": [
+      "M7-01",
+      "M0-10"
+    ],
     "acceptance": [
       ".github/workflows/deploy.yml: merge to main deploys dev; tag v* promotes to staging-in then prod-us and prod-in with manual approval environments",
       "Preview environment per PR as a Cloud Run revision tag, torn down on close",
@@ -1437,8 +2012,16 @@
     "id": "M7-04",
     "milestone": "M7",
     "title": "Billing: Stripe (USD) and Razorpay (INR with GST invoices)",
-    "spec_refs": ["3", "10.1", "10.3", "12"],
-    "depends_on": ["M0-12", "M0-08"],
+    "spec_refs": [
+      "3",
+      "10.1",
+      "10.3",
+      "12"
+    ],
+    "depends_on": [
+      "M0-12",
+      "M0-08"
+    ],
     "acceptance": [
       "BillingProvider protocol; Stripe for us tenants, Razorpay for in tenants with GST invoice fields",
       "POST /api/v1/webhooks/stripe and /webhooks/razorpay verify signatures and update tenant plan and usage_ledger",
@@ -1451,8 +2034,13 @@
     "id": "M7-05",
     "milestone": "M7",
     "title": "Observability: OpenTelemetry, Sentry, Langfuse, structured logs",
-    "spec_refs": ["10.1"],
-    "depends_on": ["M5-01", "M2-16"],
+    "spec_refs": [
+      "10.1"
+    ],
+    "depends_on": [
+      "M5-01",
+      "M2-16"
+    ],
     "acceptance": [
       "OTel traces for API, Celery tasks and adapter runs exported to Cloud Trace when configured",
       "Sentry initialised from SENTRY_DSN with tenant id tag and PII scrubbing",
@@ -1465,8 +2053,13 @@
     "id": "M7-06",
     "milestone": "M7",
     "title": "Security hardening: rate limits, scanning, secrets, ASVS checklist, backups drill",
-    "spec_refs": ["11"],
-    "depends_on": ["M0-07", "M7-02"],
+    "spec_refs": [
+      "11"
+    ],
+    "depends_on": [
+      "M0-07",
+      "M7-02"
+    ],
     "acceptance": [
       "API rate limiting per tenant and per IP (Redis) with 429 and headers",
       "Dependabot config, pip-audit and npm audit steps in CI, gitleaks secrets scan",
@@ -1479,8 +2072,14 @@
     "id": "M7-07",
     "milestone": "M7",
     "title": "Privacy: DPDP consent, data-principal requests, CCPA export/delete, sub-processors",
-    "spec_refs": ["11", "10.4"],
-    "depends_on": ["M1-09", "M0-08"],
+    "spec_refs": [
+      "11",
+      "10.4"
+    ],
+    "depends_on": [
+      "M1-09",
+      "M0-08"
+    ],
     "acceptance": [
       "Consent notice recorded at signup with version and timestamp",
       "Settings API: POST /api/v1/me/data-requests (access|correction|erasure) with SLA tracking; tenant owner export and delete of all tenant data as a background job",
@@ -1493,8 +2092,15 @@
     "id": "M7-08",
     "milestone": "M7",
     "title": "Admin console: sources health, run history, tenants, usage and LLM cost",
-    "spec_refs": ["10.3", "10.4"],
-    "depends_on": ["M2-16", "M5-01", "M0-13"],
+    "spec_refs": [
+      "10.3",
+      "10.4"
+    ],
+    "depends_on": [
+      "M2-16",
+      "M5-01",
+      "M0-13"
+    ],
     "acceptance": [
       "GET /api/v1/admin/tenants, /admin/sources, /admin/sources/{id}/runs, /admin/usage (platform_admin only)",
       "Admin UI pages for the above with run history table and cost charts",
@@ -1506,8 +2112,14 @@
     "id": "M7-09",
     "milestone": "M7",
     "title": "Frontend settings: users and roles, integrations, billing, data export/delete",
-    "spec_refs": ["10.4"],
-    "depends_on": ["M4-16", "M7-04", "M7-07"],
+    "spec_refs": [
+      "10.4"
+    ],
+    "depends_on": [
+      "M4-16",
+      "M7-04",
+      "M7-07"
+    ],
     "acceptance": [
       "Users page invites members and changes roles (owner only)",
       "Integrations page connects Slack, Teams, WhatsApp, Google/Outlook calendar",
@@ -1520,8 +2132,13 @@
     "id": "M7-10",
     "milestone": "M7",
     "title": "Load test scripts",
-    "spec_refs": ["12"],
-    "depends_on": ["M4-06", "M2-15"],
+    "spec_refs": [
+      "12"
+    ],
+    "depends_on": [
+      "M4-06",
+      "M2-15"
+    ],
     "acceptance": [
       "scripts/load/seed.py creates 50k opportunities and 200 profiles",
       "scripts/load/score.py times the batch scoring and fails if > 10 min",
@@ -1534,8 +2151,15 @@
     "id": "M7-11",
     "milestone": "M7",
     "title": "India testing checklist runbook and automated subset",
-    "spec_refs": ["12"],
-    "depends_on": ["M3-09", "M6-05", "M7-04", "M4-10"],
+    "spec_refs": [
+      "12"
+    ],
+    "depends_on": [
+      "M3-09",
+      "M6-05",
+      "M7-04",
+      "M4-10"
+    ],
     "acceptance": [
       "docs/runbooks/india-testing.md lists every SPEC 12 India checklist item with owner and evidence field",
       "tests/integration/test_india_checklist.py covers dates, INR formatting, Hindi parsing, MSME/Startup exemptions and residency configuration",
@@ -1547,8 +2171,13 @@
     "id": "M7-12",
     "milestone": "M7",
     "title": "README, adapter guide and runbook for a broken source",
-    "spec_refs": ["13.6"],
-    "depends_on": ["M2-17", "M7-03"],
+    "spec_refs": [
+      "13.6"
+    ],
+    "depends_on": [
+      "M2-17",
+      "M7-03"
+    ],
     "acceptance": [
       "README covers setup, every env var with purpose, running the stack, tests, evals, deploy",
       "docs/adapters.md is the adapter guide; docs/runbooks/broken-source.md explains triage when a portal layout changes",
@@ -1560,8 +2189,15 @@
     "id": "M7-13",
     "milestone": "M7",
     "title": "Playwright flows and accessibility checks",
-    "spec_refs": ["12"],
-    "depends_on": ["M1-13", "M2-18", "M5-18", "M6-09"],
+    "spec_refs": [
+      "12"
+    ],
+    "depends_on": [
+      "M1-13",
+      "M2-18",
+      "M5-18",
+      "M6-09"
+    ],
     "acceptance": [
       "Playwright flows: onboarding, search, pursue, review, export against the local stack",
       "axe-core check on each flow page with zero serious/critical violations",
@@ -1573,8 +2209,18 @@
     "id": "M7-14",
     "milestone": "M7",
     "title": "MVP acceptance checklist mapping SPEC 12 boxes to tests",
-    "spec_refs": ["12", "13.6"],
-    "depends_on": ["M4-15", "M5-15", "M6-03", "M5-13", "M0-11", "M7-11"],
+    "spec_refs": [
+      "12",
+      "13.6"
+    ],
+    "depends_on": [
+      "M4-15",
+      "M5-15",
+      "M6-03",
+      "M5-13",
+      "M0-11",
+      "M7-11"
+    ],
     "acceptance": [
       "docs/acceptance.md lists each SPEC 12 acceptance box with the test or runbook that proves it and current status",
       "make acceptance runs the automated subset and prints the checklist",
