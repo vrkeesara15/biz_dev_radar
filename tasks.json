@@ -444,7 +444,7 @@
       "Isolation factories registered for every profile route",
       "Round-trip test: create full profile via API and read it back equal (masked fields excepted)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-10",

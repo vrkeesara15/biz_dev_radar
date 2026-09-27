@@ -6,7 +6,7 @@ import uuid
 from collections.abc import Mapping
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, inspect, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crypto import is_masked
@@ -46,17 +46,20 @@ PROFILE_COUNTERS = {Resource.PROFILES.value: count_profiles}
 
 
 def apply_changes(row: CompanyProfile, changes: Mapping[str, Any]) -> list[str]:
-    """Set attributes from validated changes; masked encrypted values are ignored.
-    Returns the names that were written (never their values: some are secrets)."""
-    written: list[str] = []
+    """Set attributes from validated changes; masked encrypted values are ignored and a
+    value equal to the stored one is not a change. Returns the names that actually changed
+    (never their values: some are secrets); the version bumps only when something did."""
+    changed: list[str] = []
+    state = inspect(row)
     for name, value in changes.items():
         if name in ENCRYPTED_FIELDS and is_masked(value):
             continue
         setattr(row, name, value)
-        written.append(name)
-    if written:
+        if state.transient or state.attrs[name].history.has_changes():
+            changed.append(name)
+    if changed:
         row.version = (row.version or 1) + 1
-    return sorted(written)
+    return sorted(changed)
 
 
 async def naics_codes_for(session: AsyncSession, profile_id: uuid.UUID) -> list[str]:

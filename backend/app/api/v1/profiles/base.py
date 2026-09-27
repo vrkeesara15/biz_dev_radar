@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, HTTPException, Request, status
+from sqlalchemy import select
 
 from app.api.deps import TenantSessionDep
 from app.api.v1.profiles.common import EditorDep, ReaderDep, get_profile, reject_region_foreign
@@ -80,6 +81,21 @@ async def create_profile(
         action="profile.create", object_type="company_profile", object_id=str(row.id)
     )
     return await _out(session, row)
+
+
+@router.get("", response_model=list[ProfileOut])
+async def list_profiles(user: ReaderDep, session: TenantSessionDep) -> list[ProfileOut]:
+    """Every profile of the caller's tenant (RLS-scoped), oldest first."""
+    rows = (
+        (
+            await session.execute(
+                select(CompanyProfile).order_by(CompanyProfile.created_at, CompanyProfile.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [await _out(session, row) for row in rows]
 
 
 @router.get("/{profile_id}", response_model=ProfileOut)
