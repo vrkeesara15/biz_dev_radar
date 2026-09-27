@@ -529,7 +529,7 @@
       "Completeness meter updates after each step from the API",
       "Playwright test completes the wizard against a mocked API"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-01",

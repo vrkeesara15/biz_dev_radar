@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 export const NAV_ITEMS = [
   { href: "/app", label: "Home" },
+  { href: "/app/onboarding", label: "Profile setup" },
   { href: "/app/opportunities", label: "Opportunities" },
   { href: "/app/pipeline", label: "Pipeline" },
   { href: "/app/calendar", label: "Calendar" },
