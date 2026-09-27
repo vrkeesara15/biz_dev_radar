@@ -26,6 +26,10 @@ RLS_EXEMPT_TABLES = {
     "document_chunks",
     "awards_enrichment",
     "agency_spend_stats",
+    # M7-08: a support-access grant is platform bookkeeping ABOUT a tenant, not tenant
+    # data: it has no tenant_id (only target_tenant_id), no app-role grant at all, and is
+    # written and read solely through the owner-role admin session (app/models/support.py).
+    "support_access_grants",
 }
 
 

@@ -4,15 +4,32 @@
  * notification prefs, autofill) and recomputes a simplified completeness
  * score on every read so the meter visibly moves as steps are saved. It also
  * serves the opportunities search/detail routes (M2-15) from fixtures with the
- * same filter semantics as the API, and answers 404 for the pipeline actions
- * (M6-01) and saved searches (M4-08) that do not exist yet, so the screens'
- * "not available yet" paths are exercised for real.
+ * same filter semantics as the API, the platform-admin console routes (M7-08:
+ * sources, run history, tenants, usage, health, support access) with in-memory
+ * state so "Run now" and a plan edit really change what the next read returns,
+ * and answers 404 for the pipeline actions (M6-01) and saved searches (M4-08)
+ * that do not exist yet, so the screens' "not available yet" paths are
+ * exercised for real.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { Page, Route } from "@playwright/test";
 
 type Json = Record<string, unknown>;
+
+/** Shape of e2e/fixtures/admin.json (the M7-08 console routes). */
+type AdminFixture = {
+  sources: Json[];
+  runs: Record<string, Json[]>;
+  tenants: Json[];
+  planLimits: Record<string, Record<string, number | null>>;
+  usage: { current: Json[]; previous: Json[] };
+  health: Json;
+};
+
+/** "YYYY-MM" of today in UTC, the period the console asks for by default. */
+export const currentPeriod = (date = new Date()) =>
+  `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 
 const fixture = <T>(name: string): T =>
   JSON.parse(readFileSync(path.join(__dirname, "fixtures", name), "utf8")) as T;
@@ -56,6 +73,10 @@ export class MockApi {
   opportunities: Json[] = fixture<Json[]>("opportunities.json");
   opportunityDetail: Json = fixture<Json>("opportunity-detail.json");
   savedSearches: Json[] = [];
+  admin: AdminFixture = fixture<AdminFixture>("admin.json");
+  adminSources: Json[] = this.admin.sources;
+  adminTenants: Json[] = this.admin.tenants;
+  adminGrants: Json[] = [];
   private seq = 0;
 
   constructor(private readonly options: MockOptions = {}) {}
@@ -177,6 +198,10 @@ export class MockApi {
     const json = (status: number, payload: unknown) =>
       route.fulfill({ status, contentType: "application/json", body: JSON.stringify(payload) });
 
+    if (pathname.startsWith("/api/v1/admin/")) {
+      const handled = this.handleAdmin(pathname, method, body, url.searchParams, json);
+      if (handled) return handled;
+    }
     if (pathname === "/api/v1/opportunities" && method === "GET") {
       return json(200, this.searchOpportunities(url.searchParams));
     }
@@ -267,6 +292,167 @@ export class MockApi {
       }
     }
     return json(404, { detail: `Unhandled ${method} ${pathname}` });
+  }
+
+  /** The M7-08 admin console routes, platform_admin only on the real backend. */
+  private handleAdmin(
+    pathname: string,
+    method: string,
+    body: unknown,
+    params: URLSearchParams,
+    json: (status: number, payload: unknown) => Promise<void>,
+  ): Promise<void> | null {
+    const page = (items: Json[], extra: Json = {}) => {
+      const pageNumber = Math.max(1, Number(params.get("page") ?? 1));
+      const pageSize = Math.max(1, Number(params.get("page_size") ?? 25));
+      const start = (pageNumber - 1) * pageSize;
+      return {
+        items: items.slice(start, start + pageSize),
+        total: items.length,
+        page: pageNumber,
+        page_size: pageSize,
+        pages: Math.max(1, Math.ceil(items.length / pageSize)),
+        ...extra,
+      };
+    };
+
+    if (pathname === "/api/v1/admin/sources" && method === "GET") {
+      return json(200, this.adminSources);
+    }
+    if (pathname === "/api/v1/admin/health" && method === "GET") {
+      return json(200, this.admin.health);
+    }
+    if (pathname === "/api/v1/admin/usage" && method === "GET") {
+      const period = params.get("period") ?? currentPeriod();
+      const items = period === currentPeriod() ? this.admin.usage.current : this.admin.usage.previous;
+      const sum = (key: string) => items.reduce((acc, row) => acc + Number(row[key] ?? 0), 0);
+      const cost = sum("cost_microusd");
+      return json(200, {
+        period,
+        items,
+        total_tokens_in: sum("tokens_in"),
+        total_tokens_out: sum("tokens_out"),
+        total_cost_microusd: cost,
+        total_cost_usd: cost / 1_000_000,
+        total_agent_runs: sum("agent_runs"),
+      });
+    }
+    const runsMatch = pathname.match(/^\/api\/v1\/admin\/sources\/([^/]+)\/runs$/);
+    if (runsMatch && method === "GET") {
+      const [, sourceId] = runsMatch;
+      if (!this.adminSources.some((s) => s.source_id === sourceId)) {
+        return json(404, { detail: "unknown source" });
+      }
+      return json(200, page(this.admin.runs[sourceId] ?? [], { source_id: sourceId }));
+    }
+    const runMatch = pathname.match(/^\/api\/v1\/admin\/sources\/([^/]+)\/run$/);
+    if (runMatch && method === "POST") {
+      const [, sourceId] = runMatch;
+      const source = this.adminSources.find((s) => s.source_id === sourceId);
+      if (!source) return json(404, { detail: "unknown source" });
+      if (!source.registered) return json(409, { detail: `source '${sourceId}' is disabled (stub)` });
+      const startedAt = new Date().toISOString();
+      source.last_run_at = startedAt;
+      source.last_status = "ok";
+      source.health_status = "ok";
+      source.consecutive_failures = 0;
+      const run = {
+        id: this.nextId("run"),
+        source_id: sourceId,
+        started_at: startedAt,
+        finished_at: startedAt,
+        status: "ok",
+        fetched: 12,
+        upserted: 3,
+        error_count: 0,
+        last_error: null,
+      };
+      this.admin.runs[sourceId] = [run, ...(this.admin.runs[sourceId] ?? [])];
+      return json(200, { source_id: sourceId, mode: "queued", task_id: this.nextId("task"), result: null });
+    }
+    if (pathname === "/api/v1/admin/tenants" && method === "GET") {
+      const q = (params.get("q") ?? "").trim().toLowerCase();
+      const rows = this.adminTenants.filter(
+        (t) =>
+          !q ||
+          String(t.name).toLowerCase().includes(q) ||
+          String(t.slug).toLowerCase().includes(q),
+      );
+      return json(200, page(rows));
+    }
+    const tenantMatch = pathname.match(/^\/api\/v1\/admin\/tenants\/([^/]+)(?:\/([^/]+))?$/);
+    if (tenantMatch) {
+      const [, tenantId, sub] = tenantMatch;
+      const tenant = this.adminTenants.find((t) => t.id === tenantId);
+      if (!tenant) return json(404, { detail: "tenant not found" });
+      if (!sub && method === "GET") {
+        const period = params.get("period") ?? currentPeriod();
+        const usageRows = period === currentPeriod() ? this.admin.usage.current : this.admin.usage.previous;
+        const usage = usageRows.find((row) => row.tenant_id === tenantId) ?? {
+          tenant_id: tenantId,
+          slug: tenant.slug,
+          name: tenant.name,
+          plan: tenant.plan,
+          region: tenant.region,
+          tokens_in: 0,
+          tokens_out: 0,
+          cost_microusd: 0,
+          cost_usd: 0,
+          agent_runs: 0,
+          notifications: null,
+        };
+        const grant = this.adminGrants.filter((g) => g.tenant_id === tenantId).at(-1) ?? null;
+        return json(200, {
+          tenant,
+          plan_limits: this.admin.planLimits[String(tenant.plan)] ?? {},
+          period,
+          usage,
+          billing:
+            tenant.slug === "alpha-corp"
+              ? { provider: "stripe", status: "active", plan: tenant.plan, current_period_end: null, has_subscription: true }
+              : null,
+          support_access: grant,
+        });
+      }
+      if (!sub && method === "PATCH") {
+        const patch = (body ?? {}) as Json;
+        if (patch.plan !== undefined && patch.plan !== null) tenant.plan = patch.plan;
+        if (patch.is_internal !== undefined && patch.is_internal !== null) tenant.is_internal = patch.is_internal;
+        return json(200, tenant);
+      }
+      if (sub === "support-access" && method === "POST") {
+        const payload = (body ?? {}) as Json;
+        const reason = String(payload.reason ?? "");
+        if (reason.trim().length < 3) return json(422, { detail: "reason is required" });
+        const minutes = Number(payload.minutes ?? 60);
+        const grantedAt = new Date();
+        const grant = {
+          id: this.nextId("grant"),
+          tenant_id: tenantId,
+          admin_user_id: "00000000-0000-0000-0000-0000000000e2",
+          reason,
+          granted_at: grantedAt.toISOString(),
+          expires_at: new Date(grantedAt.getTime() + minutes * 60_000).toISOString(),
+        };
+        this.adminGrants.push(grant);
+        return json(200, {
+          tenant,
+          member_count: Number(tenant.member_count ?? 0),
+          reason,
+          grant,
+        });
+      }
+      if (sub === "audit-log" && method === "GET") {
+        const grant = this.adminGrants.filter((g) => g.tenant_id === tenantId).at(-1);
+        if (!grant) {
+          return json(403, {
+            detail: "support access to this tenant has not been granted (or has expired)",
+          });
+        }
+        return json(200, { ...page([]), grant });
+      }
+    }
+    return null;
   }
 
   /** GET /opportunities with the API's filter semantics over the fixture rows. */

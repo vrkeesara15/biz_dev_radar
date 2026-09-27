@@ -1,0 +1,261 @@
+{
+  "sources": [
+    {
+      "source_id": "sam_opps",
+      "region": "us",
+      "schedule": "0 6 * * *",
+      "enabled": true,
+      "registered": true,
+      "health_status": "ok",
+      "health_message": null,
+      "last_run_at": "2026-04-14T06:00:00Z",
+      "last_status": "ok",
+      "watermark_at": "2026-04-14T05:00:00Z",
+      "consecutive_failures": 0,
+      "runs": []
+    },
+    {
+      "source_id": "cppp",
+      "region": "in",
+      "schedule": "0 */6 * * *",
+      "enabled": true,
+      "registered": true,
+      "health_status": "degraded",
+      "health_message": "3 records skipped: missing tender reference",
+      "last_run_at": "2026-04-14T00:00:00Z",
+      "last_status": "degraded",
+      "watermark_at": "2026-04-13T18:00:00Z",
+      "consecutive_failures": 1,
+      "runs": []
+    },
+    {
+      "source_id": "defproc",
+      "region": "in",
+      "schedule": "0 5 * * *",
+      "enabled": false,
+      "registered": false,
+      "health_status": "not_implemented",
+      "health_message": "Defence procurement portal: documented stub",
+      "last_run_at": null,
+      "last_status": null,
+      "watermark_at": null,
+      "consecutive_failures": 0,
+      "runs": []
+    }
+  ],
+  "runs": {
+    "sam_opps": [
+      {
+        "id": "run-0001",
+        "source_id": "sam_opps",
+        "started_at": "2026-04-14T06:00:00Z",
+        "finished_at": "2026-04-14T06:01:12Z",
+        "status": "ok",
+        "fetched": 480,
+        "upserted": 37,
+        "error_count": 0,
+        "last_error": null
+      },
+      {
+        "id": "run-0002",
+        "source_id": "sam_opps",
+        "started_at": "2026-04-13T06:00:00Z",
+        "finished_at": "2026-04-13T06:00:44Z",
+        "status": "failing",
+        "fetched": 0,
+        "upserted": 0,
+        "error_count": 2,
+        "last_error": "HTTP 503 from api.sam.gov"
+      }
+    ],
+    "cppp": [
+      {
+        "id": "run-0003",
+        "source_id": "cppp",
+        "started_at": "2026-04-14T00:00:00Z",
+        "finished_at": "2026-04-14T00:04:02Z",
+        "status": "degraded",
+        "fetched": 120,
+        "upserted": 9,
+        "error_count": 3,
+        "last_error": "record 88 has no tender reference"
+      }
+    ]
+  },
+  "tenants": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "slug": "alpha-corp",
+      "name": "Alpha Corporation",
+      "region": "us",
+      "plan": "free",
+      "is_internal": false,
+      "data_residency": "us",
+      "member_count": 4,
+      "profile_count": 2,
+      "created_at": "2026-01-09T11:00:00Z",
+      "deleted_at": null
+    },
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "slug": "beta-llc",
+      "name": "Beta LLC",
+      "region": "in",
+      "plan": "pro",
+      "is_internal": false,
+      "data_residency": "in",
+      "member_count": 2,
+      "profile_count": 1,
+      "created_at": "2026-02-20T08:30:00Z",
+      "deleted_at": null
+    },
+    {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "slug": "internal",
+      "name": "BidRadar",
+      "region": "us",
+      "plan": "enterprise",
+      "is_internal": true,
+      "data_residency": "us",
+      "member_count": 3,
+      "profile_count": 1,
+      "created_at": "2025-12-01T00:00:00Z",
+      "deleted_at": null
+    }
+  ],
+  "planLimits": {
+    "free": { "profiles": 1, "source_regions": 1, "instant_alerts": 0, "agent_drafts_per_month": 0 },
+    "pro": { "profiles": 3, "source_regions": null, "instant_alerts": 1, "agent_drafts_per_month": 10 },
+    "enterprise": {
+      "profiles": null,
+      "source_regions": null,
+      "instant_alerts": null,
+      "agent_drafts_per_month": null
+    }
+  },
+  "usage": {
+    "current": [
+      {
+        "tenant_id": "11111111-1111-4111-8111-111111111111",
+        "slug": "alpha-corp",
+        "name": "Alpha Corporation",
+        "plan": "free",
+        "region": "us",
+        "tokens_in": 1500000,
+        "tokens_out": 240000,
+        "cost_microusd": 2500000,
+        "cost_usd": 2.5,
+        "agent_runs": 12,
+        "notifications": null
+      },
+      {
+        "tenant_id": "22222222-2222-4222-8222-222222222222",
+        "slug": "beta-llc",
+        "name": "Beta LLC",
+        "plan": "pro",
+        "region": "in",
+        "tokens_in": 320000,
+        "tokens_out": 61000,
+        "cost_microusd": 640000,
+        "cost_usd": 0.64,
+        "agent_runs": 4,
+        "notifications": null
+      },
+      {
+        "tenant_id": "33333333-3333-4333-8333-333333333333",
+        "slug": "internal",
+        "name": "BidRadar",
+        "plan": "enterprise",
+        "region": "us",
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "cost_microusd": 0,
+        "cost_usd": 0,
+        "agent_runs": 0,
+        "notifications": null
+      }
+    ],
+    "previous": [
+      {
+        "tenant_id": "11111111-1111-4111-8111-111111111111",
+        "slug": "alpha-corp",
+        "name": "Alpha Corporation",
+        "plan": "free",
+        "region": "us",
+        "tokens_in": 400000,
+        "tokens_out": 80000,
+        "cost_microusd": 810000,
+        "cost_usd": 0.81,
+        "agent_runs": 3,
+        "notifications": null
+      },
+      {
+        "tenant_id": "22222222-2222-4222-8222-222222222222",
+        "slug": "beta-llc",
+        "name": "Beta LLC",
+        "plan": "pro",
+        "region": "in",
+        "tokens_in": 10000,
+        "tokens_out": 2000,
+        "cost_microusd": 20000,
+        "cost_usd": 0.02,
+        "agent_runs": 1,
+        "notifications": null
+      },
+      {
+        "tenant_id": "33333333-3333-4333-8333-333333333333",
+        "slug": "internal",
+        "name": "BidRadar",
+        "plan": "enterprise",
+        "region": "us",
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "cost_microusd": 0,
+        "cost_usd": 0,
+        "agent_runs": 0,
+        "notifications": null
+      }
+    ]
+  },
+  "health": {
+    "status": "degraded",
+    "checks": [
+      { "name": "database", "status": "ok", "detail": null, "meta": {} },
+      { "name": "broker", "status": "ok", "detail": null, "meta": {} },
+      {
+        "name": "storage",
+        "status": "degraded",
+        "detail": "local filesystem backend (development only)",
+        "meta": { "backend": "local", "us": "bidradar-us", "in": "bidradar-in" }
+      },
+      {
+        "name": "adapters",
+        "status": "degraded",
+        "detail": "degraded: cppp",
+        "meta": { "total": 3, "failing": 0, "degraded": 1, "health": "degraded" }
+      }
+    ],
+    "adapters": [
+      {
+        "source_id": "cppp",
+        "region": "in",
+        "enabled": true,
+        "health_status": "degraded",
+        "health_message": "3 records skipped: missing tender reference",
+        "last_run_at": "2026-04-14T00:00:00Z",
+        "last_status": "degraded",
+        "consecutive_failures": 1
+      },
+      {
+        "source_id": "defproc",
+        "region": "in",
+        "enabled": false,
+        "health_status": "not_implemented",
+        "health_message": "Defence procurement portal: documented stub",
+        "last_run_at": null,
+        "last_status": null,
+        "consecutive_failures": 0
+      }
+    ]
+  }
+}

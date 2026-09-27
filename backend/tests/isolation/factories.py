@@ -202,7 +202,22 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ),
     ("GET", "/api/v1/me/notification-prefs"): lambda ctx: RouteCall(),
     ("PUT", "/api/v1/me/notification-prefs"): lambda ctx: RouteCall(json={"min_score_instant": 80}),
+    # --- admin console (M7-08): platform_admin only, so a tenant owner always gets 403
     ("GET", "/api/v1/admin/tenants"): lambda ctx: RouteCall(owner_expect=frozenset({403})),
+    ("GET", "/api/v1/admin/tenants/{tenant_id}"): lambda ctx: RouteCall(
+        path_params={"tenant_id": ctx.a.id}, owner_expect=frozenset({403})
+    ),
+    ("PATCH", "/api/v1/admin/tenants/{tenant_id}"): lambda ctx: RouteCall(
+        path_params={"tenant_id": ctx.a.id}, json={"plan": "pro"}, owner_expect=frozenset({403})
+    ),
+    ("GET", "/api/v1/admin/tenants/{tenant_id}/audit-log"): lambda ctx: RouteCall(
+        path_params={"tenant_id": ctx.a.id}, owner_expect=frozenset({403})
+    ),
+    ("GET", "/api/v1/admin/usage"): lambda ctx: RouteCall(owner_expect=frozenset({403})),
+    ("GET", "/api/v1/admin/health"): lambda ctx: RouteCall(owner_expect=frozenset({403})),
+    ("GET", "/api/v1/admin/sources/{source_id}/runs"): lambda ctx: RouteCall(
+        path_params={"source_id": "sam_opps"}, owner_expect=frozenset({403})
+    ),
     # --- admin sources (M2-16): platform_admin only; tenant owners get 403
     ("GET", "/api/v1/admin/sources"): lambda ctx: RouteCall(owner_expect=frozenset({403})),
     ("POST", "/api/v1/admin/sources/{source_id}/run"): lambda ctx: RouteCall(
