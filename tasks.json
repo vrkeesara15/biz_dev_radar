@@ -120,7 +120,7 @@
       "Test enumerates information_schema.columns for tenant_id and fails if any such table lacks an RLS policy",
       "Platform-admin queries use an explicit bypass session that writes an audit_log row"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-07",

@@ -11,6 +11,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 from app.core.plan import plan_limit_rows
+from migrations.rls import TENANT_EXPR, enable_rls, enable_rls_expr, grant_app
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0001_m0_foundation"
@@ -152,8 +153,32 @@ def upgrade() -> None:
     op.create_index("ix_audit_log_action", "audit_log", ["action"])
     op.create_index("ix_audit_log_at", "audit_log", ["at"])
 
+    # --- privileges for the application role (owner keeps everything) -----------------
+    for table in ("tenants", "users", "memberships", "usage_ledger"):
+        grant_app(op, table)
+    grant_app(op, "plan_limits", "SELECT")
+    # audit_log is append-only for the application (SPEC section 11).
+    grant_app(op, "audit_log", "SELECT, INSERT")
+
+    # --- row-level security -----------------------------------------------------------
+    for table in ("memberships", "usage_ledger", "audit_log"):
+        enable_rls(op, table)
+    # A tenant sees only its own tenants row.
+    enable_rls_expr(op, "tenants", f"id = {TENANT_EXPR}")
+    # Users are visible to a tenant only through a membership in that tenant. New users are
+    # provisioned by the owner role (services.users) because INSERT ... RETURNING is also
+    # subject to the SELECT policy and a brand-new user has no membership yet.
+    enable_rls_expr(
+        op,
+        "users",
+        "EXISTS (SELECT 1 FROM memberships m "
+        f"WHERE m.user_id = users.id AND m.tenant_id = {TENANT_EXPR})",
+    )
+
 
 def downgrade() -> None:
+    # The users policy references memberships; drop it before the tables.
+    op.execute("DROP POLICY IF EXISTS tenant_isolation ON users")
     for table in ("audit_log", "usage_ledger", "plan_limits", "memberships", "users", "tenants"):
         op.drop_table(table)
     bind = op.get_bind()
