@@ -10,7 +10,8 @@ Routes (all under /profiles/{profile_id}/<name>): GET list, POST 201, GET/PUT/DE
 Every write bumps the parent profile's version and sets an audit hint; with
 `reindex=True` (knowledge-base sources: files, boilerplate, past performance, service
 lines) every write also re-indexes the knowledge base (inline when Celery is eager, else a
-Celery task enqueued after commit; M1-12).
+Celery task enqueued after commit; M1-12). Every write publishes `profile.changed`, which
+M4-06 turns into a re-score of the open corpus for that profile.
 
 No `from __future__ import annotations` here: FastAPI must evaluate the closure-local
 schema classes and role dependencies used in the route signatures.
@@ -32,6 +33,7 @@ from app.core.roles import Role
 from app.jobs.index_profile import schedule_reindex
 from app.models import CompanyProfile
 from app.services.audit import AuditHint
+from app.services.profiles import publish_profile_changed
 
 # (session, profile, changes, existing row or None) -> may raise HTTPException
 Validator = Callable[[AsyncSession, CompanyProfile, dict[str, Any], Any], Awaitable[None]]
@@ -84,18 +86,25 @@ def crud_router(
             meta={"profile_id": str(profile.id), **meta},
         )
 
-    async def _reindex(request: Request, session: AsyncSession, profile: CompanyProfile) -> None:
-        if not reindex:
-            return
-        state = request.app.state
-        await schedule_reindex(
-            session,
-            profile.tenant_id,
-            profile.id,
-            settings=state.settings,
-            embeddings=getattr(state, "embeddings", None),
-            storage=getattr(state, "storage_router", None),
-        )
+    async def _after_write(
+        request: Request, session: AsyncSession, profile: CompanyProfile
+    ) -> None:
+        """Re-index the knowledge base (M1-12) and re-score the profile (M4-06).
+
+        Every child write bumps the parent's `version`, which is half the match cache
+        key, so the tenant's matches are stale whatever the child table was.
+        """
+        if reindex:
+            state = request.app.state
+            await schedule_reindex(
+                session,
+                profile.tenant_id,
+                profile.id,
+                settings=state.settings,
+                embeddings=getattr(state, "embeddings", None),
+                storage=getattr(state, "storage_router", None),
+            )
+        await publish_profile_changed(session, profile, fields=[name])
 
     def _dump(body: BaseModel) -> dict[str, Any]:
         changes = body.model_dump(exclude_unset=True, mode="python")
@@ -142,7 +151,7 @@ def crud_router(
         await _flush(session, singular)
         await session.refresh(row)
         request.state.audit = _hint("create", row, profile)
-        await _reindex(request, session, profile)
+        await _after_write(request, session, profile)
         return render(row)
 
     @router.get("/{item_id}", response_model=out, name=f"read_{singular}")
@@ -175,7 +184,7 @@ def crud_router(
         await _flush(session, singular)
         await session.refresh(row)
         request.state.audit = _hint("update", row, profile, fields=sorted(changes))
-        await _reindex(request, session, profile)
+        await _after_write(request, session, profile)
         return render(row)
 
     @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, name=f"delete_{singular}")
@@ -192,6 +201,6 @@ def crud_router(
         await session.delete(row)
         bump_version(profile)
         await session.flush()
-        await _reindex(request, session, profile)
+        await _after_write(request, session, profile)
 
     return router

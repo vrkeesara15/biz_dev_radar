@@ -29,22 +29,33 @@ throughout the notice approaches 1.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 import structlog
-from sqlalchemy import bindparam, select, text
+from sqlalchemy import bindparam, func, literal, select, text
 from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.types import Text
 
 from app.core.matching.score import SignalValue
 from app.core.matching.types import KeywordWeight, MatchProfile
 from app.models import KBChunk, Opportunity
-from app.services.embeddings import EmbeddingProvider, embeddings_available, get_embeddings
+from app.services.embeddings import (
+    EmbeddingError,
+    EmbeddingProvider,
+    embeddings_available,
+    get_embeddings,
+)
 from app.services.knowledge_base import SourceType
-from app.services.opportunity_embeddings import embed_opportunity
+from app.services.opportunity_embeddings import (
+    embed_opportunity,
+    first_document_chunk,
+    opportunity_text,
+)
 
 log = structlog.get_logger(__name__)
 
@@ -191,17 +202,22 @@ async def past_performance_signal(
 # --- keyword signal --------------------------------------------------------------------------
 
 # One tsvector per notice (title A, summary + description B, parsed documents C) ranked
-# against every include keyword in one round trip. `left(...)` caps the document text.
+# against every include keyword, for a whole batch of notices in ONE round trip
+# (`score_batch` scores a profile against thousands of notices). `left(...)` caps the
+# document text so the 1 MB tsvector limit can never be hit.
 _KEYWORD_SQL = text(
     f"""
 WITH docs AS (
-    SELECT left(string_agg(dc.text, ' ' ORDER BY od.created_at, od.id, dc.chunk_index),
+    SELECT od.opportunity_id AS oid,
+           left(string_agg(dc.text, ' ' ORDER BY od.created_at, od.id, dc.chunk_index),
                 {KEYWORD_DOC_CHARS}) AS body
     FROM document_chunks dc
     JOIN opportunity_documents od ON od.id = dc.document_id
-    WHERE od.opportunity_id = :opportunity_id
+    WHERE od.opportunity_id = ANY(:ids)
+    GROUP BY od.opportunity_id
 ), vec AS (
-    SELECT setweight(to_tsvector('{FTS_CONFIG}'::regconfig, coalesce(o.title, '')), 'A')
+    SELECT o.id AS oid,
+           setweight(to_tsvector('{FTS_CONFIG}'::regconfig, coalesce(o.title, '')), 'A')
         || setweight(
                to_tsvector(
                    '{FTS_CONFIG}'::regconfig,
@@ -213,21 +229,49 @@ WITH docs AS (
                to_tsvector('{FTS_CONFIG}'::regconfig, coalesce(docs.body, '')), 'C'
            ) AS v
     FROM opportunities o
-    LEFT JOIN docs ON true
-    WHERE o.id = :opportunity_id
+    LEFT JOIN docs ON docs.oid = o.id
+    WHERE o.id = ANY(:ids)
 )
-SELECT t.ord,
+SELECT vec.oid,
+       t.ord,
        ts_rank_cd(vec.v, plainto_tsquery('{FTS_CONFIG}'::regconfig, t.term),
                   {TS_RANK_NORMALISATION}) AS rank
 FROM vec, unnest(:terms) WITH ORDINALITY AS t(term, ord)
 """
-).bindparams(bindparam("terms", type_=ARRAY(Text())))
+).bindparams(
+    bindparam("terms", type_=ARRAY(Text())),
+    bindparam("ids", type_=ARRAY(PGUUID(as_uuid=True))),
+)
 
 
-async def keyword_signal(
+def live_terms(keywords: Sequence[KeywordWeight]) -> list[KeywordWeight]:
+    return [k for k in keywords if k.term and k.term.strip()]
+
+
+async def keyword_ranks(
     session: AsyncSession,
-    opportunity_id: uuid.UUID,
-    keywords: tuple[KeywordWeight, ...],
+    opportunity_ids: Sequence[uuid.UUID],
+    terms: Sequence[str],
+) -> dict[uuid.UUID, dict[int, float]]:
+    """{opportunity id: {1-based term index: normalised ts_rank_cd}} in one query."""
+    if not opportunity_ids or not terms:
+        return {}
+    rows = (
+        await session.execute(
+            _KEYWORD_SQL, {"ids": list(opportunity_ids), "terms": [t.strip() for t in terms]}
+        )
+    ).all()
+    out: dict[uuid.UUID, dict[int, float]] = {}
+    for row in rows:
+        oid = cast(uuid.UUID, row[0])
+        out.setdefault(oid, {})[int(str(row[1]))] = (
+            float(str(row[2])) if row[2] is not None else 0.0
+        )
+    return out
+
+
+def build_keyword_signal(
+    keywords: Sequence[KeywordWeight], ranks: dict[int, float] | None
 ) -> SignalValue:
     """Weighted include keywords over title + description + parsed docs, 0..1.
 
@@ -236,22 +280,16 @@ async def keyword_signal(
     keywords has nothing to match on, so the signal is unknown (0.5) rather than 0: the
     owner never expressed a preference (OQ-90).
     """
-    terms = [k.term.strip() for k in keywords if k.term and k.term.strip()]
-    if not terms:
+    live = live_terms(keywords)
+    if not live:
         return SignalValue.unknown("no include keywords")
-    rows = (
-        await session.execute(_KEYWORD_SQL, {"opportunity_id": opportunity_id, "terms": terms})
-    ).all()
-    if not rows:  # the notice disappeared between the load and the score
+    if ranks is None:  # the notice disappeared between the load and the score
         return SignalValue.unknown("notice not found")
-    ranks: dict[int, float] = {
-        int(str(row[0])): float(str(row[1])) if row[1] is not None else 0.0 for row in rows
-    }
     detail: list[dict[str, Any]] = []
     total_weight = _ZERO
     total = _ZERO
-    for index, keyword in enumerate(k for k in keywords if k.term and k.term.strip()):
-        score = _clamp(ranks.get(index + 1, 0.0))
+    for index, keyword in enumerate(live, start=1):
+        score = _clamp(ranks.get(index, 0.0))
         weight = max(_ZERO, Decimal(str(keyword.weight)))
         total_weight += weight
         total += score * weight
@@ -260,8 +298,154 @@ async def keyword_signal(
     if total_weight == _ZERO:  # every keyword carries weight 0: nothing to say
         return SignalValue.unknown("include keywords all weigh 0")
     raw = _clamp(float(total / total_weight))
-    plural = "" if len(terms) == 1 else "s"
-    return SignalValue.of(raw, f"{len(terms)} include keyword{plural}", terms=detail)
+    plural = "" if len(live) == 1 else "s"
+    return SignalValue.of(raw, f"{len(live)} include keyword{plural}", terms=detail)
+
+
+async def keyword_signal(
+    session: AsyncSession,
+    opportunity_id: uuid.UUID,
+    keywords: tuple[KeywordWeight, ...],
+) -> SignalValue:
+    live = live_terms(keywords)
+    if not live:
+        return SignalValue.unknown("no include keywords")
+    ranks = await keyword_ranks(session, [opportunity_id], [k.term for k in live])
+    return build_keyword_signal(keywords, ranks.get(opportunity_id))
+
+
+# --- batch (one query per signal for a whole page of notices) -------------------------------
+
+
+async def batch_cosine(
+    session: AsyncSession,
+    profile_id: uuid.UUID,
+    opportunity_ids: Sequence[uuid.UUID],
+    source_type: SourceType,
+) -> dict[uuid.UUID, Decimal]:
+    """Best cosine per notice against the profile's chunks of that source type, in ONE
+    query (`MIN(kb.embedding <=> o.embedding)` grouped by notice)."""
+    if not opportunity_ids:
+        return {}
+    nearest = func.min(KBChunk.embedding.cosine_distance(Opportunity.embedding))
+    rows = (
+        await session.execute(
+            select(Opportunity.id, nearest)
+            .select_from(Opportunity)
+            .join(KBChunk, literal(True))
+            .where(
+                Opportunity.id.in_(list(opportunity_ids)),
+                Opportunity.embedding.is_not(None),
+                KBChunk.profile_id == profile_id,
+                KBChunk.source_type == source_type.value,
+            )
+            .group_by(Opportunity.id)
+        )
+    ).all()
+    return {cast(uuid.UUID, row[0]): _clamp(1.0 - float(str(row[1]))) for row in rows}
+
+
+async def ensure_embeddings(
+    session: AsyncSession,
+    rows: Sequence[Opportunity],
+    *,
+    embeddings: EmbeddingProvider | None = None,
+) -> int:
+    """Embed every notice in the batch whose vector is still NULL, in one provider call.
+    Returns how many were embedded (0 when the provider is unavailable)."""
+    missing = [row for row in rows if row.embedding is None]
+    if not missing:
+        return 0
+    provider = embeddings or get_embeddings()
+    if not embeddings_available(provider):
+        log.info("matching.embedding_unavailable", count=len(missing))
+        return 0
+    texts = []
+    for row in missing:
+        first_chunk = None
+        if not (row.description_text or "").strip():
+            first_chunk = await first_document_chunk(session, row.id)
+        texts.append(opportunity_text(row, first_chunk))
+    try:
+        vectors = await provider.embed(texts, input_type="document")
+    except EmbeddingError as exc:
+        log.warning("matching.batch_embed_failed", count=len(missing), error=str(exc))
+        return 0
+    for row, vector in zip(missing, vectors, strict=True):
+        row.embedding = vector
+    await session.flush()
+    return len(missing)
+
+
+async def batch_signals(
+    session: AsyncSession,
+    profile: MatchProfile,
+    rows: Sequence[Opportunity],
+    *,
+    embeddings: EmbeddingProvider | None = None,
+) -> dict[uuid.UUID, PrecomputedSignals]:
+    """The three DB-backed signals for a whole page of notices: three queries, not 3xN."""
+    if not rows:
+        return {}
+    await ensure_embeddings(session, rows, embeddings=embeddings)
+    ids = [row.id for row in rows]
+    profile_id = uuid.UUID(profile.id) if profile.id else None
+    semantic_by_id: dict[uuid.UUID, Decimal] = {}
+    past_by_id: dict[uuid.UUID, Decimal] = {}
+    service_lines = past_performance = 0
+    if profile_id is not None:
+        counts = dict(
+            (
+                await session.execute(
+                    select(KBChunk.source_type, func.count())
+                    .where(KBChunk.profile_id == profile_id)
+                    .group_by(KBChunk.source_type)
+                )
+            ).all()
+        )
+        service_lines = int(counts.get(SourceType.SERVICE_LINE.value, 0))
+        past_performance = int(counts.get(SourceType.PAST_PERFORMANCE.value, 0))
+        if service_lines:
+            semantic_by_id = await batch_cosine(session, profile_id, ids, SourceType.SERVICE_LINE)
+        if past_performance:
+            past_by_id = await batch_cosine(session, profile_id, ids, SourceType.PAST_PERFORMANCE)
+    live = live_terms(profile.include_keywords)
+    ranks = await keyword_ranks(session, ids, [k.term for k in live]) if live else {}
+    out: dict[uuid.UUID, PrecomputedSignals] = {}
+    for row in rows:
+        out[row.id] = PrecomputedSignals(
+            semantic=_batch_cosine_signal(
+                semantic_by_id.get(row.id),
+                profile_id is not None and service_lines > 0,
+                row.embedding is not None,
+                note="max cosine vs service lines",
+                empty_note="no service lines indexed",
+            ),
+            past_performance=_batch_cosine_signal(
+                past_by_id.get(row.id),
+                profile_id is not None and past_performance > 0,
+                row.embedding is not None,
+                note="best cosine vs past performance",
+                empty_note="no past performance indexed",
+            ),
+            keyword=build_keyword_signal(profile.include_keywords, ranks.get(row.id, {})),
+        )
+    return out
+
+
+def _batch_cosine_signal(
+    score: Decimal | None,
+    indexed: bool,
+    embedded: bool,
+    *,
+    note: str,
+    empty_note: str,
+) -> SignalValue:
+    if not indexed:
+        return SignalValue.unknown(empty_note)
+    if not embedded or score is None:
+        return SignalValue.unknown("no opportunity embedding")
+    return SignalValue.of(score, note)
 
 
 # --- everything at once -----------------------------------------------------------------------

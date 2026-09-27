@@ -1216,7 +1216,7 @@
       "Batch job scores 200 profiles x 50k opportunities in < 10 min in the load script (hard filters in SQL, stage 2 vectorized)",
       "Emits match.high / match.medium events with band and score"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-07",

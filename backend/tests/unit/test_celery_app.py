@@ -105,3 +105,31 @@ def test_tasks_run_eagerly_over_the_job_entrypoints(monkeypatch: pytest.MonkeyPa
         run_source_task.name == "bidradar.run_source"
         and roll_status_task.name == "bidradar.roll_status"
     )
+
+
+def test_scoring_tasks_are_registered_and_call_their_jobs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """M4-06: the three scoring tasks exist and each runs its own job entrypoint."""
+    from app.celery_app import rescore_profile_task, score_batch_task, score_opportunity_task
+
+    calls: list[Any] = []
+    monkeypatch.setattr(
+        "app.jobs.score_matches.score_opportunity_sync",
+        lambda opportunity_id: calls.append(("opportunity", opportunity_id)) or {"created": 1},
+    )
+    monkeypatch.setattr(
+        "app.jobs.score_matches.rescore_profile_sync",
+        lambda tenant_id, profile_id: calls.append(("profile", profile_id)) or {"created": 2},
+    )
+    monkeypatch.setattr(
+        "app.jobs.score_matches.score_batch_sync",
+        lambda tenant_id, region: calls.append(("batch", tenant_id, region)) or {"created": 3},
+    )
+    assert score_opportunity_task.apply(args=["op-1"]).result == {"created": 1}
+    assert rescore_profile_task.apply(args=["t-1", "p-1"]).result == {"created": 2}
+    assert score_batch_task.apply(args=[None, "us"]).result == {"created": 3}
+    assert calls == [("opportunity", "op-1"), ("profile", "p-1"), ("batch", None, "us")]
+    assert score_opportunity_task.name == "bidradar.score_opportunity"
+    assert rescore_profile_task.name == "bidradar.rescore_profile"
+    assert score_batch_task.name == "bidradar.score_batch"

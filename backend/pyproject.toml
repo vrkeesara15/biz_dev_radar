@@ -116,6 +116,8 @@ addopts = "-ra -q"
 markers = [
   # needs the compose Mailpit (infra/docker-compose.yml); skipped when it is unreachable
   "mailpit: sends a real message through the local Mailpit SMTP server",
+  # M4-06: a scaled-down version of the SPEC 12 load target; slow but always run
+  "load: a timed load-shaped test (thousands of rows)",
 ]
 
 [tool.coverage.run]

@@ -32,6 +32,9 @@ RUN_AGENTS_TASK = "bidradar.run_agents"
 INDEX_PROFILE_TASK = "bidradar.index_profile"
 TENANT_EXPORT_TASK = "bidradar.tenant_export"
 TENANT_DELETE_TASK = "bidradar.tenant_delete"
+SCORE_OPPORTUNITY_TASK = "bidradar.score_opportunity"
+RESCORE_PROFILE_TASK = "bidradar.rescore_profile"
+SCORE_BATCH_TASK = "bidradar.score_batch"
 
 
 def cron_to_crontab(expression: str) -> crontab:
@@ -167,3 +170,29 @@ def tenant_delete_task(self: Any, tenant_id: str, request_id: str) -> dict[str, 
     from app.jobs.privacy import tenant_delete_sync
 
     return tenant_delete_sync(tenant_id, request_id)
+
+
+@celery_app.task(name=SCORE_OPPORTUNITY_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def score_opportunity_task(self: Any, opportunity_id: str) -> dict[str, Any]:
+    """Score one new / amended notice against every eligible profile (M4-06)."""
+    from app.jobs.score_matches import score_opportunity_sync
+
+    return score_opportunity_sync(opportunity_id)
+
+
+@celery_app.task(name=RESCORE_PROFILE_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def rescore_profile_task(self: Any, tenant_id: str, profile_id: str) -> dict[str, Any]:
+    """Re-score the open corpus for one profile whose version changed (M4-06)."""
+    from app.jobs.score_matches import rescore_profile_sync
+
+    return rescore_profile_sync(tenant_id, profile_id)
+
+
+@celery_app.task(name=SCORE_BATCH_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def score_batch_task(
+    self: Any, tenant_id: str | None = None, region: str | None = None
+) -> dict[str, Any]:
+    """Batch scoring: every eligible profile against the open corpus (M4-06)."""
+    from app.jobs.score_matches import score_batch_sync
+
+    return score_batch_sync(tenant_id, region)
