@@ -1,0 +1,134 @@
+{
+  "errorcode": 0,
+  "msg": "Webservice Succeeds",
+  "token": "REDACTED",
+  "data": {
+    "id": 334905,
+    "revision": 2,
+    "opportunityNumber": "RANDENDEPSTEMFY22RFI",
+    "opportunityTitle": "National Defense Education Program (NDEP) STEM Consortia Request for Information (RFI)",
+    "owningAgencyCode": "DOD",
+    "listed": "L",
+    "publisherUid": "publisher.user",
+    "flag2006": "N",
+    "opportunityCategory": {
+      "category": "D",
+      "description": "Discretionary"
+    },
+    "forecast": {
+      "opportunityId": 334905,
+      "version": 2,
+      "agencyCode": "DOD",
+      "agencyName": "Department of Defense",
+      "agencyDetails": {
+        "code": "DOD",
+        "seed": "DOD",
+        "agencyName": "Department of Defense",
+        "agencyCode": "DOD",
+        "topAgencyCode": "DOD"
+      },
+      "topAgencyDetails": {
+        "code": "DOD",
+        "seed": "DOD",
+        "agencyName": "Department of Defense",
+        "agencyCode": "DOD",
+        "topAgencyCode": "DOD"
+      },
+      "agencyContactPhone": "703-555-0100",
+      "agencyContactName": "NDEP Program Office",
+      "agencyContactEmail": "ndep@example.mil",
+      "agencyContactDesc": "NDEP Program Office",
+      "forecastDesc": "<p>The Office of the Under Secretary of Defense (Research &amp; Engineering) anticipates a funding opportunity for STEM consortia. This forecast is for planning purposes only.</p>",
+      "fundingDescLinkUrl": "",
+      "fundingDescLinkDesc": "",
+      "postingDate": "Jul 27, 2021 12:00:00 AM EDT",
+      "archiveDate": "Dec 31, 2026 12:00:00 AM EST",
+      "estSynopsisPostingDate": "Nov 01, 2026 12:00:00 AM EDT",
+      "estApplicationResponseDate": "Jan 15, 2027 12:00:00 AM EST",
+      "estApplicationResponseDateDesc": "",
+      "estAwardDate": "Apr 01, 2027 12:00:00 AM EDT",
+      "estProjectStartDate": "Jun 01, 2027 12:00:00 AM EDT",
+      "fiscalYear": 2027,
+      "costSharing": false,
+      "awardCeiling": "2500000",
+      "awardFloor": "250000",
+      "estimatedFunding": "10000000",
+      "numberOfAwards": "4",
+      "applicantEligibilityDesc": "Institutions of higher education and consortia thereof.",
+      "sendEmail": "Y",
+      "createTimeStamp": "Jul 20, 2021 10:00:00 AM EDT",
+      "modComments": "",
+      "createdDate": "Jul 20, 2021 10:00:00 AM EDT",
+      "lastUpdatedDate": "Sep 10, 2026 09:00:00 AM EDT",
+      "applicantTypes": [
+        {
+          "id": "20",
+          "description": "Private institutions of higher education"
+        },
+        {
+          "id": "06",
+          "description": "Public and State controlled institutions of higher education"
+        }
+      ],
+      "fundingInstruments": [
+        {
+          "id": "G",
+          "description": "Grant"
+        }
+      ],
+      "fundingActivityCategories": [
+        {
+          "id": "ED",
+          "description": "Education"
+        }
+      ],
+      "estSynopsisPostingDateStr": "2026-11-01-00-00-00",
+      "estApplicationResponseDateStr": "2027-01-15-00-00-00",
+      "estAwardDateStr": "2027-04-01-00-00-00",
+      "estProjectStartDateStr": "2027-06-01-00-00-00",
+      "postingDateStr": "2021-07-27-00-00-00",
+      "archiveDateStr": "2026-12-31-00-00-00"
+    },
+    "agencyDetails": {
+      "code": "DOD",
+      "seed": "DOD",
+      "agencyName": "Department of Defense",
+      "agencyCode": "DOD",
+      "topAgencyCode": "DOD"
+    },
+    "topAgencyDetails": {
+      "code": "DOD",
+      "seed": "DOD",
+      "agencyName": "Department of Defense",
+      "agencyCode": "DOD",
+      "topAgencyCode": "DOD"
+    },
+    "synopsisAttachmentFolders": [],
+    "synopsisDocumentURLs": [],
+    "synAttChangeComments": [],
+    "cfdas": [
+      {
+        "id": 400001,
+        "opportunityId": 334905,
+        "cfdaNumber": "12.006",
+        "programTitle": "Department of Defense STEM Education"
+      }
+    ],
+    "opportunityHistoryDetails": [],
+    "opportunityPkgs": [],
+    "closedOpportunityPkgs": [],
+    "originalDueDate": null,
+    "synopsisModifiedFields": [],
+    "forecastModifiedFields": [],
+    "errorMessages": [],
+    "synPostDateInPast": false,
+    "docType": "forecast",
+    "forecastHistCount": 1,
+    "synopsisHistCount": 0,
+    "assistCompatible": false,
+    "assistURL": "",
+    "relatedOpps": [],
+    "draftMode": "N",
+    "ost": "FORECASTED"
+  }
+}
