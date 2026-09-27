@@ -4,9 +4,14 @@ import pytest
 from app.core.config import Region
 from app.core.profile_fields import (
     ENCRYPTED_FIELDS,
+    IN_ONLY_CERTS,
     IN_ONLY_FIELDS,
     NORMALIZERS,
+    SOCIO_ECONOMIC_CERTS,
+    US_ONLY_CERTS,
     US_ONLY_FIELDS,
+    CertificationKind,
+    certification_allowed,
     normalize_cage,
     normalize_ein,
     normalize_gstin,
@@ -65,3 +70,25 @@ def test_ein_pan_tan_gstin() -> None:
     with pytest.raises(ValueError):
         normalize_gstin("27ABCDE1234F1Z")
     assert set(NORMALIZERS) == {"uei", "cage_code", "ein", "pan", "tan", "gstin"}
+
+
+def test_certification_kinds_and_region_rules() -> None:
+    assert {k.value for k in SOCIO_ECONOMIC_CERTS} == {
+        "8a",
+        "hubzone",
+        "wosb",
+        "edwosb",
+        "sdvosb",
+        "vosb",
+        "sdb",
+    }
+    assert SOCIO_ECONOMIC_CERTS < US_ONLY_CERTS
+    assert not (US_ONLY_CERTS & IN_ONLY_CERTS)
+    assert certification_allowed("us", "8a") and not certification_allowed("in", "8a")
+    assert certification_allowed(Region.IN, CertificationKind.STQC)
+    assert not certification_allowed(Region.US, "cert_in")
+    for both in ("soc2", "iso_27001", "iso_9001", "iso_20000", "cmmi"):
+        assert certification_allowed("us", both) and certification_allowed("in", both)
+    with pytest.raises(ValueError):
+        certification_allowed("us", "iso_14001")
+    assert {"net_worth_amount", "solvency_certificate_available", "mse_ownership"} <= IN_ONLY_FIELDS

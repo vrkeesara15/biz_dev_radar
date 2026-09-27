@@ -22,8 +22,9 @@ from typing import Any
 
 from app.core.config import Region
 from app.core.db import Database
+from app.core.profile_fields import CertificationKind
 from app.core.roles import Role
-from app.models import AuditLog, CompanyProfile, File, UsageLedger
+from app.models import AuditLog, Certification, CompanyProfile, File, UsageLedger
 
 from tests.factories import create_tenant_with_owner
 
@@ -76,6 +77,32 @@ class RouteCall:
 
 Factory = Callable[[IsolationContext], RouteCall]
 
+
+def child_routes(
+    name: str, seed_key: str, create_json: dict[str, Any], update_json: dict[str, Any]
+) -> dict[tuple[str, str], Factory]:
+    """The five CRUD routes of a profile sub-resource, probed with A's profile and A's row."""
+    base = f"/api/v1/profiles/{{profile_id}}/{name}"
+
+    def params(ctx: IsolationContext, with_item: bool = False) -> dict[str, Any]:
+        out: dict[str, Any] = {"profile_id": ctx.a.ids["profile"]}
+        if with_item:
+            out["item_id"] = ctx.a.ids[seed_key]
+        return out
+
+    return {
+        ("GET", base): lambda ctx: RouteCall(path_params=params(ctx)),
+        ("POST", base): lambda ctx: RouteCall(path_params=params(ctx), json=create_json),
+        ("GET", base + "/{item_id}"): lambda ctx: RouteCall(path_params=params(ctx, True)),
+        ("PUT", base + "/{item_id}"): lambda ctx: RouteCall(
+            path_params=params(ctx, True), json=update_json
+        ),
+        ("DELETE", base + "/{item_id}"): lambda ctx: RouteCall(
+            path_params=params(ctx, True), owner_expect=frozenset({204})
+        ),
+    }
+
+
 FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/me"): lambda ctx: RouteCall(),
     ("PATCH", "/api/v1/me"): lambda ctx: RouteCall(json={"name": "Isolation probe"}),
@@ -94,6 +121,13 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ),
     ("PUT", "/api/v1/profiles/{profile_id}"): lambda ctx: RouteCall(
         path_params={"profile_id": ctx.a.ids["profile"]}, json={"legal_name": "Renamed"}
+    ),
+    # --- profile sub-resources (M1-02..M1-05)
+    **child_routes(
+        "certifications",
+        "certification",
+        {"kind": "8a", "cert_number": "PROBE-1"},
+        {"cert_number": "PROBE-2"},
     ),
     # --- files (M1-11)
     ("POST", "/api/v1/files"): lambda ctx: RouteCall(
@@ -139,6 +173,14 @@ async def build_context(database: Database) -> IsolationContext:
         )
         session.add_all([ledger, audit, file, profile])
         await session.flush()
+        certification = Certification(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            kind=CertificationKind.EIGHT_A,
+            cert_number="A-8A-0001",
+        )
+        session.add(certification)
+        await session.flush()
         a = TenantCtx(
             id=ta.id,
             owner_id=ua.id,
@@ -157,6 +199,8 @@ async def build_context(database: Database) -> IsolationContext:
                 "profile_legal_name": profile.legal_name,
                 "profile_uei": "ALPHA1234567",
                 "profile_ein": "12-3456789",
+                "certification": str(certification.id),
+                "certification_number": "A-8A-0001",
             },
         )
         b = TenantCtx(

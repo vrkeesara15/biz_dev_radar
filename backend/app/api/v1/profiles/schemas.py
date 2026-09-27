@@ -13,12 +13,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core.config import Region
 from app.core.crypto import is_masked, mask_last4
+from app.core.finance import CURRENCIES, FiscalYearRevenue, average_turnover
 from app.core.profile_fields import (
     ENCRYPTED_FIELDS,
     NORMALIZERS,
     AddressKind,
     LegalStructure,
     LocalSupplierClass,
+    MseOwnership,
     SamStatus,
     UdyamCategory,
 )
@@ -28,6 +30,8 @@ _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _COUNTRY = re.compile(r"^[A-Z]{2}$")
 
 Str = Annotated[str, Field(min_length=1, max_length=300)]
+Currency = Annotated[str, Field(pattern="^(" + "|".join(CURRENCIES) + ")$")]
+Amount = Annotated[Decimal, Field(ge=0, max_digits=18, decimal_places=2)]
 
 
 class Address(BaseModel):
@@ -48,8 +52,20 @@ class Address(BaseModel):
         return value
 
 
+class RevenueEntry(BaseModel):
+    fiscal_year: Annotated[int, Field(ge=1990, le=2100)]
+    amount: Amount
+    currency: Currency
+
+
+class AverageTurnoverOut(BaseModel):
+    amount: Decimal
+    currency: str
+    fiscal_years: list[int]
+
+
 class ProfileWrite(BaseModel):
-    """Every writable 4.1 field, all optional so PUT can be partial."""
+    """Every writable 4.1/4.2 field, all optional so PUT can be partial."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -79,10 +95,51 @@ class ProfileWrite(BaseModel):
     gem_seller_id: Annotated[str | None, Field(max_length=64)] = None
     local_supplier_class: LocalSupplierClass | None = None
     local_content_pct: Annotated[Decimal | None, Field(ge=0, le=100, decimal_places=2)] = None
+    # 4.2 size and finances
+    employee_count_total: Annotated[int | None, Field(ge=0)] = None
+    employees_by_country: dict[str, Annotated[int, Field(ge=0)]] | None = None
+    annual_revenue: list[RevenueEntry] | None = None
+    net_worth_amount: Amount | None = None
+    net_worth_currency: Currency | None = None
+    solvency_certificate_available: bool | None = None
+    audited_fiscal_years: list[Annotated[int, Field(ge=1990, le=2100)]] | None = None
+    bonding_capacity_amount: Amount | None = None
+    bonding_capacity_currency: Currency | None = None
+    mse_ownership: MseOwnership | None = None
     # bank (encrypted)
     bank_name: Annotated[str | None, Field(max_length=200)] = None
     bank_account_number: Annotated[str | None, Field(max_length=64)] = None
     bank_routing_code: Annotated[str | None, Field(max_length=32)] = None
+
+    @field_validator("employees_by_country")
+    @classmethod
+    def _countries(cls, value: dict[str, int] | None) -> dict[str, int] | None:
+        if value is None:
+            return None
+        out: dict[str, int] = {}
+        for code, count in value.items():
+            key = code.strip().upper()
+            if not _COUNTRY.match(key):
+                raise ValueError(f"country {code!r} must be an ISO 3166-1 alpha-2 code")
+            out[key] = count
+        return out
+
+    @field_validator("annual_revenue")
+    @classmethod
+    def _revenue(cls, value: list[RevenueEntry] | None) -> list[RevenueEntry] | None:
+        if value is None:
+            return None
+        years = [e.fiscal_year for e in value]
+        if len(set(years)) != len(years):
+            raise ValueError("annual_revenue has duplicate fiscal years")
+        if len({e.currency for e in value}) > 1:
+            raise ValueError("annual_revenue entries must share one currency")
+        return sorted(value, key=lambda e: e.fiscal_year)
+
+    @field_validator("audited_fiscal_years")
+    @classmethod
+    def _audited(cls, value: list[int] | None) -> list[int] | None:
+        return None if value is None else sorted(set(value))
 
     @field_validator("bid_inbox_email")
     @classmethod
@@ -117,11 +174,11 @@ class ProfileWrite(BaseModel):
         for name in ENCRYPTED_FIELDS:
             if name in data and is_masked(data[name]):
                 del data[name]
-        if "addresses" in data and data["addresses"] is not None:
-            data["addresses"] = [
-                a.model_dump(mode="json") if isinstance(a, Address) else a
-                for a in data["addresses"]
-            ]
+        # jsonb columns take JSON-native values (Decimal amounts become strings)
+        as_json = self.model_dump(exclude_unset=True, mode="json")
+        for name in ("addresses", "annual_revenue", "employees_by_country"):
+            if data.get(name) is not None:
+                data[name] = as_json[name]
         return data
 
 
@@ -168,10 +225,35 @@ class ProfileOut(BaseModel):
     bank_name: str | None
     bank_account_number: str | None  # masked
     bank_routing_code: str | None  # masked
+    # 4.2
+    employee_count_total: int | None
+    employees_by_country: dict[str, int]
+    annual_revenue: list[RevenueEntry]
+    average_turnover: AverageTurnoverOut | None  # computed by core.finance
+    net_worth_amount: Decimal | None
+    net_worth_currency: str | None
+    solvency_certificate_available: bool
+    audited_fiscal_years: list[int]
+    bonding_capacity_amount: Decimal | None
+    bonding_capacity_currency: str | None
+    mse_ownership: MseOwnership | None
 
     @classmethod
     def from_row(cls, row: CompanyProfile) -> ProfileOut:
-        values = {name: getattr(row, name) for name in cls.model_fields}
+        values = {name: getattr(row, name, None) for name in cls.model_fields}
         for name in ENCRYPTED_FIELDS:
             values[name] = mask_last4(values[name])
+        values["average_turnover"] = compute_average_turnover(row.annual_revenue)
         return cls.model_validate(values)
+
+
+def compute_average_turnover(entries: list[dict[str, Any]]) -> AverageTurnoverOut | None:
+    avg = average_turnover(
+        FiscalYearRevenue(int(e["fiscal_year"]), Decimal(str(e["amount"])), str(e["currency"]))
+        for e in entries
+    )
+    if avg is None:
+        return None
+    return AverageTurnoverOut(
+        amount=avg.amount, currency=avg.currency, fiscal_years=list(avg.fiscal_years)
+    )

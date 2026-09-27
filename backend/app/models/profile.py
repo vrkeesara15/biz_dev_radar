@@ -19,6 +19,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    false,
     func,
     text,
     true,
@@ -27,7 +28,13 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config import Region
-from app.core.profile_fields import LegalStructure, LocalSupplierClass, SamStatus, UdyamCategory
+from app.core.profile_fields import (
+    LegalStructure,
+    LocalSupplierClass,
+    MseOwnership,
+    SamStatus,
+    UdyamCategory,
+)
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.tenancy import RegionEnum, _values
 from app.models.types import EncryptedString
@@ -38,6 +45,7 @@ UdyamCategoryEnum = Enum(UdyamCategory, name="udyam_category", values_callable=_
 LocalSupplierClassEnum = Enum(
     LocalSupplierClass, name="local_supplier_class", values_callable=_values
 )
+MseOwnershipEnum = Enum(MseOwnership, name="mse_ownership", values_callable=_values)
 
 
 class CompanyProfile(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
@@ -87,6 +95,28 @@ class CompanyProfile(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     gem_seller_id: Mapped[str | None] = mapped_column(String(64))
     local_supplier_class: Mapped[LocalSupplierClass | None] = mapped_column(LocalSupplierClassEnum)
     local_content_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
+
+    # --- size and finances (SPEC 4.2)
+    employee_count_total: Mapped[int | None] = mapped_column(Integer)
+    # {"US": 40, "IN": 120}
+    employees_by_country: Mapped[dict[str, int]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    # [{"fiscal_year": 2025, "amount": "1234567.00", "currency": "USD"}, ...]
+    annual_revenue: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    net_worth_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    net_worth_currency: Mapped[str | None] = mapped_column(String(3))
+    solvency_certificate_available: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=false()
+    )
+    audited_fiscal_years: Mapped[list[int]] = mapped_column(
+        ARRAY(Integer), nullable=False, server_default=text("'{}'::integer[]")
+    )
+    bonding_capacity_amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    bonding_capacity_currency: Mapped[str | None] = mapped_column(String(3))
+    mse_ownership: Mapped[MseOwnership | None] = mapped_column(MseOwnershipEnum)
 
     # --- bank details (both regions, encrypted; SPEC 11)
     bank_name: Mapped[str | None] = mapped_column(String(200))

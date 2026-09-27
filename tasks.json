@@ -302,7 +302,7 @@
       "IN fields: Udyam number + category micro|small|medium, DPIIT number, SC/ST- or women-owned MSE enum",
       "Average of last 3 FY turnover computed in core.finance with currency preserved"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-03",

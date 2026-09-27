@@ -48,6 +48,68 @@ class AddressKind(StrEnum):
     BRANCH = "branch"
 
 
+class MseOwnership(StrEnum):
+    """SC/ST-owned or women-owned MSE (India reserved procurement share, SPEC 4.2)."""
+
+    NONE = "none"
+    SC_ST = "sc_st"
+    WOMEN = "women"
+    SC_ST_WOMEN = "sc_st_women"
+
+
+class CertificationKind(StrEnum):
+    # socio-economic (US set-asides, SPEC 4.2)
+    EIGHT_A = "8a"
+    HUBZONE = "hubzone"
+    WOSB = "wosb"
+    EDWOSB = "edwosb"
+    SDVOSB = "sdvosb"
+    VOSB = "vosb"
+    SDB = "sdb"
+    # security / compliance attestations (SPEC 4.5)
+    FCL = "fcl"
+    CMMC = "cmmc"
+    FEDRAMP = "fedramp"
+    SOC2 = "soc2"
+    ISO_27001 = "iso_27001"
+    ISO_9001 = "iso_9001"
+    ISO_20000 = "iso_20000"
+    CMMI = "cmmi"
+    STQC = "stqc"
+    CERT_IN = "cert_in"
+
+
+SOCIO_ECONOMIC_CERTS: frozenset[CertificationKind] = frozenset(
+    {
+        CertificationKind.EIGHT_A,
+        CertificationKind.HUBZONE,
+        CertificationKind.WOSB,
+        CertificationKind.EDWOSB,
+        CertificationKind.SDVOSB,
+        CertificationKind.VOSB,
+        CertificationKind.SDB,
+    }
+)
+US_ONLY_CERTS: frozenset[CertificationKind] = SOCIO_ECONOMIC_CERTS | {
+    CertificationKind.FCL,
+    CertificationKind.CMMC,
+    CertificationKind.FEDRAMP,
+}
+IN_ONLY_CERTS: frozenset[CertificationKind] = frozenset(
+    {CertificationKind.STQC, CertificationKind.CERT_IN}
+)
+
+
+def certification_allowed(region: Region | str, kind: CertificationKind | str) -> bool:
+    own = Region(region)
+    cert = CertificationKind(kind)
+    if cert in US_ONLY_CERTS:
+        return own is Region.US
+    if cert in IN_ONLY_CERTS:
+        return own is Region.IN
+    return True
+
+
 # Fields that only exist for one region (SPEC 4.1 "Region" column).
 US_ONLY_FIELDS: frozenset[str] = frozenset(
     {"uei", "cage_code", "sam_status", "sam_expires_on", "ein"}
@@ -64,6 +126,11 @@ IN_ONLY_FIELDS: frozenset[str] = frozenset(
         "gem_seller_id",
         "local_supplier_class",
         "local_content_pct",
+        # 4.2
+        "net_worth_amount",
+        "net_worth_currency",
+        "solvency_certificate_available",
+        "mse_ownership",
     }
 )
 # Stored AES-GCM encrypted, returned masked to the last 4 characters (SPEC 11).

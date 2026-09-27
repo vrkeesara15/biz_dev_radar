@@ -40,11 +40,27 @@ udyam_category_t = postgresql.ENUM(
 local_supplier_class_t = postgresql.ENUM(
     "class_1", "class_2", "non_local", name="local_supplier_class", create_type=False
 )
-NEW_ENUMS = (legal_structure_t, sam_status_t, udyam_category_t, local_supplier_class_t)
+mse_ownership_t = postgresql.ENUM(
+    "none", "sc_st", "women", "sc_st_women", name="mse_ownership", create_type=False
+)
+certification_kind_t = postgresql.ENUM(
+    "8a", "hubzone", "wosb", "edwosb", "sdvosb", "vosb", "sdb",
+    "fcl", "cmmc", "fedramp", "soc2", "iso_27001", "iso_9001", "iso_20000", "cmmi",
+    "stqc", "cert_in",
+    name="certification_kind", create_type=False,
+)
+NEW_ENUMS = (
+    legal_structure_t,
+    sam_status_t,
+    udyam_category_t,
+    local_supplier_class_t,
+    mse_ownership_t,
+    certification_kind_t,
+)
 
 # Every tenant-scoped table created here, in creation order (reversed for downgrade).
 # Each gets DML grants for the app role and the standard tenant_isolation RLS policy.
-TENANT_TABLES: list[str] = ["files", "company_profiles"]
+TENANT_TABLES: list[str] = ["files", "company_profiles", "certifications"]
 
 
 def _uuid_pk() -> sa.Column[object]:
@@ -80,6 +96,20 @@ def _tenant_table(name: str, *columns: sa.schema.SchemaItem) -> None:
 def _encrypted() -> sa.Text:
     """AES-GCM token column (app.models.types.EncryptedString stores TEXT)."""
     return sa.Text()
+
+
+def _profile_id() -> sa.Column[object]:
+    return sa.Column(
+        "profile_id",
+        postgresql.UUID(as_uuid=True),
+        sa.ForeignKey("company_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+
+def _profile_child(name: str, *columns: sa.schema.SchemaItem) -> None:
+    _tenant_table(name, _profile_id(), *columns)
+    op.create_index(f"ix_{name}_profile_id", name, ["profile_id"])
 
 
 def upgrade() -> None:
@@ -150,6 +180,37 @@ def upgrade() -> None:
         sa.Column("gem_seller_id", sa.String(64)),
         sa.Column("local_supplier_class", local_supplier_class_t),
         sa.Column("local_content_pct", sa.Numeric(5, 2)),
+        # size and finances (4.2)
+        sa.Column("employee_count_total", sa.Integer()),
+        sa.Column(
+            "employees_by_country",
+            postgresql.JSONB(),
+            nullable=False,
+            server_default=sa.text("'{}'::jsonb"),
+        ),
+        sa.Column(
+            "annual_revenue",
+            postgresql.JSONB(),
+            nullable=False,
+            server_default=sa.text("'[]'::jsonb"),
+        ),
+        sa.Column("net_worth_amount", sa.Numeric(18, 2)),
+        sa.Column("net_worth_currency", sa.String(3)),
+        sa.Column(
+            "solvency_certificate_available",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.false(),
+        ),
+        sa.Column(
+            "audited_fiscal_years",
+            postgresql.ARRAY(sa.Integer()),
+            nullable=False,
+            server_default=sa.text("'{}'::integer[]"),
+        ),
+        sa.Column("bonding_capacity_amount", sa.Numeric(18, 2)),
+        sa.Column("bonding_capacity_currency", sa.String(3)),
+        sa.Column("mse_ownership", mse_ownership_t),
         # bank details (encrypted)
         sa.Column("bank_name", sa.String(200)),
         sa.Column("bank_account_number", _encrypted()),
@@ -157,6 +218,21 @@ def upgrade() -> None:
         sa.CheckConstraint(
             "year_founded BETWEEN 1800 AND 2100", name="ck_company_profiles_year_founded_range"
         ),
+    )
+
+    # --- certifications (M1-02 socio-economic, M1-05 security/compliance) ------------------
+    _profile_child(
+        "certifications",
+        sa.Column("kind", certification_kind_t, nullable=False),
+        sa.Column("cert_number", sa.String(100)),
+        sa.Column("issued_by", sa.String(200)),
+        sa.Column("level", sa.String(32)),
+        sa.Column("issued_on", sa.Date()),
+        sa.Column("expires_on", sa.Date()),
+        sa.Column(
+            "file_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("files.id", ondelete="SET NULL")
+        ),
+        sa.Column("notes", sa.Text()),
     )
 
     # --- privileges + RLS for every tenant table above --------------------------------------
