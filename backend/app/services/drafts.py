@@ -26,6 +26,7 @@ from app.core.html_text import html_to_text
 from app.core.markdown import sanitize_html
 from app.models import (
     Certification,
+    Comment,
     CompanyProfile,
     Draft,
     DraftVersion,
@@ -36,6 +37,7 @@ from app.models import (
 )
 from app.models.drafts import (
     AUTHOR_AGENT,
+    COMMENT_TARGETS,
     DRAFT_STATUS_APPROVED,
     DRAFT_STATUS_DRAFT,
     DRAFT_STATUS_IN_REVIEW,
@@ -236,6 +238,33 @@ async def create_task(
     session.add(task)
     await session.flush()
     return task
+
+
+async def add_comment(
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    pursuit_id: uuid.UUID,
+    *,
+    target_type: str,
+    target_id: uuid.UUID,
+    body: str,
+    author_user_id: uuid.UUID | None = None,
+) -> Comment:
+    """The only insert point for a review comment (a reviewer's POST and the red-team
+    agent's remaining issues both land here)."""
+    if target_type not in COMMENT_TARGETS:
+        raise ValueError(f"unknown comment target {target_type!r}; one of {COMMENT_TARGETS}")
+    comment = Comment(
+        tenant_id=tenant_id,
+        pursuit_id=pursuit_id,
+        target_type=target_type,
+        target_id=target_id,
+        body=body[:10_000],
+        author_user_id=author_user_id,
+    )
+    session.add(comment)
+    await session.flush()
+    return comment
 
 
 async def open_tasks(session: AsyncSession, pursuit_id: uuid.UUID) -> list[Task]:

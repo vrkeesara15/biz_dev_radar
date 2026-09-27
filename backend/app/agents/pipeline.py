@@ -57,14 +57,15 @@ STEP_MODULES: tuple[str, ...] = (
     "app.agents.outline",
     "app.agents.drafters",
     "app.agents.pricing",
+    "app.agents.red_team",
 )
 
 # --- human gates (SPEC 8) -------------------------------------------------------------
 GATE_1 = "gate1"
 GATE_2 = "gate2"
-# step -> the gate that closes AFTER it until a human clears it. Gate 2 (red-team review
-# and approval) is added by M5-10 with the red_team step.
-GATES: dict[str, str] = {STEP_BID_NO_BID: GATE_1}
+# step -> the gate that closes AFTER it until a human clears it. Gate 2 closes after the
+# red-team reviewer: the package is only exportable as final once a human approves it.
+GATES: dict[str, str] = {STEP_BID_NO_BID: GATE_1, STEP_RED_TEAM: GATE_2}
 GATE_REASONS: dict[str, str] = {
     GATE_1: "gate1: a bid/no-bid decision is required before drafting",
     GATE_2: "gate2: the draft package must be reviewed and approved",

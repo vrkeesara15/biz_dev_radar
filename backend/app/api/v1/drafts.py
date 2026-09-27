@@ -476,16 +476,15 @@ async def create_comment(
     await ensure_user_membership(
         user_id=user.id, email=user.email, tenant_id=user.tenant_id, role=user.role
     )
-    comment = Comment(
-        tenant_id=user.tenant_id,
-        pursuit_id=pursuit.id,
+    comment = await draft_svc.add_comment(
+        session,
+        user.tenant_id,
+        pursuit.id,
         target_type=body.target_type,
         target_id=body.target_id,
         body=body.body,
         author_user_id=user.id,
     )
-    session.add(comment)
-    await session.flush()
     request.state.audit = AuditHint(
         action="comment.created",
         object_type="comment",

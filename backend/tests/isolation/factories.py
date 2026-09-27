@@ -60,6 +60,7 @@ from app.models import (
     ProfileFile,
     ProfileKeyword,
     Pursuit,
+    PursuitArtifact,
     PushSubscription,
     RateCardEntry,
     Registration,
@@ -353,6 +354,9 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ),
     ("GET", "/api/v1/pursuits/{pursuit_id}/packet"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/approve-package"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"note": "probe"}
     ),
     # --- pursuit workspace (M5-16): drafts, approvals and comments
     ("GET", "/api/v1/pursuits/{pursuit_id}/drafts"): lambda ctx: RouteCall(
@@ -683,7 +687,15 @@ async def build_context(database: Database) -> IsolationContext:
             title="Alpha secret task",
             ref={"kind": "needs_input", "section_id": "technical-approach"},
         )
-        session.add_all([comment, task])
+        # a red-team report so Gate 2 (approve-package) has something to approve
+        red_team = PursuitArtifact(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            kind="red_team",
+            version=1,
+            data={"report": {"sections": [], "overall_score": 71, "missing_requirements": []}},
+        )
+        session.add_all([comment, task, red_team])
         await session.flush()
         a = TenantCtx(
             id=ta.id,

@@ -110,6 +110,9 @@ def upgrade() -> None:
         _fk("decided_by", "users.id", ondelete="SET NULL", nullable=True),
         _ts("decided_at"),
         sa.Column("decision_note", sa.Text()),
+        # Gate 2 (M5-10): who approved the draft package for export, and when
+        _fk("package_approved_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("package_approved_at"),
         _ts("internal_due_at"),
         _fk("created_by", "users.id", ondelete="SET NULL", nullable=True),
         sa.Column("cost_cap_usd", sa.Numeric(12, 2)),

@@ -9,6 +9,7 @@ and the budget approval that resumes a run the cost guard paused.
     POST /api/v1/pursuits/{pursuit_id}/agents/approve-budget {additional_usd, reason?}
     PATCH /api/v1/pursuits/{pursuit_id}                    {stage}
     POST /api/v1/pursuits/{pursuit_id}/decision            {decision: bid|no_bid, note?}
+    POST /api/v1/pursuits/{pursuit_id}/approve-package      Gate 2: the reviewed package
 
 M6-01 adds POST /opportunities/{id}/pursue|watch|pass and the full stage rules on top of
 `services.pursuits.check_stage_transition`; the second M5 pass adds drafts and exports.
@@ -36,6 +37,7 @@ from app.api.deps import TENANT_ROLES, CurrentUser, SettingsDep, TenantSessionDe
 from app.core.compliance import (
     ARTIFACT_CHECKLIST,
     ARTIFACT_FORMAT_RULES,
+    ARTIFACT_RED_TEAM,
     ChecklistItem,
     FormatRules,
 )
@@ -115,6 +117,9 @@ class PursuitOut(BaseModel):
     decided_by: uuid.UUID | None
     decided_at: datetime | None
     decision_note: str | None
+    # Gate 2 (SPEC 8): the human who approved the reviewed draft package
+    package_approved_by: uuid.UUID | None
+    package_approved_at: datetime | None
     internal_due_at: datetime | None
     created_by: uuid.UUID | None
     created_at: datetime
@@ -279,6 +284,8 @@ def pursuit_out(
         decided_by=pursuit.decided_by,
         decided_at=pursuit.decided_at,
         decision_note=pursuit.decision_note,
+        package_approved_by=pursuit.package_approved_by,
+        package_approved_at=pursuit.package_approved_at,
         internal_due_at=pursuit.internal_due_at,
         created_by=pursuit.created_by,
         created_at=pursuit.created_at,
@@ -467,6 +474,86 @@ async def record_decision(
         pursuit=await load_pursuit_out(session, pursuit, user.tenant_id),
         decision=body.decision,
         previous_stage=previous_stage,
+        resumed_run_id=None if resumed is None else resumed.id,
+        mode=mode,
+        task_id=task_id,
+        result=result,
+    )
+
+
+class ApprovePackageIn(BaseModel):
+    note: str | None = Field(default=None, max_length=2000)
+    # run the resumed pipeline in the API process (tests / no worker); otherwise queued
+    inline: bool = False
+
+
+class ApprovePackageOut(BaseModel):
+    pursuit: PursuitOut
+    previous_stage: str
+    approved_sections: int
+    resumed_run_id: uuid.UUID | None
+    mode: str  # queued | inline | none
+    task_id: str | None = None
+    result: dict[str, Any] | None = None
+
+
+@router.post("/{pursuit_id}/approve-package", response_model=ApprovePackageOut)
+async def approve_package(
+    pursuit_id: uuid.UUID,
+    body: ApprovePackageIn,
+    session: TenantSessionDep,
+    user: ManagerDep,
+    request: Request,
+    settings: SettingsDep,
+) -> ApprovePackageOut:
+    """Gate 2 (SPEC 8): a human reviewed, edited and approved the whole draft package.
+
+    Records who approved it and when, marks every section approved, moves the pursuit to
+    Final approval and resumes the run the red-team step left paused at Gate 2. Exports
+    keep their "DRAFT - internal" footer until the package is additionally marked final.
+    """
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    report = await pursuit_svc.latest_artifact(session, pursuit.id, ARTIFACT_RED_TEAM)
+    if report is None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail="the red-team reviewer has not run yet; there is no package to approve",
+        )
+    await ensure_user_membership(
+        user_id=user.id, email=user.email, tenant_id=user.tenant_id, role=user.role
+    )
+    previous_stage = pursuit_svc.approve_package(pursuit, user.id)
+    approved = await pursuit_svc.approve_drafts(session, pursuit.id, user.id)
+    run = await pursuit_svc.latest_run(session, pursuit.id)
+    resumed: AgentRun | None = None
+    if run is not None and run.status == RUN_PAUSED:
+        run.status = RUN_QUEUED
+        resumed = run
+    request.state.audit = AuditHint(
+        action="pursuit.package_approved",
+        object_type="pursuit",
+        object_id=str(pursuit.id),
+        meta={
+            "previous_stage": previous_stage,
+            "stage": pursuit.stage,
+            "approved_sections": approved,
+            "red_team_version": report.version,
+            "note": body.note,
+            "run_id": None if resumed is None else str(resumed.id),
+        },
+    )
+    await session.commit()  # the worker / inline job reads the run in its own session
+    mode, task_id, result = "none", None, None
+    if resumed is not None:
+        mode, task_id, result = await dispatch_run(
+            request, settings, resumed.id, user.tenant_id, inline=body.inline
+        )
+    session.expire_all()
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    return ApprovePackageOut(
+        pursuit=await load_pursuit_out(session, pursuit, user.tenant_id),
+        previous_stage=previous_stage,
+        approved_sections=approved,
         resumed_run_id=None if resumed is None else resumed.id,
         mode=mode,
         task_id=task_id,

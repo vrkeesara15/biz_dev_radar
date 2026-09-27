@@ -20,16 +20,26 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agents.pipeline import GATE_1
+from app.agents.pipeline import GATE_1, GATE_2
 from app.api.deps import CurrentUser
 from app.core.compliance import ARTIFACT_KINDS, CREATED_BY_AGENT
 from app.core.cost_guard import raise_cap
 from app.core.roles import Role
-from app.models import AgentRun, CompanyProfile, Opportunity, Pursuit, PursuitArtifact, Tenant
+from app.models import (
+    AgentRun,
+    CompanyProfile,
+    Draft,
+    Opportunity,
+    Pursuit,
+    PursuitArtifact,
+    Tenant,
+)
+from app.models.drafts import DRAFT_STATUS_APPROVED
 from app.models.pursuit import (
     DECISION_BID,
     DECISION_NO_BID,
     STAGE_DRAFTING,
+    STAGE_FINAL_APPROVAL,
     STAGE_NO_BID,
     STAGES,
 )
@@ -56,7 +66,12 @@ def approver_roles(profile: CompanyProfile | None) -> frozenset[Role]:
 
 def cleared_gates(pursuit: Pursuit) -> tuple[str, ...]:
     """The human gates this pursuit has passed (app.agents.pipeline.plan_steps)."""
-    return (GATE_1,) if pursuit.decision == DECISION_BID else ()
+    gates: list[str] = []
+    if pursuit.decision == DECISION_BID:
+        gates.append(GATE_1)
+    if pursuit.package_approved_at is not None:
+        gates.append(GATE_2)
+    return tuple(gates)
 
 
 def check_stage_transition(pursuit: Pursuit, new_stage: str) -> None:
@@ -103,6 +118,36 @@ def record_decision(
     pursuit.decided_at = now or datetime.now(UTC)
     pursuit.decision_note = note
     return move_stage(pursuit, STAGE_DRAFTING if decision == DECISION_BID else STAGE_NO_BID)
+
+
+def approve_package(pursuit: Pursuit, user_id: uuid.UUID, *, now: datetime | None = None) -> str:
+    """Gate 2 (SPEC 8): a human approved the reviewed package. Returns the old stage.
+
+    Recording the approval clears Gate 2 for `cleared_gates`, so re-dispatching the run
+    the red-team step left paused simply finishes it.
+    """
+    pursuit.package_approved_by = user_id
+    pursuit.package_approved_at = now or datetime.now(UTC)
+    previous = pursuit.stage
+    if pursuit.stage != STAGE_FINAL_APPROVAL:
+        pursuit.stage = STAGE_FINAL_APPROVAL
+    return previous
+
+
+async def approve_drafts(
+    session: AsyncSession, pursuit_id: uuid.UUID, user_id: uuid.UUID, *, now: datetime | None = None
+) -> int:
+    """Mark every section of the pursuit approved (Gate 2 approves the whole package)."""
+    rows = list(
+        (await session.execute(select(Draft).where(Draft.pursuit_id == pursuit_id))).scalars().all()
+    )
+    when = now or datetime.now(UTC)
+    for row in rows:
+        row.status = DRAFT_STATUS_APPROVED
+        row.approved_by = user_id
+        row.approved_at = when
+    await session.flush()
+    return len(rows)
 
 
 async def get_or_create(

@@ -1600,7 +1600,7 @@
       "Run stops at Gate 2 (human review, edit, approve); approval recorded with user and time",
       "Eval asserts zero fabricated company facts on the golden set"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-11",

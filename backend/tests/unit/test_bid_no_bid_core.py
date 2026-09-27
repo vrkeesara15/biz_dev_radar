@@ -140,4 +140,8 @@ def test_single_step_bid_no_bid_also_waits_at_the_gate() -> None:
 def test_a_step_without_a_gate_is_unaffected() -> None:
     _, finish = plan_steps("matrix")
     assert finish.status == "done" and finish.gate is None
-    assert pipeline.GATES == {STEP_BID_NO_BID: GATE_1}
+    # the only two human gates SPEC 8 defines: the bid decision and the package review
+    assert pipeline.GATES == {
+        STEP_BID_NO_BID: GATE_1,
+        pipeline.STEP_RED_TEAM: pipeline.GATE_2,
+    }
