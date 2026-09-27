@@ -73,10 +73,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Storage per residency region and the virus scanner; tests swap these on app.state.
     app.state.storage_router = StorageRouter(settings)
     app.state.scanner = scanner_from_settings(settings)
+    # LLM client for pipeline runs executed in-process (None without a key); tests inject
+    # a FakeLLM here. agent_services is built lazily from storage_router + scanner.
+    app.state.llm = llm_from_settings(settings)
     # embedding provider (Voyage | fake) for the knowledge base and autofill (M1-12)
     app.state.embeddings = embeddings_from_settings(settings)
-    # LLM client for request-time agents (autofill); None without ANTHROPIC_API_KEY
-    app.state.llm = llm_from_settings(settings)
     # billing providers (Stripe for us, Razorpay for in); tests install fakes on app.state
     app.state.billing_providers = providers_from_settings(settings)
     # add_middleware wraps outward: the LAST added is the outermost. Final order:

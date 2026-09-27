@@ -25,6 +25,7 @@ from app.services.status_job import SCHEDULE as STATUS_SCHEDULE
 
 RUN_SOURCE_TASK = "bidradar.run_source"
 ROLL_STATUS_TASK = "bidradar.roll_status"
+RUN_AGENTS_TASK = "bidradar.run_agents"
 INDEX_PROFILE_TASK = "bidradar.index_profile"
 TENANT_EXPORT_TASK = "bidradar.tenant_export"
 TENANT_DELETE_TASK = "bidradar.tenant_delete"
@@ -105,6 +106,14 @@ def roll_status_task(self: Any) -> dict[str, Any]:
     from app.jobs.status import run_status_job
 
     return run_status_job()
+
+
+@celery_app.task(name=RUN_AGENTS_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def run_agents_task(self: Any, run_id: str, tenant_id: str) -> dict[str, Any]:
+    """Run / resume one pursuit agent run (SPEC 8); enqueued by the pursuits API."""
+    from app.jobs.run_agents import run_agents_sync
+
+    return run_agents_sync(run_id, tenant_id)
 
 
 @celery_app.task(name=INDEX_PROFILE_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]

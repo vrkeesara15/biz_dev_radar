@@ -37,6 +37,7 @@ dependencies = [
   "opentelemetry-instrumentation-sqlalchemy>=0.50b0",
   "opentelemetry-instrumentation-httpx>=0.50b0",
   "opentelemetry-instrumentation-celery>=0.50b0",
+  "rapidfuzz>=3.14.6",
 ]
 
 [dependency-groups]

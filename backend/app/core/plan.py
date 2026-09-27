@@ -22,12 +22,14 @@ class Resource(StrEnum):
     SOURCE_REGIONS = "source_regions"
     INSTANT_ALERTS = "instant_alerts"
     AGENT_DRAFTS_PER_MONTH = "agent_drafts_per_month"
+    # whole USD of LLM spend per calendar month (SPEC 8 cost guard); None = unlimited
+    AGENT_BUDGET_USD_MONTH = "agent_budget_usd_month"
 
 
 UNLIMITED: int | None = None
 
-# Free: 1 profile, 1 source region, digest only, 0 drafts.
-# Pro: 3 profiles, all sources, instant alerts, 10 agent drafts/month.
+# Free: 1 profile, 1 source region, digest only, 0 drafts, no agent budget.
+# Pro: 3 profiles, all sources, instant alerts, 10 agent drafts/month, USD 50 of LLM spend.
 # Enterprise: unlimited.
 PLAN_DEFAULTS: dict[Plan, dict[Resource, int | None]] = {
     Plan.FREE: {
@@ -35,22 +37,26 @@ PLAN_DEFAULTS: dict[Plan, dict[Resource, int | None]] = {
         Resource.SOURCE_REGIONS: 1,
         Resource.INSTANT_ALERTS: 0,
         Resource.AGENT_DRAFTS_PER_MONTH: 0,
+        Resource.AGENT_BUDGET_USD_MONTH: 0,
     },
     Plan.PRO: {
         Resource.PROFILES: 3,
         Resource.SOURCE_REGIONS: UNLIMITED,
         Resource.INSTANT_ALERTS: 1,
         Resource.AGENT_DRAFTS_PER_MONTH: 10,
+        Resource.AGENT_BUDGET_USD_MONTH: 50,
     },
     Plan.ENTERPRISE: {
         Resource.PROFILES: UNLIMITED,
         Resource.SOURCE_REGIONS: UNLIMITED,
         Resource.INSTANT_ALERTS: UNLIMITED,
         Resource.AGENT_DRAFTS_PER_MONTH: UNLIMITED,
+        Resource.AGENT_BUDGET_USD_MONTH: UNLIMITED,
     },
 }
 
 MONTHLY_SUFFIX = "_per_month"
+MONTH_SUFFIX = "_month"
 LIFETIME_PERIOD = "lifetime"
 # LLM usage metrics written by the agent runner (M5-01); budgeted per month (SPEC 8).
 LLM_TOKENS_IN = "llm_tokens_in"
@@ -73,7 +79,11 @@ def is_unlimited(limit: int | None) -> bool:
 
 
 def is_monthly(resource: str) -> bool:
-    return resource.endswith(MONTHLY_SUFFIX) or resource in MONTHLY_METRICS
+    return (
+        resource.endswith(MONTHLY_SUFFIX)
+        or resource.endswith(MONTH_SUFFIX)
+        or resource in MONTHLY_METRICS
+    )
 
 
 def period_key(resource: str, at: datetime | None = None) -> str:

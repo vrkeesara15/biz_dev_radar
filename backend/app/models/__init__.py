@@ -4,6 +4,7 @@ from app.models.agents import AgentRun, AgentStep
 from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import BillingCustomer, BillingEventRecord, PlanLimit, UsageLedger
+from app.models.compliance import ComplianceItem, PursuitArtifact
 from app.models.files import File
 from app.models.knowledge import KBChunk
 from app.models.notify import UserNotificationPrefs
@@ -33,6 +34,8 @@ from app.models.profile_proof import (
     Registration,
     Vehicle,
 )
+from app.models.pursuit import Pursuit
+from app.models.requirements import Requirement
 from app.models.sources import Source, SourceRun
 from app.models.spend import AgencySpendStat
 from app.models.tenancy import Membership, Tenant, User
@@ -49,6 +52,7 @@ __all__ = [
     "BoilerplateBlock",
     "Certification",
     "CompanyProfile",
+    "ComplianceItem",
     "Consent",
     "DataRequest",
     "DocumentChunk",
@@ -65,8 +69,11 @@ __all__ = [
     "ProfileCode",
     "ProfileFile",
     "ProfileKeyword",
+    "Pursuit",
+    "PursuitArtifact",
     "RateCardEntry",
     "Registration",
+    "Requirement",
     "ServiceLine",
     "Source",
     "SourceRun",

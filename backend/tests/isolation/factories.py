@@ -54,6 +54,7 @@ from app.models import (
     ProfileCode,
     ProfileFile,
     ProfileKeyword,
+    Pursuit,
     RateCardEntry,
     Registration,
     ServiceLine,
@@ -267,6 +268,29 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/opportunities/{opportunity_id}"): lambda ctx: RouteCall(
         path_params={"opportunity_id": ctx.shared["opportunity"]}
     ),
+    # --- pursuits (M5-02): tenant-scoped; B posting A's profile id gets 404 (RLS hides it)
+    ("POST", "/api/v1/pursuits"): lambda ctx: RouteCall(
+        json={"profile_id": ctx.a.ids["profile"], "opportunity_id": ctx.shared["opportunity"]}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/matrix"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/packet"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    # inline so no broker is needed; B's call must 404 before any run row is created
+    ("POST", "/api/v1/pursuits/{pursuit_id}/agents/run"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={"step": "pricing", "inline": True},
+        owner_expect=frozenset({202}),
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/agents/approve-budget"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={"additional_usd": "5", "reason": "isolation probe"},
+    ),
     # --- billing (M7-04): GET /billing must never echo A's customer / subscription /
     # invoice identifiers. The harness installs network-free providers (conftest), so
     # checkout answers 201 and its body is leak-checked too.
@@ -451,6 +475,15 @@ async def build_context(database: Database) -> IsolationContext:
             channels_by_event={"digest": ["slack"]},
             tz="Asia/Kolkata",
         )
+        opportunity = Opportunity(
+            source_id="sam_opps",
+            external_id=f"iso-{uuid.uuid4().hex[:8]}",
+            region=Region.US,
+            country="US",
+            currency="USD",
+            notice_type=NoticeType.RFP,
+            title="Isolation probe notice",
+        )
         session.add_all(
             [
                 certification,
@@ -466,6 +499,16 @@ async def build_context(database: Database) -> IsolationContext:
                 *proof.values(),
             ]
         )
+        session.add(opportunity)
+        await session.flush()
+        pursuit = Pursuit(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            opportunity_id=opportunity.id,
+            created_by=ua.id,
+            owner_user_id=ua.id,
+        )
+        session.add(pursuit)
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -503,6 +546,7 @@ async def build_context(database: Database) -> IsolationContext:
                 "boilerplate_title": "Alpha Overview",
                 "rate_card_category": "Alpha Architect",
                 "notification_prefs": str(prefs.id),
+                "pursuit": str(pursuit.id),
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",
@@ -520,16 +564,5 @@ async def build_context(database: Database) -> IsolationContext:
             owner_email=ub.email,
             ids={"tenant": str(tb.id), "owner_user": str(ub.id), "membership": str(mb.id)},
         )
-        opportunity = Opportunity(
-            source_id="sam_opps",
-            external_id=f"iso-{uuid.uuid4().hex[:8]}",
-            region=Region.US,
-            country="US",
-            currency="USD",
-            notice_type=NoticeType.RFP,
-            title="Isolation probe notice",
-        )
-        session.add(opportunity)
-        await session.flush()
         shared = {"opportunity": str(opportunity.id)}
     return IsolationContext(a=a, b=b, shared=shared)
