@@ -3,7 +3,11 @@ notification_deliveries, integrations, push_subscriptions, match_feedback, saved
 alert_rules and keyword_suggestions in place.
 
 Revision ID: 0006_m4_matching_alerts
-Revises: 0004_m5_agent_runtime  (re-pointed at merge once main carries 0005_m1_knowledge_base)
+Revises: 0009_m7_billing_privacy
+
+Numbered by merge order (CLAUDE.md). The number was reserved before M7 merged, so the
+file stem stays 0006 while down_revision points at main's current head
+(0004 -> 0005_m1_knowledge_base -> 0009_m7_billing_privacy -> this), keeping one head.
 """
 
 from collections.abc import Sequence
@@ -14,7 +18,7 @@ from migrations.rls import enable_rls, grant_app
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0006_m4_matching_alerts"
-down_revision: str | None = "0004_m5_agent_runtime"
+down_revision: str | None = "0009_m7_billing_privacy"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

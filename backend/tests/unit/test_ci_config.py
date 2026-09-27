@@ -1,4 +1,9 @@
-"""M0-10: the CI workflow parses and wires the required jobs, services and gates."""
+"""M0-10: the CI workflow parses and wires the required jobs, services and gates.
+
+Extended by M7-01 (docker-build), M7-02 (terraform-validate) and M7-03/M7-06
+(deploy, preview, security-scan). Workflow YAML is the one kind of infrastructure that
+never runs locally, so it gets asserted here instead.
+"""
 
 from pathlib import Path
 from typing import Any
@@ -63,3 +68,20 @@ def test_frontend_job(repo_root: Path) -> None:
 def test_makefile_test_target_is_the_gate(repo_root: Path) -> None:
     text = (repo_root / "Makefile").read_text()
     assert "--cov-fail-under=85" in text and "alembic upgrade head" in text
+
+
+def test_docker_build_job_builds_both_images(repo_root: Path) -> None:
+    """M7-01 acceptance: `docker build` succeeds in CI, for the backend and the frontend."""
+    job = _workflow(repo_root)["jobs"]["docker-build"]
+    contexts = {entry["context"] for entry in job["strategy"]["matrix"]["include"]}
+    assert contexts == {"backend", "frontend"}
+    build_steps = [s for s in job["steps"] if "build-push-action" in str(s.get("uses", ""))]
+    assert build_steps, "docker-build must use docker/build-push-action"
+    for step in build_steps:
+        assert step["with"]["push"] is False, "CI builds, the deploy workflow pushes"
+
+
+def test_dockerfiles_exist_for_every_build_context(repo_root: Path) -> None:
+    job = _workflow(repo_root)["jobs"]["docker-build"]
+    for entry in job["strategy"]["matrix"]["include"]:
+        assert (repo_root / entry["context"] / "Dockerfile").is_file()

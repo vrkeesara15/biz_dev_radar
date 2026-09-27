@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import AuthError, decode_token, parse_bearer
 from app.core.config import Settings
+from app.core.context import set_principal
 from app.core.db import get_database
 from app.core.ratelimit import FixedWindowLimiter, client_ip_from_headers
 from app.core.roles import Role
@@ -105,6 +106,9 @@ async def get_current_user(
         id=claims.sub, email=claims.email, tenant_id=claims.tenant_id, role=claims.role
     )
     request.state.user = user  # read by AuditMiddleware after the handler ran
+    # Bind the principal so logs, OTel spans and Sentry events of this request carry it
+    # without every call site passing it along (M7-05).
+    set_principal(user.tenant_id, user.id)
     return user
 
 

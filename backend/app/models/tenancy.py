@@ -3,8 +3,18 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
-from sqlalchemy import Boolean, Enum, ForeignKey, String, UniqueConstraint, false, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    false,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -33,6 +43,9 @@ class Tenant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_internal: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
     # Region whose infrastructure holds this tenant's rows and files (SPEC section 11).
     data_residency: Mapped[Region] = mapped_column(RegionEnum, nullable=False)
+    # Set by the tenant-delete job (M7-07): every tenant-scoped row is gone, the tenants
+    # row and its audit_log trail are kept so the erasure itself stays auditable.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     memberships: Mapped[list[Membership]] = relationship(back_populates="tenant")
 

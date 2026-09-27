@@ -1,0 +1,27 @@
+# Build context for backend/Dockerfile. Keep it to what the image actually needs:
+# pyproject.toml, uv.lock, README.md, app/, migrations/, alembic.ini, docker/.
+.env
+.env.*
+!.env.example
+.storage/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+tests/
+evals/
+logs/
+*.log
+.DS_Store
+.git
+.gitignore
+Dockerfile
+.dockerignore

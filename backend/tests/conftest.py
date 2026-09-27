@@ -36,6 +36,9 @@ def settings(tmp_path_factory: pytest.TempPathFactory):  # type: ignore[no-untyp
         database_url_owner=TEST_DATABASE_URL_OWNER,
         # local object storage under the session tmp dir (never the repo's .storage)
         local_storage_root=str(tmp_path_factory.mktemp("storage")),
+        # deterministic embeddings and inline (eager) background jobs; no network
+        embedding_provider="fake",
+        celery_task_always_eager=True,
     )
 
 
@@ -79,10 +82,24 @@ async def clean_db(database):  # type: ignore[no-untyped-def]
 
 
 @pytest.fixture()
-def app(settings):  # type: ignore[no-untyped-def]
+def fake_embeddings():  # type: ignore[no-untyped-def]
+    """Deterministic EmbeddingProvider (app/services/embeddings.FakeEmbeddings), installed
+    process-wide for the test so jobs and the app share it; never touches the network."""
+    from app.services.embeddings import FakeEmbeddings, set_embeddings
+
+    provider = FakeEmbeddings()
+    set_embeddings(provider)
+    yield provider
+    set_embeddings(None)
+
+
+@pytest.fixture()
+def app(settings, fake_embeddings):  # type: ignore[no-untyped-def]
     from app.main import create_app
 
-    return create_app(settings)
+    application = create_app(settings)
+    application.state.embeddings = fake_embeddings
+    return application
 
 
 @pytest.fixture()

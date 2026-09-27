@@ -21,12 +21,16 @@ from app.adapters import registry
 from app.adapters.registry import load_builtin_adapters
 from app.core.config import Settings, get_settings
 from app.jobs.notify import DIGEST_SCHEDULE, FLUSH_SCHEDULE
+from app.observability import configure_observability
 from app.services.status_job import SCHEDULE as STATUS_SCHEDULE
 
 RUN_SOURCE_TASK = "bidradar.run_source"
 ROLL_STATUS_TASK = "bidradar.roll_status"
 SEND_DIGESTS_TASK = "bidradar.send_digests"
 FLUSH_SCHEDULED_TASK = "bidradar.flush_scheduled"
+INDEX_PROFILE_TASK = "bidradar.index_profile"
+TENANT_EXPORT_TASK = "bidradar.tenant_export"
+TENANT_DELETE_TASK = "bidradar.tenant_delete"
 
 
 def cron_to_crontab(expression: str) -> crontab:
@@ -100,6 +104,8 @@ def create_celery(settings: Settings | None = None) -> Celery:
 
 
 celery_app = create_celery()
+# OTel span per task + Sentry for the worker process; no-ops with empty settings (M7-05).
+OBSERVABILITY = configure_observability(component="worker")
 
 
 @celery_app.task(name=RUN_SOURCE_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
@@ -128,3 +134,27 @@ def flush_scheduled_task(self: Any) -> dict[str, Any]:
     from app.jobs.notify import run_flush_scheduled
 
     return run_flush_scheduled()
+
+
+@celery_app.task(name=INDEX_PROFILE_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def index_profile_task(self: Any, tenant_id: str, profile_id: str) -> dict[str, Any]:
+    """Re-index one profile's knowledge base (M1-12); queued by profile mutations."""
+    from app.jobs.index_profile import index_profile_sync
+
+    return index_profile_sync(tenant_id, profile_id)
+
+
+@celery_app.task(name=TENANT_EXPORT_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def tenant_export_task(self: Any, tenant_id: str, request_id: str) -> dict[str, Any]:
+    """Zip every tenant table + file into object storage (M7-07); queued by the owner."""
+    from app.jobs.privacy import tenant_export_sync
+
+    return tenant_export_sync(tenant_id, request_id)
+
+
+@celery_app.task(name=TENANT_DELETE_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def tenant_delete_task(self: Any, tenant_id: str, request_id: str) -> dict[str, Any]:
+    """Erase every tenant row and object, keeping audit_log (M7-07)."""
+    from app.jobs.privacy import tenant_delete_sync
+
+    return tenant_delete_sync(tenant_id, request_id)

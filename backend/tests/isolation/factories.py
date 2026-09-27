@@ -18,6 +18,7 @@ import fnmatch
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.core.config import Region
@@ -38,9 +39,13 @@ from app.core.profile_fields import (
 from app.core.roles import Role
 from app.models import (
     AuditLog,
+    BillingCustomer,
+    BillingEventRecord,
     BoilerplateBlock,
     Certification,
     CompanyProfile,
+    Consent,
+    DataRequest,
     File,
     Insurance,
     Integration,
@@ -84,6 +89,8 @@ PUBLIC_ROUTES: list[tuple[str, str]] = [
     # itself twice (our signed action token names the tenant, X-Slack-Signature proves it
     # came from Slack). tests/integration/test_integrations_api.py covers both halves.
     ("POST", "/api/v1/integrations/slack/actions"),
+    # M7-07: the published privacy notice (grievance officer, sub-processors, versions)
+    ("GET", "/api/v1/privacy"),
 ]
 
 OK_STATUSES = frozenset({200, 201, 202, 204})
@@ -219,6 +226,13 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("PUT", "/api/v1/profiles/{profile_id}"): lambda ctx: RouteCall(
         path_params={"profile_id": ctx.a.ids["profile"]}, json={"legal_name": "Renamed"}
     ),
+    # --- autofill (M1-10): read-only suggestions; B probing A's profile gets 404. Without a
+    # SAM key the UEI path answers 200 with a warning and no network call.
+    ("POST", "/api/v1/profiles/{profile_id}/autofill"): lambda ctx: RouteCall(
+        path_params={"profile_id": ctx.a.ids["profile"]},
+        json={"uei": "ALPHA1234567"},
+        role=Role.BID_MANAGER,
+    ),
     # --- profile sub-resources (M1-02..M1-05)
     **child_routes("codes", "code", {"scheme": "psc", "code": "D302"}, {"is_primary": True}),
     **child_routes(
@@ -299,6 +313,29 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         path_params={"kind": "slack"},
         json={"enabled": True, "config": {"channel": "#probe"}},
     ),
+    # --- billing (M7-04): GET /billing must never echo A's customer / subscription /
+    # invoice identifiers. The harness installs network-free providers (conftest), so
+    # checkout answers 201 and its body is leak-checked too.
+    ("GET", "/api/v1/billing"): lambda ctx: RouteCall(role=Role.VIEWER),
+    ("POST", "/api/v1/billing/checkout"): lambda ctx: RouteCall(
+        json={
+            "plan": "pro",
+            "success_url": "https://app.example/ok",
+            "cancel_url": "https://app.example/no",
+        }
+    ),
+    # --- privacy (M7-07): consents and data requests are per user, so B sees none of A's;
+    # the tenant jobs are destructive, so the probe is the 409 A gets after its own delete.
+    ("GET", "/api/v1/me/consents"): lambda ctx: RouteCall(role=Role.VIEWER),
+    ("POST", "/api/v1/me/consents"): lambda ctx: RouteCall(
+        json={"kind": "dpdp", "version": "probe"}, role=Role.VIEWER
+    ),
+    ("GET", "/api/v1/me/data-requests"): lambda ctx: RouteCall(role=Role.VIEWER),
+    ("POST", "/api/v1/me/data-requests"): lambda ctx: RouteCall(
+        json={"kind": "access"}, role=Role.VIEWER
+    ),
+    ("POST", "/api/v1/tenant/export"): lambda ctx: RouteCall(owner_expect=frozenset({202})),
+    ("POST", "/api/v1/tenant/delete"): lambda ctx: RouteCall(owner_expect=frozenset({202})),
     # --- files (M1-11)
     ("POST", "/api/v1/files"): lambda ctx: RouteCall(
         files={"file": ("probe.txt", b"isolation probe", "text/plain")}
@@ -449,6 +486,33 @@ async def build_context(database: Database) -> IsolationContext:
             config={"channel": "#alpha-bids"},
             secret_ref="env:ALPHA_SLACK_HOOK",
         )
+        consent = Consent(
+            tenant_id=ta.id, user_id=ua.id, kind="dpdp", version="alpha-consent-v1", ip="10.0.0.1"
+        )
+        data_request = DataRequest(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            kind="correction",
+            details={"note": "alpha secret request note"},
+            sla_due_at=datetime.now(UTC) + timedelta(days=30),
+        )
+        billing_customer = BillingCustomer(
+            tenant_id=ta.id,
+            provider="stripe",
+            customer_id="cus_ALPHASECRET",
+            subscription_id="sub_ALPHASECRET",
+            status="active",
+            gst_details={"gstin": "29AABCU9603R1ZM"},
+        )
+        billing_event = BillingEventRecord(
+            tenant_id=ta.id,
+            provider="stripe",
+            event_id="evt_ALPHASECRET",
+            kind="invoice_paid",
+            amount=9900,
+            currency="USD",
+            payload={"_external_ids": {"invoice_number": "BR-ALPHA-0001"}},
+        )
         prefs = UserNotificationPrefs(
             tenant_id=ta.id,
             user_id=ua.id,
@@ -466,6 +530,10 @@ async def build_context(database: Database) -> IsolationContext:
                 integration,
                 notification,
                 push,
+                billing_customer,
+                billing_event,
+                consent,
+                data_request,
                 *proof.values(),
             ]
         )
@@ -510,6 +578,15 @@ async def build_context(database: Database) -> IsolationContext:
                 "boilerplate_title": "Alpha Overview",
                 "rate_card_category": "Alpha Architect",
                 "notification_prefs": str(prefs.id),
+                "billing_customer": str(billing_customer.id),
+                "billing_customer_id": "cus_ALPHASECRET",
+                "billing_subscription_id": "sub_ALPHASECRET",
+                "billing_event": str(billing_event.id),
+                "billing_invoice_number": "BR-ALPHA-0001",
+                "consent": str(consent.id),
+                "consent_version": "alpha-consent-v1",
+                "data_request": str(data_request.id),
+                "data_request_note": "alpha secret request note",
             },
         )
         b = TenantCtx(

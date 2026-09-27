@@ -7,16 +7,21 @@ import pytest
 from app.core.db import Database
 from app.core.roles import Role
 from app.models import AuditLog, UsageLedger
-from app.notify.unsubscribe import sign_unsubscribe_token
 from app.services.audit import SUPPORT_ACCESS_ACTION, audit
 from sqlalchemy import select, text
 from sqlalchemy.exc import ProgrammingError
 
 from tests.auth import auth_headers
 from tests.factories import create_tenant_with_owner
+from tests.isolation.factories import is_public
 
-# Mutating routes that authenticate by request signature instead of a bearer session.
-SIGNED_CALLBACK_ROUTES = {("POST", "/api/v1/integrations/slack/actions")}
+# Mutating routes that authenticate by a signed request or link instead of a bearer
+# session, so the middleware has no tenant for them. Each is probed below with a bogus
+# credential: it must be refused and must write nothing.
+SIGNED_CALLBACK_ROUTES: list[tuple[str, str]] = [
+    ("POST", "/api/v1/integrations/slack/actions"),
+    ("POST", "/api/v1/notifications/unsubscribe/not-a-token"),
+]
 
 
 async def _tenant(database: Database, **overrides):  # type: ignore[no-untyped-def]
@@ -88,53 +93,54 @@ async def test_failed_mutation_by_authenticated_user_is_audited(
 async def test_every_mutating_route_under_api_v1_is_audited(
     app,
     api_client: httpx.AsyncClient,
-    database: Database,
-    settings,  # type: ignore[no-untyped-def]
+    database: Database,  # type: ignore[no-untyped-def]
 ) -> None:
     """Drive every POST/PUT/PATCH/DELETE route with an empty body as an authenticated
-    user; each must leave exactly one audit row whatever its status code."""
+    user; each must leave exactly one audit row whatever its status code.
+
+    Provider webhooks and signed-link routes (PUBLIC_ROUTES) are the exceptions: they
+    carry no user, so the middleware has no tenant to write into. Their effect is audited
+    inside the handler instead (billing.webhook in test_billing_api.py,
+    notification.unsubscribe in test_notify_email.py, integration.slack.action in
+    test_integrations_api.py). The exempt set is asserted below so a new route cannot slip
+    out of the audit trail unnoticed."""
     tid, uid = await _tenant(database, is_internal=True)
     headers = auth_headers(user_id=uid, tenant_id=tid, role=Role.PLATFORM_ADMIN)
-    # M4-10: routes that authenticate by signed link instead of a bearer token get a real
-    # token, so the probe exercises the handler rather than the 401 branch.
-    token = sign_unsubscribe_token(settings, tenant_id=tid, user_id=uid, category="digest")
     spec = app.openapi()
-    mutating = [
+    all_mutating = [
         (method.upper(), path)
         for path, ops in spec["paths"].items()
         for method in ops
         if method.upper() in {"POST", "PUT", "PATCH", "DELETE"} and path.startswith("/api/v1/")
     ]
+    mutating = [route for route in all_mutating if not is_public(*route)]
+    exempt = sorted(route for route in all_mutating if is_public(*route))
+    assert exempt == [
+        # M4-11: Slack proves itself with X-Slack-Signature, not a session
+        ("POST", "/api/v1/integrations/slack/actions"),
+        # M4-10: the CAN-SPAM one-click unsubscribe target (RFC 8058)
+        ("POST", "/api/v1/notifications/unsubscribe/{token}"),
+        ("POST", "/api/v1/webhooks/razorpay"),
+        ("POST", "/api/v1/webhooks/stripe"),
+    ], f"unexpected route exempted from the audit middleware: {exempt}"
+
+    # An exempt signed route must refuse a bogus credential and write nothing: there is no
+    # tenant to write into until its own signature or token verifies.
+    for method, path in SIGNED_CALLBACK_ROUTES:
+        before = len(await _audit_rows(database))
+        r = await api_client.request(method, path, json={}, headers=headers)
+        assert r.status_code in {400, 401}, (method, path, r.status_code)
+        assert len(await _audit_rows(database)) == before
+
     assert mutating, "expected mutating routes"
     for method, path in mutating:
-        if (method, path) in SIGNED_CALLBACK_ROUTES:
-            # A provider callback (M4-11 Slack) carries no bearer token and no tenant until
-            # its own signature verifies, so an unsigned probe must be refused outright and
-            # must NOT write a tenant-scoped audit row. The happy path is audited by
-            # tests/integration/test_integrations_api.py.
-            before = len(await _audit_rows(database))
-            r = await api_client.request(method, path, json={}, headers=headers)
-            assert r.status_code in {400, 401}, (method, path, r.status_code)
-            assert len(await _audit_rows(database)) == before
-            continue
-        concrete = (
-            path.replace("{tenant_id}", str(tid))
-            .replace("{id}", str(uuid.uuid4()))
-            .replace("{token}", token)
-        )
+        concrete = path.replace("{tenant_id}", str(tid)).replace("{id}", str(uuid.uuid4()))
         before = len(await _audit_rows(database))
         r = await api_client.request(method, concrete, json={}, headers=headers)
         assert r.status_code != 401, (method, path)
         after = await _audit_rows(database)
         assert len(after) == before + 1, f"{method} {path} -> {r.status_code} left no audit row"
-        row = after[-1]
-        if "status" in row.meta:
-            assert row.meta["status"] == r.status_code
-        else:
-            # A signed-link route (M4-10 unsubscribe) authenticates by token, so the
-            # middleware sees no CurrentUser and the handler writes the row itself.
-            assert row.action == "notification.unsubscribe" and r.status_code == 200
-            assert row.tenant_id == tid and row.user_id == uid
+        assert after[-1].meta["status"] == r.status_code
 
 
 async def test_support_access_route(api_client: httpx.AsyncClient, database: Database) -> None:

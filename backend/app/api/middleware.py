@@ -5,7 +5,12 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable, MutableMapping
 from typing import Any
 
-from app.core.context import REQUEST_ID_HEADER, clear_request_id, set_request_id
+from app.core.context import (
+    REQUEST_ID_HEADER,
+    clear_principal,
+    clear_request_id,
+    set_request_id,
+)
 
 Scope = MutableMapping[str, Any]
 Message = MutableMapping[str, Any]
@@ -46,3 +51,4 @@ class RequestIdMiddleware:
             await self.app(scope, receive, send_with_header)
         finally:
             clear_request_id()
+            clear_principal()
