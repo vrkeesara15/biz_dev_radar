@@ -32,7 +32,8 @@ down:
 	$(COMPOSE) down
 
 db-reset:
-	@echo "db-reset: compose stack lands in M0-02"
+	$(COMPOSE) exec -T postgres psql -v ON_ERROR_STOP=1 -U bidradar -d postgres -c "DROP DATABASE IF EXISTS bidradar_test WITH (FORCE)" -c "CREATE DATABASE bidradar_test OWNER bidradar"
+	$(COMPOSE) exec -T postgres psql -v ON_ERROR_STOP=1 -U bidradar -d bidradar_test -f /docker-entrypoint-initdb.d/sql/extensions.sql
 
 migrate:
 	@echo "migrate: alembic lands in M0-04"

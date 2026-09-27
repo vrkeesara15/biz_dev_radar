@@ -37,7 +37,7 @@
       "Postgres init script creates databases bidradar and bidradar_test with extensions vector and pg_trgm",
       "make up / make down wrap compose; make db-reset drops and recreates the test database"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-03",
