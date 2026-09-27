@@ -790,7 +790,7 @@
       "Untrusted-input framing: opportunity text passed as data, system prompt forbids instruction following from it",
       "FakeLLM tests; token usage recorded to usage_ledger"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-14",

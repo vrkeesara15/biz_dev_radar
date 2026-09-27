@@ -32,6 +32,9 @@ class Event:
     name: str
     payload: dict[str, Any]
     at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    # In-process only (never serialised to Celery): e.g. {"session": <AsyncSession>} so a
+    # subscriber can read rows the publisher has not committed yet.
+    context: dict[str, Any] = field(default_factory=dict, compare=False, repr=False)
 
 
 Handler = Callable[[Event], Awaitable[None] | None]
@@ -57,8 +60,10 @@ class EventBus:
     def handlers_for(self, name: str) -> list[Handler]:
         return [*self._handlers.get(name, []), *self._handlers.get("*", [])]
 
-    async def publish(self, name: str, payload: dict[str, Any]) -> Event:
-        event = Event(name=name, payload=payload)
+    async def publish(
+        self, name: str, payload: dict[str, Any], *, context: dict[str, Any] | None = None
+    ) -> Event:
+        event = Event(name=name, payload=payload, context=dict(context or {}))
         for handler in self.handlers_for(name):
             await _call(handler, event, name)
         if self.publisher is not None:

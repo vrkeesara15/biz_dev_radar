@@ -160,6 +160,7 @@ def upgrade() -> None:
         sa.Column("title", sa.Text(), nullable=False),
         sa.Column("description_text", sa.Text()),
         sa.Column("summary_ai", sa.Text()),
+        sa.Column("summary_version", sa.Integer()),
         sa.Column("solicitation_number", sa.String(128)),
         sa.Column(
             "parent_opportunity_id",

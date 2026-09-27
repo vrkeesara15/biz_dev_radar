@@ -258,6 +258,7 @@ async def ingest(
                 ),
                 "duplicate_of": str(row.duplicate_of) if row.duplicate_of else None,
             },
+            context={"session": session},
         )
         return IngestResult(
             row,
@@ -316,6 +317,7 @@ async def ingest(
             ),
             "duplicate_of": str(row.duplicate_of) if row.duplicate_of else None,
         },
+        context={"session": session},
     )
     log.info(
         "opportunity.amended", opportunity_id=str(row.id), version=row.version, changes=changes

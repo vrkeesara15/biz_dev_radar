@@ -86,6 +86,8 @@ class Opportunity(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     title: Mapped[str] = mapped_column(Text, nullable=False)
     description_text: Mapped[str | None] = mapped_column(Text)
     summary_ai: Mapped[str | None] = mapped_column(Text)
+    # the `version` summary_ai was generated for; regenerate when it lags (M2-13)
+    summary_version: Mapped[int | None] = mapped_column(Integer)
     solicitation_number: Mapped[str | None] = mapped_column(String(128), index=True)
     parent_opportunity_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("opportunities.id", ondelete="SET NULL"), index=True
