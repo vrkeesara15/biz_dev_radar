@@ -173,6 +173,16 @@ class Settings(BaseSettings):
     billing_gstin: str = ""
     billing_gst_rate_pct: int = 18
 
+    # privacy (SPEC 11): DPDP consent notice, data-principal requests, grievance officer.
+    # Bumping a *_version makes the next acceptance a new consents row (the old one stays).
+    dpdp_notice_version: str = "v1"
+    privacy_policy_version: str = "v1"
+    terms_version: str = "v1"
+    # statutory answer-by window for a data-principal request, in days from receipt
+    data_request_sla_days: int = 30
+    grievance_officer_name: str = ""
+    grievance_officer_email: str = ""
+
     # seed
     seed_admin_email: str = "admin@example.com"
 

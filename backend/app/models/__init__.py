@@ -14,6 +14,7 @@ from app.models.opportunities import (
     OpportunityDocument,
     OpportunityVersion,
 )
+from app.models.privacy import Consent, DataRequest
 from app.models.profile import CompanyProfile
 from app.models.profile_items import (
     Certification,
@@ -48,6 +49,8 @@ __all__ = [
     "BoilerplateBlock",
     "Certification",
     "CompanyProfile",
+    "Consent",
+    "DataRequest",
     "DocumentChunk",
     "File",
     "Insurance",

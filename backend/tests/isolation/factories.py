@@ -18,6 +18,7 @@ import fnmatch
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.core.config import Region
@@ -43,6 +44,8 @@ from app.models import (
     BoilerplateBlock,
     Certification,
     CompanyProfile,
+    Consent,
+    DataRequest,
     File,
     Insurance,
     Opportunity,
@@ -69,6 +72,8 @@ PUBLIC_ROUTES: list[tuple[str, str]] = [
     ("GET", "/api/v1/system/info"),
     ("*", "/api/v1/auth/*"),
     ("POST", "/api/v1/webhooks/*"),
+    # M7-07: the published privacy notice (grievance officer, sub-processors, versions)
+    ("GET", "/api/v1/privacy"),
 ]
 
 OK_STATUSES = frozenset({200, 201, 202, 204})
@@ -273,6 +278,18 @@ FACTORIES: dict[tuple[str, str], Factory] = {
             "cancel_url": "https://app.example/no",
         }
     ),
+    # --- privacy (M7-07): consents and data requests are per user, so B sees none of A's;
+    # the tenant jobs are destructive, so the probe is the 409 A gets after its own delete.
+    ("GET", "/api/v1/me/consents"): lambda ctx: RouteCall(role=Role.VIEWER),
+    ("POST", "/api/v1/me/consents"): lambda ctx: RouteCall(
+        json={"kind": "dpdp", "version": "probe"}, role=Role.VIEWER
+    ),
+    ("GET", "/api/v1/me/data-requests"): lambda ctx: RouteCall(role=Role.VIEWER),
+    ("POST", "/api/v1/me/data-requests"): lambda ctx: RouteCall(
+        json={"kind": "access"}, role=Role.VIEWER
+    ),
+    ("POST", "/api/v1/tenant/export"): lambda ctx: RouteCall(owner_expect=frozenset({202})),
+    ("POST", "/api/v1/tenant/delete"): lambda ctx: RouteCall(owner_expect=frozenset({202})),
     # --- files (M1-11)
     ("POST", "/api/v1/files"): lambda ctx: RouteCall(
         files={"file": ("probe.txt", b"isolation probe", "text/plain")}
@@ -401,6 +418,16 @@ async def build_context(database: Database) -> IsolationContext:
                 rate_currency="USD",
             ),
         }
+        consent = Consent(
+            tenant_id=ta.id, user_id=ua.id, kind="dpdp", version="alpha-consent-v1", ip="10.0.0.1"
+        )
+        data_request = DataRequest(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            kind="correction",
+            details={"note": "alpha secret request note"},
+            sla_due_at=datetime.now(UTC) + timedelta(days=30),
+        )
         billing_customer = BillingCustomer(
             tenant_id=ta.id,
             provider="stripe",
@@ -434,6 +461,8 @@ async def build_context(database: Database) -> IsolationContext:
                 prefs,
                 billing_customer,
                 billing_event,
+                consent,
+                data_request,
                 *proof.values(),
             ]
         )
@@ -479,6 +508,10 @@ async def build_context(database: Database) -> IsolationContext:
                 "billing_subscription_id": "sub_ALPHASECRET",
                 "billing_event": str(billing_event.id),
                 "billing_invoice_number": "BR-ALPHA-0001",
+                "consent": str(consent.id),
+                "consent_version": "alpha-consent-v1",
+                "data_request": str(data_request.id),
+                "data_request_note": "alpha secret request note",
             },
         )
         b = TenantCtx(

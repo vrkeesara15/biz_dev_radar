@@ -3,6 +3,7 @@
 raw/{source}/{yyyy}/{mm}/{dd}/{external_id}/{fetched_at}   raw source payloads (SPEC 5.3 raw_ref)
 tenants/{tenant_id}/files/{file_id}.{ext}                  tenant uploads (SPEC 4.5, 11)
 parsed/{opportunity_id}/{document_id}.txt                  parsed document text (M2-12)
+tenants/{tenant_id}/exports/{request_id}.zip               tenant data export (M7-07)
 """
 
 from __future__ import annotations
@@ -63,3 +64,8 @@ def tenant_file_key(tenant_id: uuid.UUID, file_id: uuid.UUID, extension: str) ->
 def parsed_text_key(opportunity_id: uuid.UUID, document_id: uuid.UUID) -> str:
     """parsed/{opportunity_id}/{document_id}.txt: pages joined with form feeds."""
     return f"{PARSED_PREFIX}/{opportunity_id}/{document_id}.txt"
+
+
+def tenant_export_key(tenant_id: uuid.UUID, request_id: uuid.UUID) -> str:
+    """tenants/{tenant_id}/exports/{request_id}.zip (SPEC 11 tenant data export)."""
+    return f"{TENANT_PREFIX}/{tenant_id}/exports/{request_id}.zip"

@@ -2086,7 +2086,7 @@
       "Erasure removes files from storage and rows across tenant tables; audit row kept",
       "docs/privacy/sub-processors.md and grievance officer contact in settings"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-08",

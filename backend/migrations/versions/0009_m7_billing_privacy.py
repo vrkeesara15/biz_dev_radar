@@ -98,7 +98,63 @@ def upgrade() -> None:
     revoke_app(op, "billing_events", "UPDATE, DELETE")
     enable_rls(op, "billing_events")
 
+    # --- M7-07 privacy ------------------------------------------------------------------
+    op.add_column("tenants", sa.Column("deleted_at", sa.DateTime(timezone=True)))
+
+    op.create_table(
+        "consents",
+        _uuid_pk(),
+        _tenant_id(),
+        sa.Column(
+            "user_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column("kind", sa.String(32), nullable=False),
+        sa.Column("version", sa.String(32), nullable=False),
+        _ts("accepted_at", nullable=False, default_now=True),
+        sa.Column("ip", sa.String(64)),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint(
+            "tenant_id", "user_id", "kind", "version", name="uq_consents_tenant_user_kind_version"
+        ),
+    )
+    for col in ("tenant_id", "user_id"):
+        op.create_index(f"ix_consents_{col}", "consents", [col])
+    grant_app(op, "consents")
+    enable_rls(op, "consents")
+
+    op.create_table(
+        "data_requests",
+        _uuid_pk(),
+        _tenant_id(),
+        sa.Column(
+            "user_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="SET NULL"),
+        ),
+        sa.Column("kind", sa.String(32), nullable=False),
+        sa.Column("status", sa.String(16), nullable=False, server_default=sa.text("'received'")),
+        _jsonb("details"),
+        _ts("sla_due_at", nullable=False),
+        _ts("completed_at"),
+        sa.Column(
+            "result_file_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("files.id", ondelete="SET NULL"),
+        ),
+        _ts("created_at", nullable=False, default_now=True),
+    )
+    for col in ("tenant_id", "user_id"):
+        op.create_index(f"ix_data_requests_{col}", "data_requests", [col])
+    grant_app(op, "data_requests")
+    enable_rls(op, "data_requests")
+
 
 def downgrade() -> None:
+    op.drop_table("data_requests")
+    op.drop_table("consents")
+    op.drop_column("tenants", "deleted_at")
     op.drop_table("billing_events")
     op.drop_table("billing_customers")

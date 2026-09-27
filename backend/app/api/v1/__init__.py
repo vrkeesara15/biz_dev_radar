@@ -11,6 +11,7 @@ from app.api.v1 import (
     me,
     notification_prefs,
     opportunities,
+    privacy,
     profiles,
     system,
     webhooks,
@@ -28,3 +29,6 @@ api_router.include_router(profiles.router)
 api_router.include_router(opportunities.router)
 api_router.include_router(billing.router)
 api_router.include_router(webhooks.router)
+api_router.include_router(privacy.me_router)
+api_router.include_router(privacy.tenant_router)
+api_router.include_router(privacy.public_router)
