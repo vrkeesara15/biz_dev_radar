@@ -1,0 +1,26 @@
+{
+ "item_or_service": "Solar Street Light System",
+ "quantity": 350,
+ "estimated_value_inr": "Rs. 87.5 Lakh",
+ "emd_amount_inr": null,
+ "min_avg_turnover_inr": "26 Lakh (s)",
+ "min_experience_years": 2,
+ "mse_exemption_allowed": true,
+ "startup_exemption_allowed": true,
+ "bid_end_at": "26-10-2026 16:30:00",
+ "consignee_locations": [
+  "Chennai, Tamil Nadu",
+  "Madurai, Tamil Nadu"
+ ],
+ "citations": {
+  "item_or_service": 1,
+  "quantity": 1,
+  "min_avg_turnover_inr": 1,
+  "min_experience_years": 1,
+  "mse_exemption_allowed": 1,
+  "startup_exemption_allowed": 1,
+  "bid_end_at": 1,
+  "estimated_value_inr": 1,
+  "consignee_locations": 3
+ }
+}

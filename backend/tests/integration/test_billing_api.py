@@ -740,11 +740,14 @@ async def test_billing_view_lists_usage_against_plan_limits(
     limits = {row["resource"]: row for row in body["limits"]}
     assert limits["profiles"] == {"resource": "profiles", "limit": 1, "used": 1, "remaining": 0}
     assert limits["agent_drafts_per_month"]["limit"] == 0
+    # M5-02 added the monthly LLM budget to plan_limits: the free plan gets none
+    assert limits["agent_budget_usd_month"]["limit"] == 0
     assert set(limits) == {
         "profiles",
         "source_regions",
         "instant_alerts",
         "agent_drafts_per_month",
+        "agent_budget_usd_month",
     }
 
 

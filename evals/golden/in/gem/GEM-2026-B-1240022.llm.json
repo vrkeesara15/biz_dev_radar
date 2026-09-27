@@ -1,0 +1,25 @@
+{
+ "item_or_service": "Facility Management Services - LumpSum Based - Hospital; Housekeeping",
+ "quantity": 1,
+ "estimated_value_inr": null,
+ "emd_amount_inr": "\u20b95,00,000",
+ "min_avg_turnover_inr": "2.5 Crore (s)",
+ "min_experience_years": 5,
+ "mse_exemption_allowed": false,
+ "startup_exemption_allowed": true,
+ "bid_end_at": "22-10-2026 15:00:00",
+ "consignee_locations": [
+  "Bhopal, Madhya Pradesh"
+ ],
+ "citations": {
+  "item_or_service": 1,
+  "quantity": 1,
+  "min_avg_turnover_inr": 1,
+  "min_experience_years": 1,
+  "mse_exemption_allowed": 1,
+  "startup_exemption_allowed": 1,
+  "bid_end_at": 1,
+  "emd_amount_inr": 2,
+  "consignee_locations": 3
+ }
+}

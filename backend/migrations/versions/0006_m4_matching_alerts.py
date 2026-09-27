@@ -18,7 +18,7 @@ from migrations.rls import enable_rls, grant_app
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0006_m4_matching_alerts"
-down_revision: str | None = "0009_m7_billing_privacy"
+down_revision = "0007_m5_agents"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

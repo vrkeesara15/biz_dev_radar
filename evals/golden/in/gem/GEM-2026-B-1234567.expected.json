@@ -1,0 +1,16 @@
+{
+ "bid_number": "GEM/2026/B/1234567",
+ "item_or_service": "Desktop Computers",
+ "quantity": 120,
+ "estimated_value_inr": "12000000",
+ "emd_amount_inr": "240000",
+ "min_avg_turnover_inr": "4500000",
+ "min_experience_years": 3,
+ "mse_exemption_allowed": true,
+ "startup_exemption_allowed": false,
+ "bid_end_at": "2026-10-17T14:53:00+00:00",
+ "consignee_locations": [
+  "Secunderabad, Telangana",
+  "Vijayawada, Andhra Pradesh"
+ ]
+}

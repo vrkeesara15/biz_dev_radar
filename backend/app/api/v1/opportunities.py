@@ -22,7 +22,7 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import TENANT_ROLES, CurrentUser, TenantSessionDep, require_role
 from app.core.attribution import portal_url, source_name
 from app.core.config import Region
-from app.core.disclaimers import VERIFY_ON_PORTAL
+from app.core.disclaimers import VERIFY_ON_PORTAL, attribution_text, record_footer
 from app.core.opportunity import NoticeType, OpportunityStatus
 from app.models import Opportunity, OpportunityDocument, OpportunityVersion
 from app.models.opportunities import FTS_EXPR
@@ -41,6 +41,9 @@ class Attribution(BaseModel):
     source_id: str
     source_name: str
     source_url: str | None
+    # SPEC 11 / M3-10: the ready-to-render line, identical in the API, exports and emails
+    text: str
+    footer: str
 
 
 class OpportunityItem(BaseModel):
@@ -137,6 +140,8 @@ def _attribution(row: Opportunity) -> Attribution:
         source_id=row.source_id,
         source_name=source_name(row.source_id),
         source_url=portal_url(row.source_id, row.source_url),
+        text=attribution_text(row.source_id, row.source_url),
+        footer=record_footer(row.source_id, row.source_url),
     )
 
 

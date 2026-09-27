@@ -97,7 +97,11 @@ async def test_created_notice_gets_a_five_line_summary_with_untrusted_framing(
     async with database.session(internal) as session:
         runs = (await session.execute(select(AgentRun))).scalars().all()
         assert len(runs) == 1 and runs[0].kind == "summary_ai" and runs[0].status == "done"
-        assert runs[0].params == {"opportunity_id": str(opp_id), "version": 1}
+        assert runs[0].params == {
+            "opportunity_id": str(opp_id),
+            "version": 1,
+            "language": "en",  # M3-07: the summary language is part of the run
+        }
         ledger = (await session.execute(select(UsageLedger))).scalars().all()
         assert {r.metric for r in ledger} >= {LLM_TOKENS_IN, LLM_COST_MICROUSD}
         assert sum(r.quantity for r in ledger if r.metric == LLM_TOKENS_IN) == fake_llm.tokens_in

@@ -8,7 +8,7 @@ import httpx
 import pytest
 from app.core.config import Region
 from app.core.db import Database
-from app.core.disclaimers import VERIFY_ON_PORTAL
+from app.core.disclaimers import VERIFY_ON_PORTAL, attribution_text, record_footer
 from app.core.opportunity import DocumentRef, NoticeType, OpportunityIn, OpportunityStatus
 from app.services.ingest import ingest
 from sqlalchemy import text
@@ -151,6 +151,8 @@ async def test_list_returns_attribution_disclaimer_and_hides_duplicates(
         "source_id": "sam_opps",
         "source_name": "SAM.gov Contract Opportunities",
         "source_url": "https://sam.gov/opp/cloud/view",
+        "text": attribution_text("sam_opps", "https://sam.gov/opp/cloud/view"),
+        "footer": record_footer("sam_opps", "https://sam.gov/opp/cloud/view"),
     }
     gem = by_title["Supply of desktop computers"]
     assert gem["attribution"]["source_name"].startswith("Government e-Marketplace")
@@ -296,3 +298,73 @@ async def test_search_query_can_use_the_fts_and_naics_indexes(database: Database
         )  # type: ignore[union-attr]
         plan = (await session.execute(text(f"EXPLAIN {compiled}"))).scalars().all()
     assert "ix_opportunities_naics" in "\n".join(plan), plan
+
+
+# --- M3-10: attribution and disclaimers on India records --------------------------------
+
+
+async def test_every_in_record_carries_its_portal_name_and_official_link(
+    api_client: httpx.AsyncClient, database: Database
+) -> None:
+    async with database.session(None) as session:
+        tn = await ingest(
+            session,
+            _opp(
+                "2026_TNCMC_871234_1",
+                source_id="gepnic_tn",
+                source_url="https://tntenders.gov.in/nicgep/app?component=%24DirectLink&sp=Sx",
+                region=Region.IN,
+                country="IN",
+                currency="INR",
+                title="Formation of park at KRG Nagar",
+                buyer_org="Government of Tamil Nadu",
+                naics=[],
+            ),
+            now=NOW,
+        )
+        cppp = await ingest(
+            session,
+            _opp(
+                "cppp-1",
+                source_id="cppp",
+                source_url=None,  # detail behind a CAPTCHA: the portal home is the link
+                region=Region.IN,
+                country="IN",
+                currency="INR",
+                title="Supply of transformers",
+                buyer_org="Bharat Sanchar Nigam Limited",
+                naics=[],
+            ),
+            now=NOW,
+        )
+    async with database.owner_session() as session:
+        tenant, user, _ = await create_tenant_with_owner(session)
+    headers = auth_headers(user_id=user.id, tenant_id=tenant.id, role="viewer")
+
+    resp = await api_client.get("/api/v1/opportunities", params={"region": "in"}, headers=headers)
+    assert resp.status_code == 200, resp.text
+    items = {item["source_id"]: item for item in resp.json()["items"]}
+    assert {"gepnic_tn", "cppp"} <= set(items)
+    for item in items.values():
+        attribution = item["attribution"]
+        assert attribution["source_name"] and attribution["source_name"] != item["source_id"]
+        assert attribution["source_url"], "an IN record always links back to the portal"
+        assert attribution["text"].startswith("Source: ")
+        assert attribution["source_name"] in attribution["text"]
+        assert attribution["source_url"] in attribution["text"]
+        assert attribution["footer"].endswith(VERIFY_ON_PORTAL)
+        assert item["disclaimer"] == VERIFY_ON_PORTAL
+
+    assert items["gepnic_tn"]["attribution"]["source_name"] == (
+        "Tamil Nadu Tenders (tntenders.gov.in)"
+    )
+    assert items["cppp"]["attribution"]["source_url"] == "https://eprocure.gov.in/"
+
+    detail = await api_client.get(f"/api/v1/opportunities/{tn.opportunity.id}", headers=headers)
+    assert detail.status_code == 200
+    body = detail.json()
+    assert body["attribution"] == items["gepnic_tn"]["attribution"]
+    assert body["attribution"]["footer"] == record_footer(
+        "gepnic_tn", "https://tntenders.gov.in/nicgep/app?component=%24DirectLink&sp=Sx"
+    )
+    assert cppp.opportunity.region is Region.IN

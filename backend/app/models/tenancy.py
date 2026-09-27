@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
     DateTime,
     Enum,
     ForeignKey,
+    Numeric,
     String,
     UniqueConstraint,
     false,
@@ -43,6 +45,10 @@ class Tenant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_internal: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
     # Region whose infrastructure holds this tenant's rows and files (SPEC section 11).
     data_residency: Mapped[Region] = mapped_column(RegionEnum, nullable=False)
+    # Default LLM spend cap per pursuit in USD (SPEC 8: default 15, configurable per tenant).
+    pursuit_cost_cap_usd: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, server_default=text("15")
+    )
     # Set by the tenant-delete job (M7-07): every tenant-scoped row is gone, the tenants
     # row and its audit_log trail are kept so the erasure itself stays auditable.
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

@@ -4,6 +4,7 @@ from app.models.agents import AgentRun, AgentStep
 from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import BillingCustomer, BillingEventRecord, PlanLimit, UsageLedger
+from app.models.compliance import ComplianceItem, PursuitArtifact
 from app.models.files import File
 from app.models.integrations import Integration, IntegrationKind
 from app.models.knowledge import KBChunk
@@ -42,6 +43,8 @@ from app.models.profile_proof import (
     Vehicle,
 )
 from app.models.push import PushSubscription
+from app.models.pursuit import Pursuit
+from app.models.requirements import Requirement
 from app.models.sources import Source, SourceRun
 from app.models.spend import AgencySpendStat
 from app.models.support import SupportAccessGrant
@@ -59,6 +62,7 @@ __all__ = [
     "BoilerplateBlock",
     "Certification",
     "CompanyProfile",
+    "ComplianceItem",
     "Consent",
     "DataRequest",
     "DeliveryChannel",
@@ -84,8 +88,11 @@ __all__ = [
     "ProfileFile",
     "ProfileKeyword",
     "PushSubscription",
+    "Pursuit",
+    "PursuitArtifact",
     "RateCardEntry",
     "Registration",
+    "Requirement",
     "ServiceLine",
     "Source",
     "SourceRun",

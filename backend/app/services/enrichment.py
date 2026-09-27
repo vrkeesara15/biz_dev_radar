@@ -8,6 +8,11 @@ the uncommitted row and its summary commits together with the notice. The LLM ca
 metered through an AgentRunner under the INTERNAL tenant (opportunities are global, so
 their enrichment cost is the platform's: OQ-47). Cached per (opportunity_id, version):
 `summary_version == version` means no call.
+
+M3-07: an IN notice also gets a Hindi summary when at least one active IN company
+profile asks for it (`output_languages` contains 'hi'). The English summary stays in the
+`summary_ai` column; the translations live in `extra.summary_ai_i18n[<lang>]` =
+{"text", "version"} and survive re-ingest (services/ingest.PRESERVED_EXTRA_KEYS).
 """
 
 from __future__ import annotations
@@ -22,11 +27,16 @@ from sqlalchemy.orm import selectinload
 
 from app.agents.llm import LLMClient, llm_from_settings
 from app.agents.runner import AgentRunner, StepContext, StepSpec
-from app.agents.summarize import DocumentExcerpt, FiveLineSummary, summarize_opportunity
+from app.agents.summarize import (
+    DEFAULT_LANGUAGE,
+    DocumentExcerpt,
+    FiveLineSummary,
+    summarize_opportunity,
+)
 from app.agents.tracing import Tracer, tracer_from_settings
-from app.core.config import Settings, get_settings
+from app.core.config import Region, Settings, get_settings
 from app.core.db import Database, get_database
-from app.models import Opportunity, Tenant
+from app.models import CompanyProfile, Opportunity, Tenant
 from app.services.documents import load_parsed_text
 from app.services.events import OPPORTUNITY_AMENDED, OPPORTUNITY_CREATED, Event, EventBus
 from app.services.storage import StorageRouter
@@ -36,6 +46,8 @@ log = structlog.get_logger(__name__)
 INTERNAL_TENANT_SLUG = "internal"
 SUMMARY_RUN_KIND = "summary_ai"
 SUMMARY_STEP = "summarize"
+HINDI = "hi"
+I18N_KEY = "summary_ai_i18n"
 
 
 async def internal_tenant_id(database: Database) -> uuid.UUID | None:
@@ -65,6 +77,7 @@ class SummaryEnricher:
         self.tracer = tracer
         self._tenant_id: uuid.UUID | None = None
         self._tenant_checked = False
+        self._languages: dict[Region, frozenset[str]] = {}
         self.summarised: list[tuple[uuid.UUID, int]] = []
 
     def subscribe(self, bus: EventBus) -> SummaryEnricher:
@@ -87,9 +100,51 @@ class SummaryEnricher:
             return
         opportunity_id = uuid.UUID(event.payload["opportunity_id"])
         await self.summarize(session, opportunity_id)
+        for language in await self.extra_languages(session, opportunity_id):
+            await self.summarize(session, opportunity_id, language=language)
 
-    async def summarize(self, session: AsyncSession, opportunity_id: uuid.UUID) -> str | None:
-        """Generate (or reuse) summary_ai for the row; returns the summary text."""
+    async def extra_languages(self, session: AsyncSession, opportunity_id: uuid.UUID) -> list[str]:
+        """Non-English summaries wanted for this notice's region (SPEC 12, M3-07)."""
+        region = await session.scalar(
+            select(Opportunity.region).where(Opportunity.id == opportunity_id)
+        )
+        if region is None:
+            return []
+        wanted = await self._profile_languages(Region(region))
+        return [lang for lang in (HINDI,) if lang in wanted]
+
+    async def _profile_languages(self, region: Region) -> frozenset[str]:
+        """Output languages asked for by active profiles of `region`.
+
+        Read with the owner role (company_profiles is tenant-scoped and the ingest
+        session has no tenant context) and cached for the life of this subscriber, which
+        lives for one API process / one source run.
+        """
+        cached = self._languages.get(region)
+        if cached is not None:
+            return cached
+        async with self.database.owner_session() as session:
+            rows = (
+                await session.execute(
+                    select(CompanyProfile.output_languages).where(
+                        CompanyProfile.region == region, CompanyProfile.is_active.is_(True)
+                    )
+                )
+            ).scalars()
+            languages = frozenset(
+                lang for row in rows for lang in (row or []) if lang != DEFAULT_LANGUAGE
+            )
+        self._languages[region] = languages
+        return languages
+
+    async def summarize(
+        self,
+        session: AsyncSession,
+        opportunity_id: uuid.UUID,
+        *,
+        language: str = DEFAULT_LANGUAGE,
+    ) -> str | None:
+        """Generate (or reuse) the summary for the row in `language`; returns the text."""
         row = (
             await session.execute(
                 select(Opportunity)
@@ -99,8 +154,9 @@ class SummaryEnricher:
         ).scalar_one_or_none()
         if row is None:
             return None
-        if row.summary_ai and row.summary_version == row.version:
-            return row.summary_ai  # cached for this version
+        cached = _cached_summary(row, language)
+        if cached is not None:
+            return cached
         tenant_id = await self._billing_tenant()
         if tenant_id is None:
             return None
@@ -116,6 +172,7 @@ class SummaryEnricher:
                 documents=documents,
                 buyer=" / ".join(row.buyer_hierarchy) or row.buyer_org,
                 facts=_facts(row),
+                language=language,
             )
             parsed: FiveLineSummary = result.parsed
             return parsed
@@ -128,20 +185,25 @@ class SummaryEnricher:
         )
         run_id = await runner.start(
             kind=SUMMARY_RUN_KIND,
-            params={"opportunity_id": str(row.id), "version": version},
+            params={"opportunity_id": str(row.id), "version": version, "language": language},
         )
         result = await runner.run(
-            run_id, [StepSpec(SUMMARY_STEP, step, input_ref=f"opportunity:{row.id}@{version}")]
+            run_id,
+            [StepSpec(SUMMARY_STEP, step, input_ref=f"opportunity:{row.id}@{version}:{language}")],
         )
         if result.status != "done":
-            log.warning("enrichment.summary_failed", opportunity_id=str(row.id), error=result.error)
+            log.warning(
+                "enrichment.summary_failed",
+                opportunity_id=str(row.id),
+                language=language,
+                error=result.error,
+            )
             return None
-        lines = result.outputs[SUMMARY_STEP]["lines"]
-        row.summary_ai = "\n".join(lines)
-        row.summary_version = version
+        text = "\n".join(result.outputs[SUMMARY_STEP]["lines"])
+        _store_summary(row, language, text, version)
         await session.flush()
         self.summarised.append((row.id, version))
-        return row.summary_ai
+        return text
 
     async def _excerpts(self, row: Opportunity) -> list[DocumentExcerpt]:
         if self.storage is None:
@@ -160,6 +222,27 @@ class SummaryEnricher:
                 continue
             excerpts.append(DocumentExcerpt(name=doc.file_name or doc.url, pages=pages))
         return excerpts
+
+
+def _cached_summary(row: Opportunity, language: str) -> str | None:
+    """The stored summary when it was generated for this version, else None."""
+    if language == DEFAULT_LANGUAGE:
+        return row.summary_ai if row.summary_ai and row.summary_version == row.version else None
+    entry = ((row.extra or {}).get(I18N_KEY) or {}).get(language) or {}
+    text = entry.get("text")
+    return text if text and entry.get("version") == row.version else None
+
+
+def _store_summary(row: Opportunity, language: str, text: str, version: int) -> None:
+    if language == DEFAULT_LANGUAGE:
+        row.summary_ai = text
+        row.summary_version = version
+        return
+    extra = dict(row.extra or {})
+    translations = dict(extra.get(I18N_KEY) or {})
+    translations[language] = {"text": text, "version": version}
+    extra[I18N_KEY] = translations
+    row.extra = extra
 
 
 def _facts(row: Opportunity) -> dict[str, Any]:

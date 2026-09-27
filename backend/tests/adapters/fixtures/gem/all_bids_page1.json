@@ -1,0 +1,143 @@
+{
+ "response": {
+  "responseHeader": {
+   "status": 0,
+   "QTime": 7
+  },
+  "response": {
+   "numFound": 5,
+   "start": 0,
+   "docs": [
+    {
+     "id": "7891234",
+     "b_id": [
+      7891234
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/1234567"
+     ],
+     "b_category_name": [
+      "Desktop Computers"
+     ],
+     "b_total_quantity": [
+      120
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Railways"
+     ],
+     "ba_official_details_deptName": [
+      "South Central Railway"
+     ],
+     "ba_official_details_orgName": [
+      "South Central Railway"
+     ],
+     "ba_official_details_officeName": [
+      "Divisional Railway Manager Office Secunderabad"
+     ],
+     "ba_official_details_stateName": [
+      "Telangana"
+     ],
+     "final_start_date_sort": "2026-09-22T14:53:00Z",
+     "final_end_date_sort": "2026-10-17T14:53:00Z",
+     "bid_end_date_display": "17-Oct-2026 08:23 PM",
+     "b_bid_type": [
+      "Bid"
+     ],
+     "b_is_ra": [
+      false
+     ],
+     "b_status": [
+      "Active"
+     ]
+    },
+    {
+     "id": "7893001",
+     "b_id": [
+      7893001
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/1240022"
+     ],
+     "b_category_name": [
+      "Facility Management Services - LumpSum Based - Hospital; Housekeeping"
+     ],
+     "b_total_quantity": [
+      1
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Health and Family Welfare"
+     ],
+     "ba_official_details_deptName": [
+      "Directorate General of Health Services"
+     ],
+     "ba_official_details_orgName": [
+      "All India Institute of Medical Sciences Bhopal"
+     ],
+     "ba_official_details_officeName": [
+      "AIIMS Bhopal"
+     ],
+     "ba_official_details_stateName": [
+      "Madhya Pradesh"
+     ],
+     "final_start_date_sort": "2026-09-21T09:00:00Z",
+     "final_end_date_sort": "2026-10-22T09:30:00Z",
+     "bid_end_date_display": "22-Oct-2026 03:00 PM",
+     "b_bid_type": [
+      "RA"
+     ],
+     "b_is_ra": [
+      true
+     ],
+     "b_status": [
+      "Active"
+     ]
+    },
+    {
+     "id": "7895555",
+     "b_id": [
+      7895555
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/1250910"
+     ],
+     "b_category_name": [
+      "Solar Street Light System"
+     ],
+     "b_total_quantity": [
+      350
+     ],
+     "ba_official_details_minName": [
+      "Ministry of New and Renewable Energy"
+     ],
+     "ba_official_details_deptName": [
+      "State Government of Tamil Nadu"
+     ],
+     "ba_official_details_orgName": [
+      "Tamil Nadu Energy Development Agency"
+     ],
+     "ba_official_details_officeName": [
+      "TEDA Chennai"
+     ],
+     "ba_official_details_stateName": [
+      "Tamil Nadu"
+     ],
+     "final_start_date_sort": "2026-09-22T05:30:00Z",
+     "final_end_date_sort": "2026-10-26T11:00:00Z",
+     "bid_end_date_display": "26-Oct-2026 04:30 PM",
+     "b_bid_type": [
+      "Bid"
+     ],
+     "b_is_ra": [
+      false
+     ],
+     "b_status": [
+      "Active"
+     ]
+    }
+   ]
+  },
+  "filterCounts": {
+   "ongoing_bids": 5
+  }
+ }
+}

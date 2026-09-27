@@ -18,6 +18,12 @@ a tenant session) and returns a Pydantic model / dict / None, stored as the step
 
 `run()` skips steps whose latest row is already `done` and re-executes the rest, so a
 worker that died mid-step (row left `running`) simply retries that step.
+
+Cost guard (SPEC 8, M5-02): when a `guard` is given, it is asked BEFORE every step with
+the step's projected cost; a blocking decision leaves the run `needs_approval` with
+`pause_reason` set and `params["paused_at"]` naming the step, and nothing is spent.
+`finish_status=RUN_PAUSED` ends a run of the implemented steps as `paused` (gates,
+unimplemented steps) instead of `done`.
 """
 
 from __future__ import annotations
@@ -28,7 +34,7 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, Protocol
 
 import structlog
 from pydantic import BaseModel
@@ -36,7 +42,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.llm import CacheBlock, InvalidOutput, LLMClient, LLMResult, Message
+from app.agents.services import AgentServices
 from app.agents.tracing import NoopTracer, Tracer
+from app.core.cost_guard import BudgetDecision, StepEstimate
 from app.core.db import Database, get_database
 from app.core.llm_cost import to_microusd
 from app.core.plan import LLM_COST_MICROUSD, LLM_TOKENS_IN, LLM_TOKENS_OUT, period_key
@@ -44,6 +52,8 @@ from app.models import AgentRun, AgentStep, UsageLedger
 from app.models.agents import (
     RUN_DONE,
     RUN_FAILED,
+    RUN_NEEDS_APPROVAL,
+    RUN_PAUSED,
     RUN_QUEUED,
     RUN_RUNNING,
     STEP_DONE,
@@ -106,6 +116,8 @@ class StepContext:
     outputs: dict[str, Any]  # agent name -> output of earlier done steps
     params: dict[str, Any]
     tenant_id: uuid.UUID
+    # storage, scanner, OCR, HTTP client factory (None for LLM-only steps such as summary)
+    services: AgentServices | None = None
 
     def cache_block(self, text: str, ttl: str | None = None) -> CacheBlock:
         return CacheBlock(text=text, ttl=ttl)
@@ -113,8 +125,32 @@ class StepContext:
     def message(self, role: str, content: str) -> Message:
         return {"role": role, "content": content}
 
+    def require_services(self) -> AgentServices:
+        if self.services is None:
+            raise RuntimeError(f"step {self.step.agent!r} needs AgentServices on the runner")
+        return self.services
+
+
+@dataclass(slots=True)
+class GuardContext:
+    """What a step's cost estimator and the guard see before the step row exists."""
+
+    session: AsyncSession
+    run: AgentRun
+    tenant_id: uuid.UUID
+    outputs: dict[str, Any]
+    params: dict[str, Any]
+    services: AgentServices | None = None
+
 
 StepFn = Callable[[StepContext], Awaitable[Any]]
+Estimator = Callable[[GuardContext], Awaitable[StepEstimate | None]]
+
+
+class StepGuard(Protocol):
+    """Decides before a step whether it may spend (app.agents.cost_guard.LedgerCostGuard)."""
+
+    async def check(self, ctx: GuardContext, spec: StepSpec) -> BudgetDecision | None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +158,8 @@ class StepSpec:
     agent: str
     fn: StepFn
     input_ref: str | None = None
+    # projected spend for the guard; None = the step costs nothing (no LLM)
+    estimate: Estimator | None = None
 
 
 @dataclass(slots=True)
@@ -136,6 +174,11 @@ class RunResult:
     cost_usd: Decimal = Decimal(0)
     tokens_in: int = 0
     tokens_out: int = 0
+    # set when the guard stopped the run before `paused_step` (status needs_approval) or
+    # when the caller asked for a paused finish (gates / unimplemented steps)
+    paused_step: str | None = None
+    pause_reason: str | None = None
+    decision: BudgetDecision | None = None
 
 
 def _jsonable(output: Any) -> Any:
@@ -159,12 +202,16 @@ class AgentRunner:
         llm: LLMClient,
         tracer: Tracer | None = None,
         now: Callable[[], datetime] | None = None,
+        guard: StepGuard | None = None,
+        services: AgentServices | None = None,
     ) -> None:
         self.database = database or get_database()
         self.tenant_id = tenant_id
         self.llm = llm
         self.tracer = tracer or NoopTracer()
         self._now = now or (lambda: datetime.now(UTC))
+        self.guard = guard
+        self.services = services
 
     # -- lifecycle ------------------------------------------------------------------
     async def start(
@@ -186,7 +233,18 @@ class AgentRunner:
             await session.flush()
             return run.id
 
-    async def run(self, run_id: uuid.UUID, steps: Sequence[StepSpec]) -> RunResult:
+    async def run(
+        self,
+        run_id: uuid.UUID,
+        steps: Sequence[StepSpec],
+        *,
+        finish_status: str = RUN_DONE,
+        finish_reason: str | None = None,
+    ) -> RunResult:
+        """Execute the not-yet-done steps in order. `finish_status` (done or paused) is the
+        status once every given step is done; `finish_reason` explains a paused finish."""
+        if finish_status not in (RUN_DONE, RUN_PAUSED):
+            raise ValueError("finish_status must be done or paused")
         async with self.database.session(self.tenant_id) as session:
             run = await session.get(AgentRun, run_id)
             if run is None:
@@ -202,15 +260,28 @@ class AgentRunner:
                 tenant_id=str(self.tenant_id),
                 pursuit_id=None if run.pursuit_id is None else str(run.pursuit_id),
             )
+            run.pause_reason = None
             done_outputs = await self._done_outputs(session, run_id)
             attempts = await self._attempts(session, run_id)
-            params = dict(run.params or {})
+            params = {k: v for k, v in (run.params or {}).items() if k != "paused_at"}
         result = RunResult(run_id, RUN_RUNNING, outputs=dict(done_outputs))
 
         for spec in steps:
             if spec.agent in done_outputs:
                 result.skipped.append(spec.agent)
                 continue
+            block = await self._guard_check(spec, run_id, result, params)
+            if block is not None:
+                result.paused_step = spec.agent
+                result.pause_reason = block.reason
+                result.decision = block
+                log.warning(
+                    "agent.needs_approval",
+                    run_id=str(run_id),
+                    agent=spec.agent,
+                    reason=block.reason,
+                )
+                break
             ok = await self._execute(spec, run_id, result, attempts.get(spec.agent, 0) + 1, params)
             result.executed.append(spec.agent)
             if not ok:
@@ -219,17 +290,46 @@ class AgentRunner:
         async with self.database.session(self.tenant_id) as session:
             run = await session.get(AgentRun, run_id)
             assert run is not None
-            if result.failed_step is None:
-                run.status = RUN_DONE
-            else:
+            if result.failed_step is not None:
                 run.status = RUN_FAILED
                 run.error = result.error
-            run.finished_at = self._now()
+                run.finished_at = self._now()
+            elif result.paused_step is not None:
+                run.status = RUN_NEEDS_APPROVAL
+                run.pause_reason = result.pause_reason
+                run.params = {**params, "paused_at": result.paused_step}
+            elif finish_status == RUN_PAUSED:
+                run.status = RUN_PAUSED
+                run.pause_reason = finish_reason
+                run.params = params
+                result.pause_reason = finish_reason
+            else:
+                run.status = RUN_DONE
+                run.params = params
+                run.finished_at = self._now()
             result.status = run.status
             result.cost_usd = Decimal(run.cost_usd)
             result.tokens_in, result.tokens_out = run.tokens_in, run.tokens_out
         self.tracer.flush()
         return result
+
+    async def _guard_check(
+        self, spec: StepSpec, run_id: uuid.UUID, result: RunResult, params: dict[str, Any]
+    ) -> BudgetDecision | None:
+        if self.guard is None:
+            return None
+        async with self.database.session(self.tenant_id) as session:
+            run = await session.get(AgentRun, run_id)
+            assert run is not None
+            ctx = GuardContext(
+                session=session,
+                run=run,
+                tenant_id=self.tenant_id,
+                outputs=dict(result.outputs),
+                params=params,
+                services=self.services,
+            )
+            return await self.guard.check(ctx, spec)
 
     # -- internals ----------------------------------------------------------------
     async def _done_outputs(self, session: AsyncSession, run_id: uuid.UUID) -> dict[str, Any]:
@@ -287,6 +387,7 @@ class AgentRunner:
                 outputs=dict(result.outputs),
                 params=params,
                 tenant_id=self.tenant_id,
+                services=self.services,
             )
             try:
                 output = _jsonable(await spec.fn(ctx))

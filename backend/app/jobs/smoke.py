@@ -4,8 +4,16 @@ without keys.
 
     BIDRADAR_LIVE=1 SAM_API_KEY=... python -m app.jobs.smoke [--days 7] [--only sam_opps]
 
+Every registered adapter is covered, India included (cppp, gem, gepnic_tn, gepnic_up,
+gepnic_central). Several Indian portals refuse connections from outside India, so the
+India run is a documented MANUAL run from an Indian IP or cloud region - see
+docs/adapters.md, "Live smoke".
+
 Exit status 1 when any adapter raised or yielded nothing; the JSON report on stdout lists
-each adapter's outcome so the Slack alert can quote it.
+each adapter's outcome so the Slack alert can quote it, and `skipped` names every
+registered source the smoke did not call (documented stubs, paid feeds, and portals such
+as gepnic_mh whose robots.txt disallows crawling) with the reason, so a disabled source
+is visible rather than silently absent.
 """
 
 from __future__ import annotations
@@ -98,6 +106,25 @@ def run_smoke(
     return results
 
 
+def skipped_sources(adapters: Mapping[str, type[Any]] | None = None) -> list[dict[str, str]]:
+    """Registered but disabled sources, with the status and reason from their health()."""
+    if adapters is None:
+        load_builtin_adapters()
+        adapters = registry.registered()
+    out: list[dict[str, str]] = []
+    for source_id, cls in sorted(adapters.items()):
+        if registry.is_enabled(cls):
+            continue
+        status, reason = "not_implemented", ""
+        try:  # health() of a disabled adapter never makes a request
+            health = cls().health()
+            status, reason = health.status.value, health.message or ""
+        except Exception as exc:  # pragma: no cover - a stub that cannot be constructed
+            reason = f"{type(exc).__name__}: {exc}"[:200]
+        out.append({"source_id": source_id, "status": status, "reason": reason})
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="live adapter smoke test")
     parser.add_argument("--days", type=int, default=7, help="look-back window for fetch()")
@@ -115,6 +142,7 @@ def main(argv: list[str] | None = None) -> int:
         "checked": len(results),
         "failed": [r.source_id for r in failed],
         "results": [asdict(r) for r in results],
+        "skipped": skipped_sources(),
     }
     sys.stdout.write(json.dumps(report, indent=1, default=str) + "\n")
     return 1 if failed or not results else 0

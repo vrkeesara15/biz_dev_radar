@@ -6,6 +6,10 @@ Title, description and the first pages of parsed documents are DATA: each part i
 in an <untrusted> block inside one cache block (stable across retries and re-runs), and
 the system prompt carries the injection preamble. The output schema forces exactly five
 non-empty lines.
+
+`language` selects the output language (SPEC 12 / M3-07: a profile in the IN region may
+ask for Hindi). The content block is identical for every language, so the cached prefix
+is shared between the English and the Hindi call.
 """
 
 from __future__ import annotations
@@ -37,6 +41,20 @@ exactly {LINE_COUNT} lines, in this order:
 5. Key dates: questions due, pre-bid, response deadline, or "No dates stated".
 Each line is one plain sentence under {MAX_LINE_CHARS} characters, no markdown, no
 numbering. Never invent facts; say what is not stated."""
+
+DEFAULT_LANGUAGE = "en"
+# SPEC 12: IN profiles may ask for Hindi output (core.preferences.allowed_output_languages)
+LANGUAGE_INSTRUCTIONS = {
+    "hi": (
+        "Write all five lines in Hindi, in the Devanagari script. Keep proper nouns, "
+        "reference numbers, amounts and dates exactly as they appear in the notice."
+    ),
+}
+
+
+def instructions_for(language: str) -> str:
+    extra = LANGUAGE_INSTRUCTIONS.get(language.strip().lower())
+    return f"{INSTRUCTIONS}\n{extra}" if extra else INSTRUCTIONS
 
 
 class FiveLineSummary(BaseModel):
@@ -95,6 +113,7 @@ async def summarize_opportunity(
     documents: Sequence[DocumentExcerpt] = (),
     buyer: str | None = None,
     facts: dict[str, Any] | None = None,
+    language: str = DEFAULT_LANGUAGE,
 ) -> LLMResult:
     """One Haiku-class call returning an LLMResult whose `parsed` is a FiveLineSummary."""
     bundle = solicitation_bundle(
@@ -102,7 +121,7 @@ async def summarize_opportunity(
     )
     result: LLMResult = await llm.complete_json(
         model=model_for(AgentRole.SUMMARY, settings),
-        system=system_prompt(INSTRUCTIONS),
+        system=system_prompt(instructions_for(language)),
         messages=[
             {
                 "role": "user",

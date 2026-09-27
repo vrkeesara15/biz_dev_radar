@@ -249,3 +249,114 @@ async def test_find_duplicates_lists_candidates_with_method(database: Database) 
         )
         found = await find_duplicates(session, probe)
     assert [(c.id, c.method) for c in found] == [(a.opportunity.id, "cross_source_key")]
+
+
+# --- M3-06: India mirrors and transliterated organisation names ---------------------
+
+
+def _in_opp(source_id: str, external_id: str, **overrides: Any) -> OpportunityIn:
+    values: dict[str, Any] = {
+        "region": Region.IN,
+        "country": "IN",
+        "currency": "INR",
+        "title": "Formation of park at KRG Nagar in Ward No 20 North Zone",
+        "buyer_org": "Government of Tamil Nadu",
+        "buyer_sub_org": "Municipal Administration and Water Supply",
+        "solicitation_number": "e71/2026-NZ",
+    }
+    values.update(overrides)
+    return _opp(source_id, external_id, **values)
+
+
+async def test_cppp_mirror_of_a_state_tender_merges_on_a_transliterated_buyer(
+    database: Database,
+) -> None:
+    """The same tender is published on tntenders.gov.in and mirrored on CPPP, which
+    writes the buyer as 'Govt. of Tamil Nadu'. The transliteration table (M3-06) puts
+    both on one buyer_norm, so the cross-source key merges them into the richer record
+    and keeps both portal links."""
+    mirror = await _ingest(
+        database,
+        _in_opp(
+            "cppp",
+            "2026_TNCMC_871234_1",
+            buyer_org="Govt. of Tamil Nadu",
+            source_url="https://eprocure.gov.in/cppp/tendersfullview/xyz",
+        ),
+    )
+    state = await _ingest(
+        database,
+        _in_opp(
+            "gepnic_tn",
+            "2026_TNCMC_871234_1",
+            buyer_org="Government of Tamil Nadu",
+            source_url="https://tntenders.gov.in/nicgep/app?component=%24DirectLink&sp=Stender1",
+            buyer_office="Coimbatore City Municipal Corporation",
+            buyer_hierarchy=[
+                "Government of Tamil Nadu",
+                "Municipal Administration and Water Supply",
+                "Coimbatore City Municipal Corporation",
+            ],
+            opening_at=DUE + timedelta(days=1),
+            emd_amount=Decimal("25000"),
+        ),
+    )
+    assert state.merged and state.merged[0].method == "cross_source_key"
+    assert state.merged[0].winner_id == state.opportunity.id
+    assert state.merged[0].loser_id == mirror.opportunity.id
+
+    loser = await _row(database, mirror.opportunity.id)
+    winner = await _row(database, state.opportunity.id)
+    assert loser.duplicate_of == winner.id
+    assert loser.buyer_norm == winner.buyer_norm == "government of tamil nadu"
+    assert loser.reference_norm == winner.reference_norm == "E712026NZ"
+    # both official links stay reachable from the survivor
+    assert winner.extra["also_from"] == [
+        {
+            "source_id": "cppp",
+            "external_id": "2026_TNCMC_871234_1",
+            "source_url": "https://eprocure.gov.in/cppp/tendersfullview/xyz",
+        }
+    ]
+    assert winner.source_url.startswith("https://tntenders.gov.in/")
+
+
+async def test_hindi_english_mixed_titles_dedupe_across_indian_portals(
+    database: Database,
+) -> None:
+    """Bilingual notice: CPPP carries the Devanagari title, the state portal the same
+    title with a small English suffix. Same buyer (spelled 'Nagar Nigam' on one portal,
+    'Municipal Corporation' on the other) and a deadline inside the window -> fuzzy
+    trigram merge."""
+    title_hi = (
+        "लखनऊ नगर निगम में वार्ड 12 सड़क निर्माण एवं मरम्मत कार्य "
+        "/ Road construction and repair work in Ward 12"
+    )
+    first = await _ingest(
+        database,
+        _in_opp(
+            "cppp",
+            "hi-1",
+            title=title_hi,
+            buyer_org="लखनऊ नगर निगम (Lucknow Nagar Nigam)",
+            solicitation_number=None,
+        ),
+    )
+    second = await _ingest(
+        database,
+        _in_opp(
+            "gepnic_up",
+            "hi-2",
+            title=title_hi.upper() + " (Zone 4)",
+            buyer_org="लखनऊ नगर निगम (Lucknow Municipal Corporation)",
+            solicitation_number=None,
+            description_text="निविदा दस्तावेज़ पोर्टल पर उपलब्ध है।",
+            response_due_at=DUE + timedelta(hours=6),
+        ),
+    )
+    assert second.merged and second.merged[0].method == "fuzzy_title"
+    winner = await _row(database, second.opportunity.id)
+    loser = await _row(database, first.opportunity.id)
+    assert loser.duplicate_of == winner.id
+    assert winner.buyer_norm == loser.buyer_norm == "लखनऊ नगर निगम lucknow municipal"
+    assert [e["source_id"] for e in winner.extra["also_from"]] == ["cppp"]

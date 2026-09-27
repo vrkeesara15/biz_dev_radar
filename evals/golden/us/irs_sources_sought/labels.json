@@ -1,0 +1,146 @@
+{
+  "source": "synthetic IRS sources-sought pattern (evals/golden/us/irs_sources_sought)",
+  "notice_id": "2032H5-26-SS-0042",
+  "region": "us",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "This requirement is being considered as a total small business set-aside under NAICS 541512 with a size standard of $34 million.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "Respondents must be registered and active in SAM.gov at the time of response.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "Respondents must hold an active FedRAMP Moderate authorization or be a partner of a FedRAMP Moderate authorized cloud service provider.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "4.1 The contractor shall migrate approximately 400 on-premises workloads from the Kansas City and Ogden data centers to a FedRAMP Moderate cloud environment within 24 months of award.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-05",
+      "text": "4.2 The contractor shall provide 24x7 managed operations including monitoring, patching and incident response for all migrated workloads.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-06",
+      "text": "4.3 The contractor shall develop a migration wave plan within 45 calendar days of award.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "4.4 The contractor shall maintain a Recovery Time Objective of four hours and a Recovery Point Objective of one hour for Tier 1 applications.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "4.5 The contractor must ensure that all personnel with access to Federal Tax Information complete IRS Publication 1075 background investigations before access is granted.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-09",
+      "text": "4.6 The contractor should propose an approach for FinOps cost optimization and monthly cost reporting.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-10",
+      "text": "4.7 The contractor shall provide a transition-out plan 90 days before the end of the contract.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-11",
+      "text": "Responses shall not exceed 10 pages, excluding the cover page.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-12",
+      "text": "Use 12-point Times New Roman font with one-inch margins on letter-size paper.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-13",
+      "text": "Submit the capability statement as a single PDF file.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-14",
+      "text": "File names shall follow the pattern CompanyName_IRS_SS_0042.pdf.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-15",
+      "text": "Include the company name, UEI, CAGE code, business size and socio-economic status on the cover page.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-16",
+      "text": "Responses must be emailed to the Contracting Officer at market.research@irs.example.gov no later than 2:00 PM Eastern Time on October 30, 2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-17",
+      "text": "The email subject line must read 'Sources Sought 2032H5-26-SS-0042 - Company Name'.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-18",
+      "text": "Questions must be submitted in writing by October 16, 2026; telephone inquiries will not be accepted.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-19",
+      "text": "Responses will be reviewed for demonstrated experience migrating at least 200 workloads for a federal agency within the past three years.",
+      "page": 4,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-20",
+      "text": "The Government will assess the relevance of past performance in FedRAMP Moderate environments handling Federal Tax Information.",
+      "page": 4,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-21",
+      "text": "The Government will consider the respondent's ability to provide cleared staff in Kansas City, Missouri and Ogden, Utah.",
+      "page": 4,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-22",
+      "text": "Capability statements should identify any teaming or subcontracting arrangements and the percentage of work to be performed by the small business prime.",
+      "page": 4,
+      "type": "should"
+    }
+  ],
+  "eligibility": {
+    "naics": "541512",
+    "set_aside": "small_business",
+    "size_standard_usd": 34000000,
+    "sam_registration_required": true,
+    "fedramp_level": "Moderate"
+  }
+}
