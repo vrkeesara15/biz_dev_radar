@@ -20,6 +20,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.tools import PursuitScope, enforce
 from app.core.citations import kb_token
 from app.core.diffs import diff_stats, unified_diff
 from app.core.grounding import validate
@@ -166,6 +167,8 @@ async def save_version(
     needs_input: Sequence[dict[str, Any]] = (),
     # extra keys merged over the grounding report (the red-team reviewer adds its own)
     flags: dict[str, Any] | None = None,
+    # SPEC 11: the agent run's PursuitScope; a write outside it raises ScopeViolation
+    scope: PursuitScope | None = None,
     author: str = AUTHOR_AGENT,
     author_user_id: uuid.UUID | None = None,
     model: str | None = None,
@@ -177,6 +180,7 @@ async def save_version(
     grounding validator runs over the result (SPEC 8: unsupported company claims are
     flagged for the UI) and the draft's `current_version_id` is repointed at the new row.
     """
+    enforce(scope, tenant_id=tenant_id, pursuit_id=pursuit_id)
     draft = await get_draft(session, pursuit_id, section_id)
     previous: DraftVersion | None = None
     if draft is not None:
@@ -272,8 +276,10 @@ async def create_task(
     ref: dict[str, Any] | None = None,
     source: str = AUTHOR_AGENT,
     assignee_user_id: uuid.UUID | None = None,
+    scope: PursuitScope | None = None,
 ) -> Task:
     """A piece of work an agent hands back to a human (SPEC 8: [NEEDS INPUT] -> task)."""
+    enforce(scope, tenant_id=tenant_id, pursuit_id=pursuit_id)
     task = Task(
         tenant_id=tenant_id,
         pursuit_id=pursuit_id,
@@ -297,9 +303,11 @@ async def add_comment(
     target_id: uuid.UUID,
     body: str,
     author_user_id: uuid.UUID | None = None,
+    scope: PursuitScope | None = None,
 ) -> Comment:
     """The only insert point for a review comment (a reviewer's POST and the red-team
     agent's remaining issues both land here)."""
+    enforce(scope, tenant_id=tenant_id, pursuit_id=pursuit_id)
     if target_type not in COMMENT_TARGETS:
         raise ValueError(f"unknown comment target {target_type!r}; one of {COMMENT_TARGETS}")
     comment = Comment(

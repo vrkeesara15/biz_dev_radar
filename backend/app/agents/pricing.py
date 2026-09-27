@@ -205,6 +205,7 @@ async def pricing(ctx: StepContext) -> PricingOutput:
         pursuit.id,
         ARTIFACT_PRICING_TEMPLATE,
         {"pending": True},
+        scope=ctx.scope,
     )
     key = pricing_template_key(ctx.tenant_id, pursuit.id, artifact.version)
     await services.storage_for(opportunity.region).put(key, data, XLSX_CONTENT_TYPE)

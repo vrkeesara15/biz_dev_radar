@@ -34,6 +34,7 @@ from app.agents.pipeline import STEP_DRAFT, register
 from app.agents.prompting import system_prompt, untrusted_block
 from app.agents.routing import AgentRole, model_for
 from app.agents.runner import GuardContext, StepContext
+from app.agents.tools import PursuitScope
 from app.core.citations import find_tokens, kb_token, parse_token
 from app.core.compliance import ARTIFACT_FORMAT_RULES, ARTIFACT_OUTLINE, FormatRules
 from app.core.config import Settings, get_settings
@@ -319,6 +320,7 @@ async def draft_section(
     *,
     tenant_id: uuid.UUID,
     settings: Settings,
+    scope: PursuitScope | None = None,
 ) -> SectionResult:
     hits = await similarity_search(
         session, inputs.pursuit.profile_id, rag_query(inputs, section), k=RAG_K
@@ -392,6 +394,7 @@ async def draft_section(
         body_html=markdown_to_html(body),
         citations=citations,
         needs_input=needs_input,
+        scope=scope,
         author="agent",
         model=getattr(result, "model", None),
         tokens=int(getattr(result, "tokens_out", 0) or 0),
@@ -410,6 +413,7 @@ async def draft_section(
                 "version_id": str(version.id),
                 "placeholder": item["placeholder"],
             },
+            scope=scope,
         )
         item["task_id"] = str(task.id)
         tasks += 1
@@ -448,6 +452,7 @@ async def draft_volume(
     *,
     llm: LLMClient | Any,
     settings: Settings,
+    scope: PursuitScope | None = None,
 ) -> VolumeOut:
     """Draft every section of one volume in its own session (safe to run concurrently)."""
     async with database.session(tenant_id) as session:
@@ -465,6 +470,7 @@ async def draft_volume(
                 section,
                 tenant_id=tenant_id,
                 settings=settings,
+                scope=scope,
             )
             sections.append(result.out)
         log.info(
@@ -533,7 +539,13 @@ async def draft(ctx: StepContext) -> DraftStepOutput:
         results = await fan_out(
             names,
             lambda name: draft_volume(
-                database, ctx.tenant_id, pursuit_id, name, llm=ctx.llm, settings=settings
+                database,
+                ctx.tenant_id,
+                pursuit_id,
+                name,
+                llm=ctx.llm,
+                settings=settings,
+                scope=ctx.scope,
             ),
             concurrency=settings.agent_fanout_concurrency,
         )

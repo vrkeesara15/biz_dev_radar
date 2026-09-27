@@ -482,6 +482,7 @@ async def bid_no_bid(ctx: StepContext) -> ScorecardOutput:
         inputs.pursuit.id,
         ARTIFACT_SCORECARD,
         output.model_dump(mode="json"),
+        scope=ctx.scope,
     )
     output.version = artifact.version
     log.info(

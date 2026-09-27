@@ -1637,7 +1637,7 @@
       "evals/injection/ contains at least 5 injection cases; eval fails if any changes agent output or triggers a tool call",
       "make eval runs the injection suite"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-13",

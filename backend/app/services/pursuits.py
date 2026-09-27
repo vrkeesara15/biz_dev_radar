@@ -21,6 +21,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.pipeline import GATE_1, GATE_2
+from app.agents.tools import PursuitScope, enforce
 from app.api.deps import CurrentUser
 from app.core.compliance import ARTIFACT_KINDS, CREATED_BY_AGENT
 from app.core.cost_guard import raise_cap
@@ -229,9 +230,11 @@ async def store_artifact(
     data: dict[str, Any],
     *,
     created_by: str = CREATED_BY_AGENT,
+    scope: PursuitScope | None = None,
 ) -> PursuitArtifact:
     """Append the next version of a pursuit artifact. Versions are never overwritten, so
     a re-run keeps the history an export or an audit can point at."""
+    enforce(scope, tenant_id=tenant_id, pursuit_id=pursuit_id)
     if kind not in ARTIFACT_KINDS:
         raise ValueError(f"unknown artifact kind {kind!r}; one of {ARTIFACT_KINDS}")
     current: int | None = (

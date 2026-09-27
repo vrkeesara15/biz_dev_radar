@@ -296,6 +296,7 @@ async def outline(ctx: StepContext) -> OutlineOutput:
         inputs.pursuit.id,
         ARTIFACT_OUTLINE,
         output.model_dump(mode="json"),
+        scope=ctx.scope,
     )
     output.version = artifact.version
     log.info(

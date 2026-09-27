@@ -41,6 +41,7 @@ from app.agents.pipeline import GATE_2, STEP_RED_TEAM, register
 from app.agents.prompting import system_prompt, untrusted_block
 from app.agents.routing import AgentRole, model_for
 from app.agents.runner import GuardContext, StepContext
+from app.agents.tools import PursuitScope
 from app.core.citations import find_tokens
 from app.core.compliance import (
     ARTIFACT_FORMAT_RULES,
@@ -439,6 +440,7 @@ async def revise_section(
     *,
     tenant_id: uuid.UUID,
     settings: Settings,
+    scope: PursuitScope | None = None,
 ) -> tuple[DraftVersion, RevisionCheck, list[str]]:
     """The single auto-revision of one section (SPEC 8: "drafts auto-revised once")."""
     assert entry.version is not None
@@ -466,6 +468,7 @@ async def revise_section(
         citations=[dict(c) for c in (entry.version.citations or [])],
         needs_input=[dict(n) for n in (entry.version.needs_input or [])],
         flags=flags_for_version(entry.section.id, issues, revised=True, estimate=estimate),
+        scope=scope,
         author="agent",
         model=getattr(result, "model", None),
         tokens=int(getattr(result, "tokens_out", 0) or 0),
@@ -533,6 +536,7 @@ async def red_team(ctx: StepContext) -> RedTeamOutput:
             pursuit_id,
             ARTIFACT_RED_TEAM,
             output.model_dump(mode="json"),
+            scope=ctx.scope,
         )
         output.version = artifact.version
         return output
@@ -563,6 +567,7 @@ async def red_team(ctx: StepContext) -> RedTeamOutput:
                 estimate,
                 tenant_id=ctx.tenant_id,
                 settings=settings,
+                scope=ctx.scope,
             )
             revised = True
             revisions += 1
@@ -589,6 +594,7 @@ async def red_team(ctx: StepContext) -> RedTeamOutput:
                 target_type=COMMENT_DRAFT,
                 target_id=entry.draft.id,
                 body=comment_body(entry.section.title, issue),
+                scope=ctx.scope,
             )
             comments += 1
         resolved_total += len(issues) - len(surviving)
@@ -625,6 +631,7 @@ async def red_team(ctx: StepContext) -> RedTeamOutput:
                 f"Red team (missing_requirement) - requirement {req_id} is not answered by any "
                 "drafted section. Assign it to a section and draft an answer."
             ),
+            scope=ctx.scope,
         )
         comments += 1
 
@@ -642,7 +649,12 @@ async def red_team(ctx: StepContext) -> RedTeamOutput:
         warnings=warnings,
     )
     artifact = await store_artifact(
-        ctx.session, ctx.tenant_id, pursuit_id, ARTIFACT_RED_TEAM, output.model_dump(mode="json")
+        ctx.session,
+        ctx.tenant_id,
+        pursuit_id,
+        ARTIFACT_RED_TEAM,
+        output.model_dump(mode="json"),
+        scope=ctx.scope,
     )
     output.version = artifact.version
     log.info(

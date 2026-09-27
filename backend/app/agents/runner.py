@@ -43,6 +43,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.llm import CacheBlock, InvalidOutput, LLMClient, LLMResult, Message
 from app.agents.services import AgentServices
+from app.agents.tools import PursuitScope, PursuitTools
 from app.agents.tracing import NoopTracer, Tracer
 from app.core.cost_guard import BudgetDecision, StepEstimate
 from app.core.db import Database, get_database
@@ -121,6 +122,21 @@ class StepContext:
     # the runner's Database: a step that fans work out concurrently opens its OWN session
     # per branch (an AsyncSession is not safe to share between coroutines)
     database: Database | None = None
+    # SPEC 11: what this run may read and write (app.agents.tools). Every write helper
+    # takes it and raises ScopeViolation outside the run's own tenant / pursuit.
+    scope: PursuitScope | None = None
+
+    def tools(self, region: str | None = None) -> PursuitTools:
+        """The read-only retrieval tool set (kb_search, read_document, read_requirements).
+
+        `region` picks the storage bucket `read_document` reads parsed text from; without
+        it the tool set can still search the knowledge base and read requirements."""
+        if self.scope is None:  # pragma: no cover - the runner always sets a scope
+            raise RuntimeError("the step has no PursuitScope")
+        storage = None
+        if region is not None and self.services is not None:
+            storage = self.services.storage_for(region)
+        return PursuitTools(session=self.session, scope=self.scope, storage=storage)
 
     def cache_block(self, text: str, ttl: str | None = None) -> CacheBlock:
         return CacheBlock(text=text, ttl=ttl)
@@ -397,6 +413,9 @@ class AgentRunner:
                 tenant_id=self.tenant_id,
                 services=self.services,
                 database=self.database,
+                scope=PursuitScope(
+                    tenant_id=self.tenant_id, pursuit_id=run.pursuit_id, run_id=run_id
+                ),
             )
             try:
                 output = _jsonable(await spec.fn(ctx))
