@@ -284,7 +284,7 @@
       "UEI validated as 12 alphanumeric chars, CAGE as 5 chars; SAM expiry stored as date",
       "US-only and IN-only fields are rejected with 422 when the profile region does not match"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-02",
@@ -302,7 +302,7 @@
       "IN fields: Udyam number + category micro|small|medium, DPIIT number, SC/ST- or women-owned MSE enum",
       "Average of last 3 FY turnover computed in core.finance with currency preserved"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-03",
@@ -322,7 +322,7 @@
       "service_lines(name, description <= 150 words enforced, differentiators, tools, delivery_model)",
       "Unit tests for validation edge cases"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-04",
@@ -342,7 +342,7 @@
       "teaming_partners(name, uei, pan, capabilities, relationship prime|sub|jv)",
       "Round-trip test through the API"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-05",
@@ -363,7 +363,7 @@
       "boilerplate_blocks(kind, title, body rich text) and profile_files(kind capability_statement|brochure|case_study|past_proposal|brand|template, metadata jsonb)",
       "Labor categories / rate card table with currency"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-06",
@@ -383,7 +383,7 @@
       "Bid/no-bid criteria weights and required approver roles stored on the profile",
       "Output languages list defaults to ['en']; 'hi' allowed for IN profiles"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-07",
@@ -402,7 +402,7 @@
       "Unit tests: receipts-based and employee-based codes, missing data -> unknown",
       "Computed statuses exposed on GET /profiles/{id} as size_status_by_naics"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-08",
