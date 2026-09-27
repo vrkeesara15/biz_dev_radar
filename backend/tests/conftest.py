@@ -22,3 +22,27 @@ def repo_root() -> Path:
 @pytest.fixture(scope="session")
 def backend_root() -> Path:
     return BACKEND_ROOT
+
+
+@pytest.fixture(scope="session")
+def settings():  # type: ignore[no-untyped-def]
+    from app.core.config import Settings
+
+    return Settings(_env_file=None)  # type: ignore[call-arg]
+
+
+@pytest.fixture()
+def app(settings):  # type: ignore[no-untyped-def]
+    from app.main import create_app
+
+    return create_app(settings)
+
+
+@pytest.fixture()
+async def client(app):  # type: ignore[no-untyped-def]
+    import httpx
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        yield ac

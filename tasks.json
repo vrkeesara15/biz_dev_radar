@@ -58,7 +58,7 @@
       "Unit test asserts no hard-coded 'claude-' model id string exists outside app/core/config.py",
       "Request-id middleware adds X-Request-ID to every response"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-04",
