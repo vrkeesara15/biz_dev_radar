@@ -70,6 +70,7 @@ class Opportunity(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         Index("ix_opportunities_fts", text(FTS_EXPR), postgresql_using="gin"),
         Index("ix_opportunities_naics", "naics", postgresql_using="gin"),
         Index("ix_opportunities_region_status_due", "region", "status", "response_due_at"),
+        Index("ix_opportunities_reference_buyer", "reference_norm", "buyer_norm"),
     )
 
     # identity (SPEC 5.3)
@@ -146,6 +147,9 @@ class Opportunity(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     duplicate_of: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("opportunities.id", ondelete="SET NULL"), index=True
     )
+    # dedupe keys (core.normalize.reference / .buyer): cross-source key = both equal
+    reference_norm: Mapped[str | None] = mapped_column(String(128))
+    buyer_norm: Mapped[str | None] = mapped_column(Text, index=True)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM))
     raw_ref: Mapped[str | None] = mapped_column(Text)
     extra: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}")

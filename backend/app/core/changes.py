@@ -57,7 +57,8 @@ HASHED_FIELDS: tuple[str, ...] = (
     "status",
     "extra",
 )
-VOLATILE_EXTRA_KEYS = frozenset({"raw_ref"})
+# also_from is dedupe bookkeeping written by the pipeline (M2-10), never by an adapter.
+VOLATILE_EXTRA_KEYS = frozenset({"raw_ref", "also_from"})
 DEADLINE_FIELDS = ("response_due_at", "questions_due_at", "opening_at", "prebid_meeting_at")
 
 

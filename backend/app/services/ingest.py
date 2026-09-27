@@ -25,9 +25,12 @@ from app.adapters.base import OpportunityIn, RawRecord
 from app.core.changes import canonical_payload, classify_changes, content_hash, diff_payloads
 from app.core.config import Settings, get_settings
 from app.core.money import to_usd
+from app.core.normalize.buyer import normalized_buyer
+from app.core.normalize.reference import normalized_reference
 from app.core.normalize.sam import normalized_solicitation
 from app.core.opportunity import OpportunityStatus
 from app.models import Opportunity, OpportunityDocument, OpportunityVersion
+from app.services.dedupe import Merge, dedupe
 from app.services.events import OPPORTUNITY_AMENDED, OPPORTUNITY_CREATED, EventBus, get_event_bus
 
 log = structlog.get_logger(__name__)
@@ -77,6 +80,7 @@ class IngestResult:
     diff: dict[str, dict[str, Any]] = field(default_factory=dict)
     changes: list[str] = field(default_factory=list)
     event: str | None = None
+    merged: list[Merge] = field(default_factory=list)
 
     @property
     def unchanged(self) -> bool:
@@ -108,7 +112,13 @@ def _apply(row: Opportunity, opp: OpportunityIn, settings: Settings, *, new: boo
         opp.place_of_performance.model_dump(mode="json") if opp.place_of_performance else None
     )
     row.contacts = [c.model_dump(mode="json") for c in opp.contacts]
-    row.extra = {k: v for k, v in opp.extra.items() if k != "raw_ref"}
+    extra = {k: v for k, v in opp.extra.items() if k != "raw_ref"}
+    previous = getattr(row, "extra", None) or {}
+    if "also_from" in previous:  # dedupe bookkeeping (M2-10) survives re-ingest
+        extra["also_from"] = previous["also_from"]
+    row.extra = extra
+    row.reference_norm = normalized_reference(opp.solicitation_number)
+    row.buyer_norm = normalized_buyer(opp.buyer_org)
     row.detail_status = opp.detail_status.value
     row.estimated_value_min_usd = to_usd(opp.estimated_value_min, opp.currency, settings.fx_rates)
     row.estimated_value_max_usd = to_usd(opp.estimated_value_max, opp.currency, settings.fx_rates)
@@ -228,6 +238,7 @@ async def ingest(
         _sync_documents(session, row, opp, [])
         row.parent_opportunity_id = await resolve_parent(session, opp, row.id)
         await session.flush()
+        merged = await dedupe(session, row)
         await bus.publish(
             OPPORTUNITY_CREATED,
             {
@@ -238,6 +249,7 @@ async def ingest(
                 "parent_opportunity_id": (
                     str(row.parent_opportunity_id) if row.parent_opportunity_id else None
                 ),
+                "duplicate_of": str(row.duplicate_of) if row.duplicate_of else None,
             },
         )
         return IngestResult(
@@ -247,6 +259,7 @@ async def ingest(
             version=1,
             content_hash=new_hash,
             event=OPPORTUNITY_CREATED,
+            merged=merged,
         )
 
     row.last_seen_at = now
@@ -279,6 +292,7 @@ async def ingest(
         )
     )
     await session.flush()
+    merged = await dedupe(session, row)
     await bus.publish(
         OPPORTUNITY_AMENDED,
         {
@@ -291,6 +305,7 @@ async def ingest(
             "parent_opportunity_id": (
                 str(row.parent_opportunity_id) if row.parent_opportunity_id else None
             ),
+            "duplicate_of": str(row.duplicate_of) if row.duplicate_of else None,
         },
     )
     log.info(
@@ -305,6 +320,7 @@ async def ingest(
         diff=diff,
         changes=changes,
         event=OPPORTUNITY_AMENDED,
+        merged=merged,
     )
 
 

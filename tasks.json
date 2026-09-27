@@ -732,7 +732,7 @@
       "Richness = count of non-null canonical fields + documents; both source links kept on the surviving record",
       "Unit tests for the reference normalizer and integration test for the fuzzy path"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-11",

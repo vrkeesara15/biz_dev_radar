@@ -206,6 +206,8 @@ def upgrade() -> None:
             postgresql.UUID(as_uuid=True),
             sa.ForeignKey("opportunities.id", ondelete="SET NULL"),
         ),
+        sa.Column("reference_norm", sa.String(128)),
+        sa.Column("buyer_norm", sa.Text()),
         sa.Column("embedding", Vector(EMBEDDING_DIM)),
         sa.Column("raw_ref", sa.Text()),
         _jsonb("extra", "{}"),
@@ -223,8 +225,12 @@ def upgrade() -> None:
         "response_due_at",
         "status",
         "duplicate_of",
+        "buyer_norm",
     ):
         op.create_index(f"ix_opportunities_{col}", "opportunities", [col])
+    op.create_index(
+        "ix_opportunities_reference_buyer", "opportunities", ["reference_norm", "buyer_norm"]
+    )
     op.create_index(
         "ix_opportunities_region_status_due",
         "opportunities",
