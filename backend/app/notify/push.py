@@ -59,7 +59,9 @@ class PushSender(Protocol):
     async def send(self, subscription: Subscription, payload: str) -> PushResult: ...
 
 
-SubscriptionResolver = Callable[[uuid.UUID], Awaitable[Sequence[Subscription]]]
+# (tenant_id, user_id) -> that user's live subscriptions; the tenant is needed for RLS.
+SubscriptionResolver = Callable[[uuid.UUID, uuid.UUID], Awaitable[Sequence[Subscription]]]
+GoneHandler = Callable[[uuid.UUID, Subscription], Awaitable[None]]
 
 
 class WebPushSender:
@@ -129,7 +131,7 @@ class PushChannel:
         *,
         subscriptions: SubscriptionResolver | None = None,
         sender: PushSender | None = None,
-        on_gone: Callable[[Subscription], Awaitable[None]] | None = None,
+        on_gone: GoneHandler | None = None,
     ) -> None:
         self.settings = settings
         self.subscriptions = subscriptions
@@ -139,7 +141,7 @@ class PushChannel:
     async def send(self, delivery: Any, notification: Notification, recipient: Any) -> SendResult:
         if self.subscriptions is None:
             return SendResult.skip("no push subscription resolver")
-        subs = list(await self.subscriptions(recipient.user_id))
+        subs = list(await self.subscriptions(notification.tenant_id, recipient.user_id))
         if not subs:
             return SendResult.skip("user has no push subscriptions")
         payload = build_payload(notification)
@@ -153,7 +155,7 @@ class PushChannel:
             if result.gone:
                 log.info("notify.push.gone", endpoint=subscription.endpoint[:60])
                 if self.on_gone is not None:
-                    await self.on_gone(subscription)
+                    await self.on_gone(notification.tenant_id, subscription)
                 continue
             errors.append(result.error or "push failed")
         if sent:

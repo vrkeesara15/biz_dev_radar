@@ -66,13 +66,17 @@ class NotificationEvent:
     occurred_at: datetime | None = None
     # the notice's deadline; quiet hours are ignored when it is < 72 h away (M4-13)
     response_due_at: datetime | None = None
+    # stands in for the object id when the event is not about one row: a digest uses
+    # "daily:2026-10-11" so one user gets one digest per period however often beat ticks
+    dedupe_key: str | None = None
 
     @property
     def object_id(self) -> uuid.UUID | None:
         return self.opportunity_id or self.pursuit_id
 
     def idempotency_key(self, user_id: uuid.UUID) -> str:
-        return f"{user_id}:{self.event_type}:{self.object_id or '-'}:{self.version}"
+        marker = self.dedupe_key or (str(self.object_id) if self.object_id else "-")
+        return f"{user_id}:{self.event_type}:{marker}:{self.version}"
 
 
 @dataclass(frozen=True, slots=True)

@@ -190,8 +190,8 @@ class FakeSender:
 
 
 def _resolver(*subs: Subscription):  # type: ignore[no-untyped-def]
-    async def resolve(user_id: uuid.UUID) -> tuple[Subscription, ...]:
-        assert user_id == USER
+    async def resolve(tenant_id: uuid.UUID, user_id: uuid.UUID) -> tuple[Subscription, ...]:
+        assert (tenant_id, user_id) == (TENANT, USER)
         return subs
 
     return resolve
@@ -224,7 +224,8 @@ async def test_push_fans_out_to_every_subscription() -> None:
 async def test_push_prunes_gone_subscriptions_and_still_counts_the_live_one() -> None:
     pruned: list[str] = []
 
-    async def on_gone(subscription: Subscription) -> None:
+    async def on_gone(tenant_id: uuid.UUID, subscription: Subscription) -> None:
+        assert tenant_id == TENANT
         pruned.append(subscription.endpoint)
 
     sender = FakeSender(PushResult(False, gone=True, error="410"), PushResult(True))
