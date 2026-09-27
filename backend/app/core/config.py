@@ -186,8 +186,12 @@ class Settings(BaseSettings):
     # seed
     seed_admin_email: str = "admin@example.com"
 
-    # observability
+    # observability (SPEC 10.1). Every one of these is off when empty: no OTLP endpoint
+    # means no tracer provider, no DSN means no Sentry, no Langfuse keys mean a NoopTracer.
     sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.0
+    # OTLP/HTTP collector base URL, e.g. http://localhost:4318 (Cloud Trace via the agent)
+    otel_exporter_otlp_endpoint: str = ""
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"

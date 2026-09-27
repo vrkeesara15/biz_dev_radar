@@ -2047,7 +2047,7 @@
       "Langfuse traces per agent step with cost; structured JSON logs with request id and tenant id",
       "All disabled when settings are empty (tests)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-06",

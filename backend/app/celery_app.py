@@ -20,6 +20,7 @@ from celery.schedules import crontab
 from app.adapters import registry
 from app.adapters.registry import load_builtin_adapters
 from app.core.config import Settings, get_settings
+from app.observability import configure_observability
 from app.services.status_job import SCHEDULE as STATUS_SCHEDULE
 
 RUN_SOURCE_TASK = "bidradar.run_source"
@@ -88,6 +89,8 @@ def create_celery(settings: Settings | None = None) -> Celery:
 
 
 celery_app = create_celery()
+# OTel span per task + Sentry for the worker process; no-ops with empty settings (M7-05).
+OBSERVABILITY = configure_observability(component="worker")
 
 
 @celery_app.task(name=RUN_SOURCE_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]

@@ -21,6 +21,7 @@ from app.core.db import get_database
 from app.core.plan import PlanLimitExceeded
 from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
+from app.observability import configure_observability
 from app.services.billing import providers_from_settings
 from app.services.embeddings import embeddings_from_settings
 from app.services.enrichment import install_enrichment
@@ -87,6 +88,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         expose_headers=["X-Request-ID"],
     )
     app.add_middleware(RequestIdMiddleware)
+    # OTel (FastAPI + SQLAlchemy + httpx) and Sentry; all no-ops with empty settings (M7-05).
+    app.state.observability = configure_observability(settings, app=app, component="api")
     app.add_exception_handler(PlanLimitExceeded, _plan_limit_handler)  # type: ignore[arg-type]
     app.include_router(health.router)
     app.include_router(api_router)

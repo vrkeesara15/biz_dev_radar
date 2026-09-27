@@ -13,6 +13,15 @@ log = structlog.get_logger(__name__)
 
 
 class Tracer(Protocol):
+    def run_started(
+        self,
+        *,
+        run_id: str,
+        kind: str,
+        tenant_id: str,
+        pursuit_id: str | None = None,
+    ) -> None: ...
+
     def step_started(self, *, run_id: str, step_id: str, agent: str, attempt: int) -> None: ...
 
     def step_finished(
@@ -33,6 +42,9 @@ class Tracer(Protocol):
 
 
 class NoopTracer:
+    def run_started(self, **kwargs: Any) -> None:
+        return None
+
     def step_started(self, *, run_id: str, step_id: str, agent: str, attempt: int) -> None:
         return None
 
@@ -61,10 +73,25 @@ class LangfuseTracer:
         self.client = client
         self._traces: dict[str, Any] = {}
         self._generations: dict[str, Any] = {}
+        # run_id -> the tags/metadata the run was started with (tenant, pursuit, kind)
+        self._runs: dict[str, dict[str, Any]] = {}
+
+    def run_started(
+        self, *, run_id: str, kind: str, tenant_id: str, pursuit_id: str | None = None
+    ) -> None:
+        """Tag the run's trace so Langfuse can be filtered per tenant and per pursuit."""
+        self._runs[run_id] = {
+            "tags": [f"tenant:{tenant_id}", f"kind:{kind}"]
+            + ([f"pursuit:{pursuit_id}"] if pursuit_id else []),
+            "metadata": {"tenant_id": tenant_id, "kind": kind, "pursuit_id": pursuit_id},
+        }
+        self._trace(run_id)
 
     def _trace(self, run_id: str) -> Any:
         if run_id not in self._traces:
-            self._traces[run_id] = self.client.trace(id=run_id, name="agent_run")
+            self._traces[run_id] = self.client.trace(
+                id=run_id, name="agent_run", **self._runs.get(run_id, {})
+            )
         return self._traces[run_id]
 
     def step_started(self, *, run_id: str, step_id: str, agent: str, attempt: int) -> None:
