@@ -43,6 +43,7 @@ from app.models import (
     CompanyProfile,
     File,
     Insurance,
+    Integration,
     Opportunity,
     PastPerformance,
     Personnel,
@@ -77,6 +78,10 @@ PUBLIC_ROUTES: list[tuple[str, str]] = [
     # a tampered token is 401 and that the opt-out lands on the right tenant's prefs row.
     ("GET", "/api/v1/notifications/unsubscribe/*"),
     ("POST", "/api/v1/notifications/unsubscribe/*"),
+    # M4-11: Slack's interactive callback. Slack has no bearer token; the request proves
+    # itself twice (our signed action token names the tenant, X-Slack-Signature proves it
+    # came from Slack). tests/integration/test_integrations_api.py covers both halves.
+    ("POST", "/api/v1/integrations/slack/actions"),
 ]
 
 OK_STATUSES = frozenset({200, 201, 202, 204})
@@ -263,6 +268,16 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/opportunities/{opportunity_id}"): lambda ctx: RouteCall(
         path_params={"opportunity_id": ctx.shared["opportunity"]}
     ),
+    # --- integrations (M4-11): tenant owners only; B probes with its own body because the
+    # row is addressed by (tenant, kind), so a 200 must still never show A's connection
+    ("GET", "/api/v1/integrations"): lambda ctx: RouteCall(),
+    ("GET", "/api/v1/integrations/{kind}"): lambda ctx: RouteCall(
+        path_params={"kind": "slack"}, owner_expect=frozenset({200, 404})
+    ),
+    ("PUT", "/api/v1/integrations/{kind}"): lambda ctx: RouteCall(
+        path_params={"kind": "slack"},
+        json={"enabled": True, "config": {"channel": "#probe"}},
+    ),
     # --- files (M1-11)
     ("POST", "/api/v1/files"): lambda ctx: RouteCall(
         files={"file": ("probe.txt", b"isolation probe", "text/plain")}
@@ -391,6 +406,13 @@ async def build_context(database: Database) -> IsolationContext:
                 rate_currency="USD",
             ),
         }
+        integration = Integration(
+            tenant_id=ta.id,
+            kind="slack",
+            enabled=True,
+            config={"channel": "#alpha-bids"},
+            secret_ref="env:ALPHA_SLACK_HOOK",
+        )
         prefs = UserNotificationPrefs(
             tenant_id=ta.id,
             user_id=ua.id,
@@ -398,7 +420,16 @@ async def build_context(database: Database) -> IsolationContext:
             tz="Asia/Kolkata",
         )
         session.add_all(
-            [certification, code, keyword, service_line, partner, prefs, *proof.values()]
+            [
+                certification,
+                code,
+                keyword,
+                service_line,
+                partner,
+                prefs,
+                integration,
+                *proof.values(),
+            ]
         )
         await session.flush()
         a = TenantCtx(
@@ -424,6 +455,7 @@ async def build_context(database: Database) -> IsolationContext:
                 "code": str(code.id),
                 "keyword": str(keyword.id),
                 "keyword_term": "alpha secret term",
+                "integration": str(integration.id),
                 "service_line": str(service_line.id),
                 "service_line_name": "Alpha Cloud Line",
                 "teaming_partner": str(partner.id),

@@ -18,7 +18,7 @@ down_revision: str | None = "0004_m5_agent_runtime"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-TENANT_TABLES = ("matches", "notifications", "notification_deliveries")
+TENANT_TABLES = ("matches", "notifications", "notification_deliveries", "integrations")
 
 
 def _uuid_pk() -> sa.Column[object]:
@@ -154,6 +154,21 @@ def upgrade() -> None:
         "notification_deliveries",
         ["status", "scheduled_for"],
     )
+
+    # --- integrations (M4-11): one connection per tenant per kind -------------------------------
+    op.create_table(
+        "integrations",
+        _uuid_pk(),
+        _tenant_id(),
+        sa.Column("kind", sa.String(32), nullable=False),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
+        _jsonb("config"),
+        # "env:NAME" | "sm://projects/../secrets/..." | "enc:v1:<nonce>:<ciphertext>"
+        sa.Column("secret_ref", sa.Text()),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("tenant_id", "kind", name="uq_integrations_tenant_kind"),
+    )
+    op.create_index("ix_integrations_tenant_id", "integrations", ["tenant_id"])
 
     # --- per-category unsubscribe (M4-10, CAN-SPAM): event types the user opted out of ----------
     op.add_column(

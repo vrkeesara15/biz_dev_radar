@@ -15,6 +15,9 @@ from sqlalchemy.exc import ProgrammingError
 from tests.auth import auth_headers
 from tests.factories import create_tenant_with_owner
 
+# Mutating routes that authenticate by request signature instead of a bearer session.
+SIGNED_CALLBACK_ROUTES = {("POST", "/api/v1/integrations/slack/actions")}
+
 
 async def _tenant(database: Database, **overrides):  # type: ignore[no-untyped-def]
     async with database.owner_session() as session:
@@ -104,6 +107,16 @@ async def test_every_mutating_route_under_api_v1_is_audited(
     ]
     assert mutating, "expected mutating routes"
     for method, path in mutating:
+        if (method, path) in SIGNED_CALLBACK_ROUTES:
+            # A provider callback (M4-11 Slack) carries no bearer token and no tenant until
+            # its own signature verifies, so an unsigned probe must be refused outright and
+            # must NOT write a tenant-scoped audit row. The happy path is audited by
+            # tests/integration/test_integrations_api.py.
+            before = len(await _audit_rows(database))
+            r = await api_client.request(method, path, json={}, headers=headers)
+            assert r.status_code in {400, 401}, (method, path, r.status_code)
+            assert len(await _audit_rows(database)) == before
+            continue
         concrete = (
             path.replace("{tenant_id}", str(tid))
             .replace("{id}", str(uuid.uuid4()))

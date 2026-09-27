@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from app.api.v1 import (
     admin,
     files,
+    integrations,
     me,
     notification_prefs,
     notifications,
@@ -24,5 +25,6 @@ api_router.include_router(notification_prefs.router)
 api_router.include_router(notifications.router)
 api_router.include_router(admin.router)
 api_router.include_router(files.router)
+api_router.include_router(integrations.router)
 api_router.include_router(profiles.router)
 api_router.include_router(opportunities.router)

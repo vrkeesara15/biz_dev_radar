@@ -1313,7 +1313,7 @@
       "Tenant Slack settings stored in integrations table with webhook URL referenced from Secret Manager",
       "Tests with mocked webhook and signed action payloads"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-12",

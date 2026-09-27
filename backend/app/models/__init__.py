@@ -5,6 +5,7 @@ from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import PlanLimit, UsageLedger
 from app.models.files import File
+from app.models.integrations import Integration, IntegrationKind
 from app.models.matching import Match, MatchBand
 from app.models.notifications import (
     DeliveryChannel,
@@ -57,6 +58,8 @@ __all__ = [
     "DocumentChunk",
     "File",
     "Insurance",
+    "Integration",
+    "IntegrationKind",
     "Match",
     "MatchBand",
     "Membership",
