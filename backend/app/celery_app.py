@@ -20,7 +20,9 @@ from celery.schedules import crontab
 from app.adapters import registry
 from app.adapters.registry import load_builtin_adapters
 from app.core.config import Settings, get_settings
+from app.jobs.checks import EXPIRY_SCHEDULE, STALE_SCHEDULE
 from app.jobs.notify import DIGEST_SCHEDULE, FLUSH_SCHEDULE
+from app.jobs.reminders import SCHEDULE as REMINDERS_SCHEDULE
 from app.jobs.retune_keywords import RETUNE_SCHEDULE
 from app.observability import configure_observability
 from app.services.status_job import SCHEDULE as STATUS_SCHEDULE
@@ -37,6 +39,9 @@ SCORE_OPPORTUNITY_TASK = "bidradar.score_opportunity"
 RESCORE_PROFILE_TASK = "bidradar.rescore_profile"
 SCORE_BATCH_TASK = "bidradar.score_batch"
 RETUNE_KEYWORDS_TASK = "bidradar.retune_keywords"
+SEND_REMINDERS_TASK = "bidradar.send_reminders"
+EXPIRY_CHECKS_TASK = "bidradar.expiry_checks"
+STALE_PURSUITS_TASK = "bidradar.stale_pursuits"
 
 
 def cron_to_crontab(expression: str) -> crontab:
@@ -90,6 +95,24 @@ def build_beat_schedule(adapters: dict[str, type[Any]] | None = None) -> dict[st
     schedule["matching:retune"] = {
         "task": RETUNE_KEYWORDS_TASK,
         "schedule": cron_to_crontab(RETUNE_SCHEDULE),
+        "options": {"expires": 3600},
+    }
+    # SPEC 9: the deadline ladder is checked every five minutes; the job is idempotent
+    # per rung, so an overlapping tick sends nothing twice.
+    schedule["pursuits:reminders"] = {
+        "task": SEND_REMINDERS_TASK,
+        "schedule": cron_to_crontab(REMINDERS_SCHEDULE),
+        "options": {"expires": 300},
+    }
+    # SPEC 9 / 4.1: the daily recurring checks
+    schedule["checks:expiry"] = {
+        "task": EXPIRY_CHECKS_TASK,
+        "schedule": cron_to_crontab(EXPIRY_SCHEDULE),
+        "options": {"expires": 3600},
+    }
+    schedule["checks:stale_pursuits"] = {
+        "task": STALE_PURSUITS_TASK,
+        "schedule": cron_to_crontab(STALE_SCHEDULE),
         "options": {"expires": 3600},
     }
     return schedule
@@ -212,3 +235,27 @@ def retune_keywords_task(self: Any) -> dict[str, Any]:
     from app.jobs.retune_keywords import retune_keywords_sync
 
     return retune_keywords_sync()
+
+
+@celery_app.task(name=SEND_REMINDERS_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def send_reminders_task(self: Any) -> dict[str, Any]:
+    """Send every deadline reminder whose rung has come due (SPEC 9, M6-03)."""
+    from app.jobs.reminders import run_send_reminders
+
+    return run_send_reminders()
+
+
+@celery_app.task(name=EXPIRY_CHECKS_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def expiry_checks_task(self: Any) -> dict[str, Any]:
+    """60/30/7-day renewal reminders and the SAM / DSC bid block (SPEC 4.1, M6-06)."""
+    from app.jobs.checks import run_expiry_checks
+
+    return dict(run_expiry_checks())
+
+
+@celery_app.task(name=STALE_PURSUITS_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def stale_pursuits_task(self: Any) -> dict[str, Any]:
+    """Nudge the owner of a pursuit nobody has touched for five days (SPEC 9, M6-06)."""
+    from app.jobs.checks import run_stale_pursuits
+
+    return dict(run_stale_pursuits())

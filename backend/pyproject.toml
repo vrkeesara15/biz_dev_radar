@@ -40,6 +40,7 @@ dependencies = [
   "opentelemetry-instrumentation-httpx>=0.50b0",
   "opentelemetry-instrumentation-celery>=0.50b0",
   "rapidfuzz>=3.14.6",
+  "icalendar>=6,<7",
 ]
 
 [dependency-groups]
@@ -98,6 +99,7 @@ module = [
   "langfuse.*",
   "kombu.*",
   "pywebpush.*",
+  "icalendar.*",
 ]
 ignore_missing_imports = true
 

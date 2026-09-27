@@ -44,6 +44,7 @@ from app.models import (
     BillingCustomer,
     BillingEventRecord,
     BoilerplateBlock,
+    CalendarConnection,
     Certification,
     CompanyProfile,
     Consent,
@@ -63,6 +64,9 @@ from app.models import (
     ProfileFile,
     ProfileKeyword,
     Pursuit,
+    PursuitComment,
+    PursuitDate,
+    PursuitTask,
     PushSubscription,
     RateCardEntry,
     Registration,
@@ -99,6 +103,11 @@ PUBLIC_ROUTES: list[tuple[str, str]] = [
     ("POST", "/api/v1/integrations/slack/actions"),
     # M7-07: the published privacy notice (grievance officer, sub-processors, versions)
     ("GET", "/api/v1/privacy"),
+    # M6-04: the iCal feed. A calendar client cannot hold a session, so the URL carries a
+    # signed token (tenant + user + a nonce matched against user_notification_prefs);
+    # tests/integration/test_calendar_api.py proves a foreign, tampered or rotated token
+    # is 401 and that the feed only ever contains that user's own dates.
+    ("GET", "/api/v1/calendar.ics"),
 ]
 
 OK_STATUSES = frozenset({200, 201, 202, 204})
@@ -392,6 +401,101 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     # --- pursuits (M5-02): tenant-scoped; B posting A's profile id gets 404 (RLS hides it)
     ("POST", "/api/v1/pursuits"): lambda ctx: RouteCall(
         json={"profile_id": ctx.a.ids["profile"], "opportunity_id": ctx.shared["opportunity"]}
+    ),
+    # --- board actions (M6-01): the notice is global, so B may act on it — with its OWN
+    # profile. B has none, so the call 404s; A reuses its existing pursuit (200).
+    ("POST", "/api/v1/opportunities/{opportunity_id}/pursue"): lambda ctx: RouteCall(
+        path_params={"opportunity_id": ctx.shared["opportunity"]},
+        json={"profile_id": ctx.a.ids["profile"], "run_agents": False},
+    ),
+    ("POST", "/api/v1/opportunities/{opportunity_id}/watch"): lambda ctx: RouteCall(
+        path_params={"opportunity_id": ctx.shared["opportunity"]},
+        json={"profile_id": ctx.a.ids["profile"]},
+    ),
+    ("POST", "/api/v1/opportunities/{opportunity_id}/pass"): lambda ctx: RouteCall(
+        path_params={"opportunity_id": ctx.shared["opportunity"]},
+        json={"profile_id": ctx.a.ids["profile"], "reason": "isolation probe"},
+    ),
+    ("GET", "/api/v1/pursuits"): lambda ctx: RouteCall(params={"page": 1}),
+    # --- calendar (M6-04): every route is about the CALLER, so B never sees A's link
+    ("GET", "/api/v1/dashboard"): lambda ctx: RouteCall(),
+    ("GET", "/api/v1/me/calendar"): lambda ctx: RouteCall(),
+    ("POST", "/api/v1/me/calendar-token"): lambda ctx: RouteCall(),
+    (
+        "DELETE",
+        "/api/v1/me/calendar-connections/{connection_id}",
+    ): lambda ctx: RouteCall(path_params={"connection_id": ctx.a.ids["calendar_connection"]}),
+    # --- key dates (M6-02)
+    ("GET", "/api/v1/pursuits/{pursuit_id}/dates"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/dates"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={"kind": "custom", "at": "2026-10-01T10:00:00Z", "label": "isolation probe"},
+    ),
+    ("PUT", "/api/v1/pursuits/{pursuit_id}/dates/{date_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "date_id": ctx.a.ids["pursuit_date"],
+        },
+        json={"label": "isolation probe"},
+    ),
+    ("DELETE", "/api/v1/pursuits/{pursuit_id}/dates/{date_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "date_id": ctx.a.ids["pursuit_date"],
+        }
+    ),
+    (
+        "POST",
+        "/api/v1/pursuits/{pursuit_id}/dates/{date_id}/acknowledge",
+    ): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "date_id": ctx.a.ids["pursuit_date"],
+        }
+    ),
+    # --- tasks and comments (M6-07)
+    ("GET", "/api/v1/pursuits/{pursuit_id}/tasks"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/tasks"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"title": "isolation probe"}
+    ),
+    ("PATCH", "/api/v1/pursuits/{pursuit_id}/tasks/{task_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "task_id": ctx.a.ids["pursuit_task"],
+        },
+        json={"status": "done"},
+    ),
+    ("DELETE", "/api/v1/pursuits/{pursuit_id}/tasks/{task_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "task_id": ctx.a.ids["pursuit_task"],
+        }
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/comments"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/comments"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"body": "isolation probe"}
+    ),
+    ("PATCH", "/api/v1/pursuits/{pursuit_id}/comments/{comment_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "comment_id": ctx.a.ids["pursuit_comment"],
+        },
+        json={"resolved": True},
+    ),
+    ("DELETE", "/api/v1/pursuits/{pursuit_id}/comments/{comment_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "comment_id": ctx.a.ids["pursuit_comment"],
+        }
+    ),
+    ("PATCH", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"stage": "qualifying"}
     ),
     ("GET", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
@@ -706,6 +810,38 @@ async def build_context(database: Database) -> IsolationContext:
         )
         session.add(pursuit)
         await session.flush()
+        pursuit_date = PursuitDate(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            kind="portal_submission",
+            at=datetime.now(UTC) + timedelta(days=10),
+            buyer_tz="America/New_York",
+            source="auto",
+            label="Alpha submission due",
+        )
+        pursuit_task = PursuitTask(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            title="Alpha secret task",
+            assignee_user_id=ua.id,
+            created_by=ua.id,
+        )
+        calendar_connection = CalendarConnection(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            provider="google",
+            calendar_id="alpha-secret-calendar",
+            secret_ref="env:ALPHA_CALENDAR_TOKEN",
+        )
+        pursuit_comment = PursuitComment(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            target_type="pursuit",
+            body="alpha secret comment",
+            author_user_id=ua.id,
+        )
+        session.add_all([pursuit_date, pursuit_task, pursuit_comment, calendar_connection])
+        await session.flush()
         a = TenantCtx(
             id=ta.id,
             owner_id=ua.id,
@@ -758,6 +894,14 @@ async def build_context(database: Database) -> IsolationContext:
                 "saved_search_name": "Alpha saved search",
                 "alert_rule": str(alert_rule.id),
                 "alert_rule_name": "Alpha alert rule",
+                "pursuit_date": str(pursuit_date.id),
+                "pursuit_date_label": "Alpha submission due",
+                "pursuit_task": str(pursuit_task.id),
+                "pursuit_task_title": "Alpha secret task",
+                "pursuit_comment": str(pursuit_comment.id),
+                "pursuit_comment_body": "alpha secret comment",
+                "calendar_connection": str(calendar_connection.id),
+                "calendar_id": "alpha-secret-calendar",
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",

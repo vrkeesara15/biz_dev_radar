@@ -5,10 +5,13 @@ from typing import Any
 import pytest
 from app.adapters.registry import load_builtin_adapters, registered
 from app.celery_app import (
+    EXPIRY_CHECKS_TASK,
     FLUSH_SCHEDULED_TASK,
     ROLL_STATUS_TASK,
     RUN_SOURCE_TASK,
     SEND_DIGESTS_TASK,
+    SEND_REMINDERS_TASK,
+    STALE_PURSUITS_TASK,
     build_beat_schedule,
     celery_app,
     create_celery,
@@ -51,6 +54,11 @@ def test_beat_schedule_from_registry_skips_disabled_and_adds_status() -> None:
         "notify:flush",
         # M4-07: the weekly keyword re-tune
         "matching:retune",
+        # M6-03: the deadline reminder ladder
+        "pursuits:reminders",
+        # M6-06: the daily recurring checks
+        "checks:expiry",
+        "checks:stale_pursuits",
     }
     weekly = schedule["source:weekly"]
     assert weekly["task"] == RUN_SOURCE_TASK and weekly["args"] == ("weekly",)
@@ -61,6 +69,12 @@ def test_beat_schedule_from_registry_skips_disabled_and_adds_status() -> None:
     assert schedule["notify:digests"]["schedule"] == crontab(minute="*/15")
     assert schedule["notify:flush"]["task"] == FLUSH_SCHEDULED_TASK
     assert schedule["notify:flush"]["schedule"] == crontab(minute="*/5")
+    assert schedule["pursuits:reminders"]["task"] == SEND_REMINDERS_TASK
+    assert schedule["pursuits:reminders"]["schedule"] == crontab(minute="*/5")
+    assert schedule["checks:expiry"]["task"] == EXPIRY_CHECKS_TASK
+    assert schedule["checks:expiry"]["schedule"] == crontab(minute="0", hour="7")
+    assert schedule["checks:stale_pursuits"]["task"] == STALE_PURSUITS_TASK
+    assert schedule["checks:stale_pursuits"]["schedule"] == crontab(minute="30", hour="7")
 
 
 def test_default_schedule_covers_every_enabled_builtin_adapter() -> None:

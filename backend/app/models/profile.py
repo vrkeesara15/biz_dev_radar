@@ -61,6 +61,9 @@ class CompanyProfile(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
 
     region: Mapped[Region] = mapped_column(RegionEnum, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=true())
+    # SPEC 4.1: set by the daily expiry check when SAM or the DSC has lapsed; pursuing
+    # answers 409 until it is cleared (app.core.expiry).
+    blocked_for_bids: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
     # bumped on every write; matches/rationales cache on (opportunity version, profile version)
     version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
     updated_at: Mapped[datetime] = mapped_column(

@@ -1,28 +1,32 @@
 """Pursuits API (SPEC 10.3, M5): the pursuit record with its cost meter, the agent runs
 and the budget approval that resumes a run the cost guard paused.
 
+    POST /api/v1/opportunities/{id}/pursue|watch|pass      create / track / drop a pursuit
+    GET  /api/v1/pursuits                                  board + table listing with filters
     POST /api/v1/pursuits                                  {profile_id, opportunity_id}
     GET  /api/v1/pursuits/{pursuit_id}                     cost_so_far, cap, budget, latest run
+    PATCH /api/v1/pursuits/{pursuit_id}                    {stage?, owner_user_id?} (409 rules)
     GET  /api/v1/pursuits/{pursuit_id}/matrix              matrix + format rules + checklist
     GET  /api/v1/pursuits/{pursuit_id}/packet              uploads, portal, signatures, deadline
     POST /api/v1/pursuits/{pursuit_id}/agents/run          {step: collect|...|all}
     POST /api/v1/pursuits/{pursuit_id}/agents/approve-budget {additional_usd, reason?}
 
-M6-01 adds POST /opportunities/{id}/pursue|watch|pass, PATCH (stages) and the decision
-route; the second M5 pass adds drafts, matrix comments and exports.
+Stage moves go through app.core.pursuit_stages: a refused drag answers 409 with the
+reason the board shows. POST /pursuits/{id}/decision (Gate 1) belongs to the bid/no-bid
+agent milestone and is deliberately NOT defined here.
 """
 
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents import pipeline
@@ -31,27 +35,41 @@ from app.agents.llm import LLMClient
 from app.agents.runner import AgentRunner
 from app.agents.services import AgentServices, services_from_settings
 from app.api.deps import TENANT_ROLES, CurrentUser, SettingsDep, TenantSessionDep, require_role
+from app.core import pursuit_stages as stages
 from app.core.compliance import (
     ARTIFACT_CHECKLIST,
     ARTIFACT_FORMAT_RULES,
     ChecklistItem,
     FormatRules,
 )
-from app.core.config import Settings
+from app.core.config import Region, Settings
+from app.core.display_time import TzDateOut, tz_fields_or_none
 from app.core.packet import Packet, PacketContext, build_packet
+from app.core.plan import Resource
 from app.core.roles import Role
 from app.jobs import run_agents as run_agents_job_module
 from app.models import AgentRun, ComplianceItem, Opportunity, Pursuit, Requirement, User
 from app.models.agents import RUN_NEEDS_APPROVAL, RUN_QUEUED
+from app.services import key_dates as key_date_svc
 from app.services import pursuits as pursuit_svc
 from app.services.audit import AuditHint
+from app.services.plan import PlanService
 
 router = APIRouter(prefix="/pursuits", tags=["pursuits"])
+# SPEC 10.3 puts the board actions on the opportunity; they live here with the rest of
+# the pursuit logic and are mounted next to the opportunities router.
+opportunity_router = APIRouter(prefix="/opportunities", tags=["pursuits"])
 
 # SPEC 3: bid managers (and owners) decide, assign and approve; every tenant role reads.
 MANAGER_ROLES = (Role.TENANT_OWNER, Role.BID_MANAGER)
+# Watching costs nothing and starts no agent, so a writer may do it (SPEC 3 writer row).
+WRITER_ROLES = (Role.TENANT_OWNER, Role.BID_MANAGER, Role.WRITER)
 ManagerDep = Annotated[CurrentUser, Depends(require_role(*MANAGER_ROLES))]
+WriterDep = Annotated[CurrentUser, Depends(require_role(*WRITER_ROLES))]
 ReaderDep = Annotated[CurrentUser, Depends(require_role(*TENANT_ROLES))]
+
+MAX_LIST_PAGE_SIZE = 200
+DEFAULT_LIST_PAGE_SIZE = 50
 
 MAX_APPROVAL_USD = Decimal("10000")
 _NO_LLM = run_agents_job_module.NoLLM()  # steps that need a model fail loudly, others run
@@ -85,6 +103,11 @@ class PursuitOut(BaseModel):
     owner_user_id: uuid.UUID | None
     decision: str | None
     internal_due_at: datetime | None
+    watch: bool
+    pass_reason: str | None
+    submitted_at: datetime | None
+    activity_at: datetime
+    matrix_recheck_required: bool
     created_by: uuid.UUID | None
     created_at: datetime
     updated_at: datetime
@@ -208,6 +231,11 @@ def pursuit_out(pursuit: Pursuit, costs: CostSnapshot, run: AgentRun | None) -> 
         owner_user_id=pursuit.owner_user_id,
         decision=pursuit.decision,
         internal_due_at=pursuit.internal_due_at,
+        watch=pursuit.watch,
+        pass_reason=pursuit.pass_reason,
+        submitted_at=pursuit.submitted_at,
+        activity_at=pursuit.activity_at,
+        matrix_recheck_required=pursuit.matrix_recheck_required,
         created_by=pursuit.created_by,
         created_at=pursuit.created_at,
         updated_at=pursuit.updated_at,
@@ -223,6 +251,10 @@ def pursuit_out(pursuit: Pursuit, costs: CostSnapshot, run: AgentRun | None) -> 
 async def load_pursuit_out(
     session: AsyncSession, pursuit: Pursuit, tenant_id: uuid.UUID
 ) -> PursuitOut:
+    # a handler that mutated the row leaves server-side columns (updated_at) expired;
+    # refresh them here rather than letting Pydantic trigger a sync lazy load
+    await session.flush()
+    await session.refresh(pursuit)
     tenant = await pursuit_svc.get_tenant(session, tenant_id)
     costs = await cost_snapshot(session, pursuit, tenant)
     return pursuit_out(pursuit, costs, await pursuit_svc.latest_run(session, pursuit.id))
@@ -498,3 +530,401 @@ async def approve_budget(
         task_id=task_id,
         result=result,
     )
+
+
+# --- M6-01: board actions, stage moves and the pipeline listing -----------------------------
+
+
+class PursueIn(BaseModel):
+    """`profile_id` is optional while the tenant has exactly one profile."""
+
+    profile_id: uuid.UUID | None = None
+    # pursuing starts the agent pipeline (SPEC 9); set false to only open the card
+    run_agents: bool = True
+
+
+class WatchIn(BaseModel):
+    profile_id: uuid.UUID | None = None
+
+
+class PassIn(BaseModel):
+    profile_id: uuid.UUID | None = None
+    reason: str = Field(min_length=1, max_length=1000)
+    # qualifying / bid_decision pursuits may be recorded as a formal no-bid instead
+    no_bid: bool = False
+
+
+class PursuitPatchIn(BaseModel):
+    stage: str | None = None
+    owner_user_id: uuid.UUID | None = None
+    internal_due_at: datetime | None = None
+    watch: bool | None = None
+
+    @field_validator("stage")
+    @classmethod
+    def _known_stage(cls, value: str | None) -> str | None:
+        if value is not None and not stages.is_stage(value):
+            raise ValueError(f"unknown stage {value!r}; one of {', '.join(stages.STAGES)}")
+        return value
+
+
+class AgentsQueuedOut(BaseModel):
+    """What POST /pursue did with the pipeline. A board action never runs it inline."""
+
+    enqueued: bool
+    run_id: uuid.UUID | None = None
+    task_id: str | None = None
+    reason: str | None = None
+
+
+class PursuitActionOut(BaseModel):
+    pursuit: PursuitOut
+    created: bool
+    agents: AgentsQueuedOut | None = None
+
+
+class PursuitListItem(BaseModel):
+    """One card on the board / row in the table (SPEC 9, 10.4 screen 5)."""
+
+    id: uuid.UUID
+    profile_id: uuid.UUID
+    opportunity_id: uuid.UUID
+    stage: str
+    owner_user_id: uuid.UUID | None
+    decision: str | None
+    watch: bool
+    pass_reason: str | None
+    internal_due_at: TzDateOut | None
+    submitted_at: datetime | None
+    activity_at: datetime
+    matrix_recheck_required: bool
+    created_at: datetime
+    updated_at: datetime
+    # the notice behind the card, so the board needs no second round trip
+    title: str
+    buyer_org: str | None
+    region: Region
+    currency: str
+    estimated_value_min: Decimal | None
+    estimated_value_max: Decimal | None
+    estimated_value_min_usd: Decimal | None
+    estimated_value_max_usd: Decimal | None
+    source_tz: str
+    response_due_at: TzDateOut | None
+
+
+class PursuitPage(BaseModel):
+    items: list[PursuitListItem]
+    total: int
+    page: int
+    page_size: int
+    pages: int
+    # counts per stage over the WHOLE filtered set, so the board header is not paginated
+    by_stage: dict[str, int]
+
+
+async def reader_tz(session: AsyncSession, user: CurrentUser) -> str | None:
+    row = await session.get(User, user.id)
+    return None if row is None else row.tz
+
+
+def list_item_out(
+    pursuit: Pursuit, opportunity: Opportunity, user_tz: str | None
+) -> PursuitListItem:
+    buyer_tz = opportunity.source_tz
+    return PursuitListItem(
+        id=pursuit.id,
+        profile_id=pursuit.profile_id,
+        opportunity_id=pursuit.opportunity_id,
+        stage=pursuit.stage,
+        owner_user_id=pursuit.owner_user_id,
+        decision=pursuit.decision,
+        watch=pursuit.watch,
+        pass_reason=pursuit.pass_reason,
+        internal_due_at=tz_fields_or_none(pursuit.internal_due_at, buyer_tz, user_tz),
+        submitted_at=pursuit.submitted_at,
+        activity_at=pursuit.activity_at,
+        matrix_recheck_required=pursuit.matrix_recheck_required,
+        created_at=pursuit.created_at,
+        updated_at=pursuit.updated_at,
+        title=opportunity.title,
+        buyer_org=opportunity.buyer_org,
+        region=Region(opportunity.region),
+        currency=opportunity.currency,
+        estimated_value_min=opportunity.estimated_value_min,
+        estimated_value_max=opportunity.estimated_value_max,
+        estimated_value_min_usd=opportunity.estimated_value_min_usd,
+        estimated_value_max_usd=opportunity.estimated_value_max_usd,
+        source_tz=buyer_tz,
+        response_due_at=tz_fields_or_none(opportunity.response_due_at, buyer_tz, user_tz),
+    )
+
+
+async def enqueue_pipeline(
+    request: Request,
+    settings: Settings,
+    session: AsyncSession,
+    pursuit: Pursuit,
+    user: CurrentUser,
+) -> AgentsQueuedOut:
+    """Hand the whole pipeline to Celery. Never inline: Pursue is a board click, not a
+    30-minute request. A plan with no agent budget opens the card and says so."""
+    tenant = await pursuit_svc.get_tenant(session, user.tenant_id)
+    budget = await PlanService(session).limit_for(tenant, Resource.AGENT_BUDGET_USD_MONTH)
+    if budget is not None and budget <= 0:
+        return AgentsQueuedOut(enqueued=False, reason=f"the {tenant.plan} plan has no agent budget")
+    runner = AgentRunner(tenant_id=user.tenant_id, llm=app_llm(request) or _NO_LLM)
+    run_id = await runner.start(
+        kind=pursuit_svc.PIPELINE_RUN_KIND,
+        pursuit_id=pursuit.id,
+        params={"step": pipeline.STEP_ALL},
+    )
+    if settings.celery_task_always_eager:
+        # an eager task would call asyncio.run inside this event loop (OQ-82)
+        return AgentsQueuedOut(
+            enqueued=False, run_id=run_id, reason="celery eager: run left queued"
+        )
+    task_id = run_agents_job_module.enqueue_agents(run_id, user.tenant_id)
+    if task_id is None:
+        return AgentsQueuedOut(
+            enqueued=False, run_id=run_id, reason="broker unreachable: run left queued"
+        )
+    return AgentsQueuedOut(enqueued=True, run_id=run_id, task_id=task_id)
+
+
+async def open_pursuit(
+    session: AsyncSession,
+    user: CurrentUser,
+    opportunity_id: uuid.UUID,
+    profile_id: uuid.UUID | None,
+    *,
+    require_biddable: bool = False,
+) -> tuple[Pursuit, Opportunity, bool]:
+    """Create or reuse the tenant's pursuit of this notice with the chosen profile."""
+    opportunity = await session.get(Opportunity, opportunity_id)
+    if opportunity is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="opportunity not found")
+    profile = await pursuit_svc.resolve_profile(session, user, profile_id)
+    if require_biddable:  # SPEC 4.1: an expired SAM / DSC blocks bidding (M6-06)
+        pursuit_svc.ensure_not_blocked(profile)
+    pursuit, created = await pursuit_svc.get_or_create(session, profile.id, opportunity.id, user)
+    if created or pursuit.internal_due_at is None:
+        pursuit.internal_due_at = pursuit_svc.internal_due_at(opportunity.response_due_at)
+    if pursuit.owner_user_id is None:
+        pursuit.owner_user_id = user.id
+    # SPEC 9: the key dates exist from the moment the card does (M6-02)
+    await key_date_svc.sync_auto_dates(session, pursuit, opportunity)
+    return pursuit, opportunity, created
+
+
+@opportunity_router.post("/{opportunity_id}/pursue", response_model=PursuitActionOut)
+async def pursue_opportunity(
+    opportunity_id: uuid.UUID,
+    body: PursueIn,
+    session: TenantSessionDep,
+    user: ManagerDep,
+    request: Request,
+    settings: SettingsDep,
+) -> JSONResponse:
+    """Track this notice and start the agent workflow (SPEC 9).
+
+    Idempotent per (profile, opportunity): pursuing again reuses the card, clears the
+    watch flag and re-enqueues the pipeline.
+    """
+    pursuit, opportunity, created = await open_pursuit(
+        session, user, opportunity_id, body.profile_id, require_biddable=True
+    )
+    pursuit.watch = False
+    pursuit_svc.touch(pursuit)
+    if stages.is_terminal(pursuit.stage):
+        pursuit_svc.move_stage(pursuit, stages.STAGE_QUALIFYING, role=user.role)
+        pursuit.pass_reason = None
+    request.state.audit = AuditHint(
+        action="pursuit.pursued",
+        object_type="pursuit",
+        object_id=str(pursuit.id),
+        meta={"opportunity_id": str(opportunity.id), "created": created},
+    )
+    agents: AgentsQueuedOut | None = None
+    if body.run_agents:
+        pursuit_id = pursuit.id
+        await session.commit()  # the runner opens its own session and needs the FK to exist
+        pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+        agents = await enqueue_pipeline(request, settings, session, pursuit, user)
+        session.expire_all()
+        pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    out = PursuitActionOut(
+        pursuit=await load_pursuit_out(session, pursuit, user.tenant_id),
+        created=created,
+        agents=agents,
+    )
+    code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    return JSONResponse(status_code=code, content=out.model_dump(mode="json"))
+
+
+@opportunity_router.post("/{opportunity_id}/watch", response_model=PursuitActionOut)
+async def watch_opportunity(
+    opportunity_id: uuid.UUID,
+    body: WatchIn,
+    session: TenantSessionDep,
+    user: WriterDep,
+    request: Request,
+) -> JSONResponse:
+    """Follow the notice for amendments and reminders without starting any agent work."""
+    pursuit, opportunity, created = await open_pursuit(
+        session, user, opportunity_id, body.profile_id
+    )
+    pursuit.watch = True
+    pursuit_svc.touch(pursuit)
+    request.state.audit = AuditHint(
+        action="pursuit.watched",
+        object_type="pursuit",
+        object_id=str(pursuit.id),
+        meta={"opportunity_id": str(opportunity.id), "created": created},
+    )
+    out = PursuitActionOut(
+        pursuit=await load_pursuit_out(session, pursuit, user.tenant_id), created=created
+    )
+    code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    return JSONResponse(status_code=code, content=out.model_dump(mode="json"))
+
+
+@opportunity_router.post("/{opportunity_id}/pass", response_model=PursuitActionOut)
+async def pass_opportunity(
+    opportunity_id: uuid.UUID,
+    body: PassIn,
+    session: TenantSessionDep,
+    user: ManagerDep,
+    request: Request,
+) -> JSONResponse:
+    """Drop the notice with a reason: `cancelled` by default, `no_bid` when the pursuit
+    is still at qualifying / bid_decision and the caller asks for a formal no-bid."""
+    pursuit, opportunity, created = await open_pursuit(
+        session, user, opportunity_id, body.profile_id
+    )
+    pursuit.watch = False
+    pursuit.pass_reason = body.reason
+    target = stages.STAGE_NO_BID if body.no_bid else stages.STAGE_CANCELLED
+    pursuit_svc.move_stage(pursuit, target, role=user.role)
+    request.state.audit = AuditHint(
+        action="pursuit.passed",
+        object_type="pursuit",
+        object_id=str(pursuit.id),
+        meta={
+            "opportunity_id": str(opportunity.id),
+            "reason": body.reason,
+            "stage": pursuit.stage,
+            "created": created,
+        },
+    )
+    out = PursuitActionOut(
+        pursuit=await load_pursuit_out(session, pursuit, user.tenant_id), created=created
+    )
+    code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    return JSONResponse(status_code=code, content=out.model_dump(mode="json"))
+
+
+@router.get("", response_model=PursuitPage)
+async def list_pursuits(
+    session: TenantSessionDep,
+    user: ReaderDep,
+    owner: Annotated[uuid.UUID | None, Query(description="owner_user_id")] = None,
+    stage: Annotated[str | None, Query(description="stages, comma-separated")] = None,
+    due_before: datetime | None = None,
+    region: Region | None = None,
+    min_value: Annotated[Decimal | None, Query(ge=0, description="USD")] = None,
+    watch: bool | None = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=MAX_LIST_PAGE_SIZE)] = DEFAULT_LIST_PAGE_SIZE,
+) -> PursuitPage:
+    """The pipeline, filtered by owner / stage / due date / region / value (SPEC 9).
+
+    The board groups by stage in the browser; `by_stage` counts the whole filtered set so
+    the column headers do not change with the page.
+    """
+    wanted = [part.strip() for part in (stage or "").split(",") if part.strip()]
+    for name in wanted:
+        if not stages.is_stage(name):
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"unknown stage {name!r}; one of {', '.join(stages.STAGES)}",
+            )
+    filters: dict[str, Any] = {
+        "owner_user_id": owner,
+        "stage": wanted,
+        "due_before": due_before,
+        "region": None if region is None else region.value,
+        "min_value_usd": min_value,
+        "watch": watch,
+    }
+    base = pursuit_svc.list_statement(**filters)
+    total = (
+        await session.execute(
+            select(func.count()).select_from(base.with_only_columns(Pursuit.id).subquery())
+        )
+    ).scalar_one()
+    count_rows = (
+        await session.execute(
+            base.with_only_columns(Pursuit.stage, func.count()).group_by(Pursuit.stage)
+        )
+    ).all()
+    by_stage = {str(row[0]): int(row[1]) for row in count_rows}
+    rows = (
+        await session.execute(
+            base.order_by(Opportunity.response_due_at.asc().nullslast(), Pursuit.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+    ).all()
+    tz = await reader_tz(session, user)
+    return PursuitPage(
+        items=[list_item_out(pursuit, opportunity, tz) for pursuit, opportunity in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=max(1, -(-total // page_size)),
+        by_stage=by_stage,
+    )
+
+
+@router.patch("/{pursuit_id}", response_model=PursuitOut)
+async def update_pursuit(
+    pursuit_id: uuid.UUID,
+    body: PursuitPatchIn,
+    session: TenantSessionDep,
+    user: WriterDep,
+    request: Request,
+) -> PursuitOut:
+    """Move the card and reassign it. A refused move answers 409 with
+    {error: stage_transition, from, to, reason} — the board shows `reason` on the drop."""
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    before = pursuit.stage
+    meta: dict[str, Any] = {}
+    if body.owner_user_id is not None:
+        if user.role not in MANAGER_ROLES:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, detail="only a bid manager may assign a pursuit"
+            )
+        owner = await session.get(User, body.owner_user_id)
+        if owner is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="owner not found")
+        pursuit.owner_user_id = owner.id
+        meta["owner_user_id"] = str(owner.id)
+    if body.internal_due_at is not None:
+        if body.internal_due_at.tzinfo is None:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="internal_due_at must carry a time zone offset",
+            )
+        pursuit.internal_due_at = body.internal_due_at.astimezone(UTC)
+        meta["internal_due_at"] = pursuit.internal_due_at.isoformat()
+    if body.watch is not None:
+        pursuit.watch = body.watch
+        meta["watch"] = body.watch
+    pursuit_svc.touch(pursuit)
+    if body.stage is not None and pursuit_svc.move_stage(pursuit, body.stage, role=user.role):
+        meta["stage"] = {"from": before, "to": pursuit.stage}
+    request.state.audit = AuditHint(
+        action="pursuit.updated", object_type="pursuit", object_id=str(pursuit.id), meta=meta
+    )
+    return await load_pursuit_out(session, pursuit, user.tenant_id)

@@ -1,8 +1,9 @@
 """pursuits (SPEC 9, 10.2): a tenant's decision to chase one opportunity with one profile.
 
-Minimal shape for the agent pipeline (M5): M6-01 adds the stage rules, key dates, tasks
-and the pursue/watch/pass routes. Agent runs, requirements, compliance items and
-artifacts hang off `pursuit_id`.
+M5-02 created the minimal shape the agent pipeline hangs off; M6-01 adds the stage rules
+(`app.core.pursuit_stages`), the watch flag, the pass reason and the decision stamps.
+Agent runs, requirements, compliance items, artifacts, key dates, tasks, comments and
+reminders all hang off `pursuit_id`.
 """
 
 from __future__ import annotations
@@ -11,19 +12,37 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, UniqueConstraint, func, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    false,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.pursuit_stages import DEFAULT_STAGE, STAGES
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
-STAGE_IDENTIFIED = "identified"
+STAGE_IDENTIFIED = DEFAULT_STAGE
+# "'identified', 'qualifying', ..." for the CHECK constraint, in SPEC 9 order
+STAGE_SQL_LIST = ", ".join(f"'{stage}'" for stage in STAGES)
 
 
 class Pursuit(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     __tablename__ = "pursuits"
     __table_args__ = (
         UniqueConstraint("profile_id", "opportunity_id", name="uq_pursuits_profile_opportunity"),
+        # a CHECK rather than a Postgres enum: SPEC 9 stages are product vocabulary and a
+        # future stage should be one migration, not an enum rewrite under load.
+        CheckConstraint(f"stage IN ({STAGE_SQL_LIST})", name="stage"),
     )
 
     profile_id: Mapped[uuid.UUID] = mapped_column(
@@ -39,15 +58,34 @@ class Pursuit(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
         index=True,
     )
     # identified | qualifying | bid_decision | drafting | in_review | final_approval |
-    # submitted | awarded | lost | cancelled | no_bid (rules arrive with M6-01)
+    # submitted | awarded | lost | cancelled | no_bid (rules: app.core.pursuit_stages)
     stage: Mapped[str] = mapped_column(
-        String(32), nullable=False, server_default=text("'identified'")
+        String(32), nullable=False, server_default=text(f"'{DEFAULT_STAGE}'"), index=True
     )
     owner_user_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     decision: Mapped[str | None] = mapped_column(String(16))  # bid | no_bid
+    # who closed Gate 1 and when (the decision endpoint itself is M5's)
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     internal_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # "Watch" (SPEC 7 one-click action): tracked for amendments, but no agent work
+    watch: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
+    # why the tenant passed (POST /opportunities/{id}/pass); feeds match feedback later
+    pass_reason: Mapped[str | None] = mapped_column(Text)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # SPEC 9 "stale pursuits": the last time anyone (or any agent) touched this pursuit.
+    # Bumped by app.services.pursuits.touch from every stage move, task, comment and date.
+    activity_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
+    )
+    # SPEC 9: an amendment on a notice whose pursuit is past drafting forces a re-check
+    matrix_recheck_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=false()
+    )
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )

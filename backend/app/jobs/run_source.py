@@ -30,9 +30,11 @@ from app.core.config import Settings, get_settings
 from app.core.db import Database, get_database
 from app.services import sources as source_svc
 from app.services.awards import run_awards_enrichment
+from app.services.checks import install_matrix_recheck
 from app.services.enrichment import install_enrichment
 from app.services.events import EventBus, get_event_bus
 from app.services.gem_extraction import install_gem_extraction
+from app.services.key_dates import install_key_date_recalc
 from app.services.matching.triggers import install_match_scoring
 from app.services.opportunity_embeddings import install_opportunity_embeddings
 from app.services.source_runner import RunResult, run_source
@@ -115,6 +117,9 @@ async def _run_with_fresh_database(source_id: str, mode: str) -> dict[str, Any]:
         # M4-06: the worker scores what it ingests (the run is queued or, without a
         # broker, executed in this process once the ingest transaction commits)
         trigger = install_match_scoring(settings, db, bus, storage=storage)
+        # SPEC 9: amendments re-date pursuits and force a matrix re-check (M6-02 / M6-06)
+        install_key_date_recalc(bus, db)
+        install_matrix_recheck(settings, bus, db)
         result = await run_source_job(source_id, database=db, settings=settings, bus=bus, mode=mode)
         await trigger.drain()
         return result

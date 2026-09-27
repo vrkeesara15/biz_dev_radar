@@ -25,10 +25,12 @@ from app.logging import configure_logging
 from app.notify.router import install_notification_router
 from app.observability import configure_observability
 from app.services.billing import providers_from_settings
+from app.services.checks import install_matrix_recheck
 from app.services.embeddings import embeddings_from_settings
 from app.services.enrichment import install_enrichment
 from app.services.events import get_event_bus
 from app.services.gem_extraction import install_gem_extraction
+from app.services.key_dates import install_key_date_recalc
 from app.services.matching.triggers import install_match_scoring
 from app.services.opportunity_embeddings import install_opportunity_embeddings
 from app.services.ratelimit import limiter_from_settings, policies_from_settings
@@ -66,6 +68,10 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.notification_router = install_notification_router(
         settings, get_database(), get_event_bus()
     )
+    # SPEC 9: an amendment that moves the deadline re-dates every pursuit of the notice
+    install_key_date_recalc(get_event_bus(), get_database())
+    # SPEC 9: an amendment after drafting started forces a matrix re-check (M6-06)
+    install_matrix_recheck(settings, get_event_bus(), get_database())
     yield
 
 

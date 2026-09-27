@@ -1773,7 +1773,7 @@
       "POST /opportunities/{id}/pursue|watch|pass create/track pursuits; PATCH /pursuits/{id} moves stage; drafting requires Gate 1 approval (409 otherwise)",
       "Pursuing enqueues the agent workflow; internal_due_at = response_due_at - 48h"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-02",
@@ -1792,7 +1792,7 @@
       "IN pursuits add emd_bg_ready and dsc_check (due-3d)",
       "Dates recalculated when an amendment moves the deadline; user-edited dates preserved"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-03",
@@ -1812,7 +1812,7 @@
       "Times computed in the user's tz; tests cover US and IST users, DST transition and a deadline moved by amendment",
       "Beat task runs every 5 min and is idempotent"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-04",
@@ -1831,7 +1831,7 @@
       "Events created/updated/deleted as pursuit_dates change",
       "ics validated with the icalendar library in tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-05",
@@ -1850,7 +1850,7 @@
       "Delivery status webhook updates notification_deliveries",
       "Mocked provider tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-06",
@@ -1871,7 +1871,7 @@
       "Amendment on an opportunity whose pursuit is past drafting sets matrix_recheck_required and notifies the assignee",
       "Frozen-time unit tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-07",
@@ -1890,7 +1890,7 @@
       "[NEEDS INPUT] placeholders create tasks automatically",
       "CRUD endpoints with role checks and isolation factories"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-08",
@@ -1908,7 +1908,7 @@
       "Values computed with SQL aggregates scoped by RLS",
       "Unit tests on the aggregation with seeded data"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-09",

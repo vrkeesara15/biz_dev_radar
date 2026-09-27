@@ -1,6 +1,6 @@
 """Pursuits service (minimal for M5; M6-01 adds stage rules, dates and actions).
 
-pursuit = await get_or_create(session, profile_id, opportunity_id, user)
+pursuit, created = await get_or_create(session, profile_id, opportunity_id, user)
 run = await latest_run(session, pursuit.id)
 artifact = await store_artifact(session, tenant_id, pursuit.id, "checklist", data)
 latest = await latest_artifact(session, pursuit.id, "checklist")
@@ -9,16 +9,21 @@ latest = await latest_artifact(session, pursuit.id, "checklist")
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.core import pursuit_stages as stages
 from app.core.compliance import ARTIFACT_KINDS, CREATED_BY_AGENT
 from app.core.cost_guard import raise_cap
+from app.core.expiry import BLOCKING_REGISTRATIONS, blocked_reason
+from app.core.roles import Role
 from app.models import AgentRun, CompanyProfile, Opportunity, Pursuit, PursuitArtifact, Tenant
 from app.services.users import ensure_user_membership
 
@@ -140,3 +145,140 @@ async def latest_artifact(
             .limit(1)
         )
     ).scalar_one_or_none()
+
+
+# --- M6-01: stages, pursue / watch / pass, listing ------------------------------------------
+
+
+def internal_due_at(response_due_at: datetime | None) -> datetime | None:
+    """SPEC 9: the internal deadline is 48 hours before the buyer's."""
+    if response_due_at is None:
+        return None
+    return response_due_at - timedelta(hours=stages.INTERNAL_DUE_OFFSET_HOURS)
+
+
+async def resolve_profile(
+    session: AsyncSession, user: CurrentUser, profile_id: uuid.UUID | None = None
+) -> CompanyProfile:
+    """The profile a pursuit is created for: the one the caller named, else the tenant's
+    only (or oldest active) profile. 404 when there is none and 409 when the tenant has
+    several and named none, so a board action never guesses between two profiles."""
+    if profile_id is not None:
+        profile = await session.get(CompanyProfile, profile_id)
+        if profile is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="profile not found")
+        return profile
+    rows = (
+        (
+            await session.execute(
+                select(CompanyProfile)
+                .where(CompanyProfile.is_active.is_(True))
+                .order_by(CompanyProfile.created_at, CompanyProfile.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if not rows:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="no active company profile")
+    if len(rows) > 1:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={
+                "error": "profile_required",
+                "message": "this tenant has several profiles; send profile_id",
+                "profile_ids": [str(row.id) for row in rows],
+            },
+        )
+    return rows[0]
+
+
+def touch(pursuit: Pursuit, *, now: datetime | None = None) -> None:
+    """Record that somebody worked on this pursuit (SPEC 9 stale-pursuit check, M6-06)."""
+    pursuit.activity_at = now or datetime.now(UTC)
+
+
+def ensure_not_blocked(profile: CompanyProfile) -> None:
+    """SPEC 4.1: an expired SAM registration or DSC blocks bidding on this profile."""
+    if profile.blocked_for_bids:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={
+                "error": "profile_blocked_for_bids",
+                "profile_id": str(profile.id),
+                "reason": blocked_reason(list(BLOCKING_REGISTRATIONS)),
+            },
+        )
+
+
+def stage_conflict(pursuit: Pursuit, target: str, reason: str) -> HTTPException:
+    return HTTPException(
+        status.HTTP_409_CONFLICT,
+        detail={
+            "error": "stage_transition",
+            "from": pursuit.stage,
+            "to": target,
+            "reason": reason,
+        },
+    )
+
+
+def move_stage(
+    pursuit: Pursuit,
+    target: str,
+    *,
+    role: Role,
+    now: datetime | None = None,
+) -> bool:
+    """Apply `target` to the pursuit if app.core.pursuit_stages allows it, else raise 409.
+
+    Returns True when the stage actually changed. Side effects kept here (rather than in
+    the pure rules) so every caller stamps submitted_at the same way.
+    """
+    moment = now or datetime.now(UTC)
+    ok, reason = stages.can_transition(
+        pursuit.stage, target, stages.TransitionContext(decision=pursuit.decision, role=role)
+    )
+    if not ok:
+        raise stage_conflict(pursuit, target, reason)
+    if pursuit.stage == target:
+        return False
+    pursuit.stage = target
+    touch(pursuit, now=moment)
+    if target == stages.STAGE_SUBMITTED:
+        pursuit.submitted_at = moment
+    return True
+
+
+def list_statement(
+    *,
+    owner_user_id: uuid.UUID | None = None,
+    stage: Sequence[str] | None = None,
+    due_before: datetime | None = None,
+    region: str | None = None,
+    min_value_usd: Decimal | None = None,
+    watch: bool | None = None,
+) -> Select[Pursuit, Opportunity]:
+    """Board / table listing (SPEC 9 filters: owner, due date, value, region, stage).
+
+    Joined to the opportunity because every filter but owner and stage lives there; the
+    board groups by stage client-side from the same rows.
+    """
+    stmt = select(Pursuit, Opportunity).join(Opportunity, Opportunity.id == Pursuit.opportunity_id)
+    if owner_user_id is not None:
+        stmt = stmt.where(Pursuit.owner_user_id == owner_user_id)
+    if stage:
+        stmt = stmt.where(Pursuit.stage.in_(list(stage)))
+    if due_before is not None:
+        stmt = stmt.where(Opportunity.response_due_at.is_not(None))
+        stmt = stmt.where(Opportunity.response_due_at <= due_before)
+    if region is not None:
+        stmt = stmt.where(Opportunity.region == region)
+    if min_value_usd is not None:
+        value = func.coalesce(
+            Opportunity.estimated_value_max_usd, Opportunity.estimated_value_min_usd
+        )
+        stmt = stmt.where(value.is_not(None)).where(value >= min_value_usd)
+    if watch is not None:
+        stmt = stmt.where(Pursuit.watch.is_(watch))
+    return stmt
