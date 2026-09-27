@@ -154,6 +154,9 @@ class CompanyProfile(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
         ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
     )
 
+    # --- proof (SPEC 4.5): personnel clearances count; the rest lives in child tables
+    cleared_personnel_count: Mapped[int | None] = mapped_column(Integer)
+
     # --- bank details (both regions, encrypted; SPEC 11)
     bank_name: Mapped[str | None] = mapped_column(String(200))
     bank_account_number: Mapped[str | None] = mapped_column(EncryptedString)

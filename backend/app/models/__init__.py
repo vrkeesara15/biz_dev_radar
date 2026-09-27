@@ -12,18 +12,35 @@ from app.models.profile_items import (
     ServiceLine,
     TeamingPartner,
 )
+from app.models.profile_proof import (
+    BoilerplateBlock,
+    Insurance,
+    PastPerformance,
+    Personnel,
+    ProfileFile,
+    RateCardEntry,
+    Registration,
+    Vehicle,
+)
 from app.models.tenancy import Membership, Tenant, User
 
 __all__ = [
     "AuditLog",
     "Base",
+    "BoilerplateBlock",
     "Certification",
     "CompanyProfile",
     "File",
+    "Insurance",
     "Membership",
+    "PastPerformance",
+    "Personnel",
     "PlanLimit",
     "ProfileCode",
+    "ProfileFile",
     "ProfileKeyword",
+    "RateCardEntry",
+    "Registration",
     "ServiceLine",
     "TeamingPartner",
     "Tenant",
@@ -32,4 +49,5 @@ __all__ = [
     "UUIDPrimaryKeyMixin",
     "UsageLedger",
     "User",
+    "Vehicle",
 ]

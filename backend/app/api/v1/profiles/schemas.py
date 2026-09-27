@@ -128,6 +128,8 @@ class ProfileWrite(BaseModel):
     notice_types_wanted: list[NoticeType] | None = None
     contract_types_preferred: list[ContractType] | None = None
     teaming_roles: list[TeamingRole] | None = None
+    # 4.5 proof: personnel clearances count (US); the rest are sub-resources
+    cleared_personnel_count: Annotated[int | None, Field(ge=0)] = None
     # bank (encrypted)
     bank_name: Annotated[str | None, Field(max_length=200)] = None
     bank_account_number: Annotated[str | None, Field(max_length=64)] = None
@@ -318,6 +320,8 @@ class ProfileOut(BaseModel):
     notice_types_wanted: list[NoticeType]
     contract_types_preferred: list[ContractType]
     teaming_roles: list[TeamingRole]
+    # 4.5
+    cleared_personnel_count: int | None
 
     @classmethod
     def from_row(cls, row: CompanyProfile) -> ProfileOut:

@@ -363,7 +363,7 @@
       "boilerplate_blocks(kind, title, body rich text) and profile_files(kind capability_statement|brochure|case_study|past_proposal|brand|template, metadata jsonb)",
       "Labor categories / rate card table with currency"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-06",

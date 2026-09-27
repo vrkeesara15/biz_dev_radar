@@ -23,18 +23,36 @@ from typing import Any
 from app.core.config import Region
 from app.core.db import Database
 from app.core.notice_types import TeamingRole
-from app.core.profile_fields import CertificationKind, CodeScheme, KeywordKind
+from app.core.profile_fields import (
+    BoilerplateKind,
+    CertificationKind,
+    CodeScheme,
+    InsuranceKind,
+    KeywordKind,
+    PerformanceRole,
+    ProfileFileKind,
+    RateUnit,
+    RegistrationKind,
+)
 from app.core.roles import Role
 from app.models import (
     AuditLog,
+    BoilerplateBlock,
     Certification,
     CompanyProfile,
     File,
+    Insurance,
+    PastPerformance,
+    Personnel,
     ProfileCode,
+    ProfileFile,
     ProfileKeyword,
+    RateCardEntry,
+    Registration,
     ServiceLine,
     TeamingPartner,
     UsageLedger,
+    Vehicle,
 )
 
 from tests.factories import create_tenant_with_owner
@@ -89,10 +107,22 @@ class RouteCall:
 Factory = Callable[[IsolationContext], RouteCall]
 
 
+Payload = dict[str, Any] | Callable[["IsolationContext"], dict[str, Any]]
+
+
+def _payload(payload: Payload, ctx: IsolationContext) -> dict[str, Any]:
+    return payload(ctx) if callable(payload) else payload
+
+
 def child_routes(
-    name: str, seed_key: str, create_json: dict[str, Any], update_json: dict[str, Any]
+    name: str,
+    seed_key: str,
+    create_json: Payload,
+    update_json: Payload,
+    role: Role = Role.TENANT_OWNER,
 ) -> dict[tuple[str, str], Factory]:
-    """The five CRUD routes of a profile sub-resource, probed with A's profile and A's row."""
+    """The five CRUD routes of a profile sub-resource, probed with A's profile and A's row.
+    Payloads may be callables so a probe can reference A's ids (e.g. a file id)."""
     base = f"/api/v1/profiles/{{profile_id}}/{name}"
 
     def params(ctx: IsolationContext, with_item: bool = False) -> dict[str, Any]:
@@ -102,14 +132,18 @@ def child_routes(
         return out
 
     return {
-        ("GET", base): lambda ctx: RouteCall(path_params=params(ctx)),
-        ("POST", base): lambda ctx: RouteCall(path_params=params(ctx), json=create_json),
-        ("GET", base + "/{item_id}"): lambda ctx: RouteCall(path_params=params(ctx, True)),
+        ("GET", base): lambda ctx: RouteCall(path_params=params(ctx), role=role),
+        ("POST", base): lambda ctx: RouteCall(
+            path_params=params(ctx), json=_payload(create_json, ctx), role=role
+        ),
+        ("GET", base + "/{item_id}"): lambda ctx: RouteCall(
+            path_params=params(ctx, True), role=role
+        ),
         ("PUT", base + "/{item_id}"): lambda ctx: RouteCall(
-            path_params=params(ctx, True), json=update_json
+            path_params=params(ctx, True), json=_payload(update_json, ctx), role=role
         ),
         ("DELETE", base + "/{item_id}"): lambda ctx: RouteCall(
-            path_params=params(ctx, True), owner_expect=frozenset({204})
+            path_params=params(ctx, True), owner_expect=frozenset({204}), role=role
         ),
     }
 
@@ -149,6 +183,47 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         "teaming_partner",
         {"name": "Probe Partners", "relationship": "sub"},
         {"relationship": "jv"},
+    ),
+    # --- proof (M1-05); past performance and personnel probed as WRITER (allowed role)
+    **child_routes(
+        "past-performance",
+        "past_performance",
+        {"title": "Probe PP", "customer": "Probe Agency", "role": "prime", "scope": "probe"},
+        {"title": "Probe PP 2"},
+        role=Role.WRITER,
+    ),
+    **child_routes(
+        "personnel",
+        "personnel",
+        {"name": "Probe Person", "role": "PM"},
+        {"role": "Lead"},
+        role=Role.WRITER,
+    ),
+    **child_routes(
+        "registrations", "registration", {"kind": "sam", "identifier": "P"}, {"holder": "x"}
+    ),
+    **child_routes("vehicles", "vehicle", {"vehicle": "GSA MAS", "number": "P"}, {"number": "Q"}),
+    **child_routes(
+        "insurance", "insurance", {"kind": "cyber", "carrier": "Probe"}, {"carrier": "Probe 2"}
+    ),
+    **child_routes(
+        "boilerplate",
+        "boilerplate_block",
+        {"kind": "company_overview", "title": "Probe", "body": "<p>probe</p>"},
+        {"title": "Probe 2"},
+    ),
+    # B posting A's file id must fail (not visible); A's owner succeeds with its own file
+    **child_routes(
+        "files",
+        "profile_file",
+        lambda ctx: {"file_id": ctx.a.ids["file"], "kind": "brochure"},
+        {"title": "Probe"},
+    ),
+    **child_routes(
+        "rate-card",
+        "rate_card_entry",
+        {"labor_category": "Probe", "unit": "hour", "rate_amount": "1", "rate_currency": "USD"},
+        {"rate_amount": "2"},
     ),
     **child_routes(
         "certifications",
@@ -234,7 +309,57 @@ async def build_context(database: Database) -> IsolationContext:
             uei="PARTNER12345",
             pan="ABCDE1234F",
         )
-        session.add_all([certification, code, keyword, service_line, partner])
+        proof = {
+            "past_performance": PastPerformance(
+                tenant_id=ta.id,
+                profile_id=profile.id,
+                title="Alpha PP",
+                customer="Alpha Agency",
+                role=PerformanceRole.PRIME,
+                scope="alpha scope",
+            ),
+            "personnel": Personnel(
+                tenant_id=ta.id, profile_id=profile.id, name="Alpha Person", role="PM"
+            ),
+            "registration": Registration(
+                tenant_id=ta.id,
+                profile_id=profile.id,
+                kind=RegistrationKind.SAM,
+                identifier="ALPHA-SAM",
+            ),
+            "vehicle": Vehicle(
+                tenant_id=ta.id, profile_id=profile.id, vehicle="GSA MAS", number="ALPHA-MAS-1"
+            ),
+            "insurance": Insurance(
+                tenant_id=ta.id,
+                profile_id=profile.id,
+                kind=InsuranceKind.CYBER,
+                carrier="Alpha Insurer",
+            ),
+            "boilerplate_block": BoilerplateBlock(
+                tenant_id=ta.id,
+                profile_id=profile.id,
+                kind=BoilerplateKind.COMPANY_OVERVIEW,
+                title="Alpha Overview",
+                body="<p>alpha body</p>",
+            ),
+            "profile_file": ProfileFile(
+                tenant_id=ta.id,
+                profile_id=profile.id,
+                file_id=file.id,
+                kind=ProfileFileKind.CAPABILITY_STATEMENT,
+                title="Alpha Capability",
+            ),
+            "rate_card_entry": RateCardEntry(
+                tenant_id=ta.id,
+                profile_id=profile.id,
+                labor_category="Alpha Architect",
+                unit=RateUnit.HOUR,
+                rate_amount=150,
+                rate_currency="USD",
+            ),
+        }
+        session.add_all([certification, code, keyword, service_line, partner, *proof.values()])
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -265,6 +390,12 @@ async def build_context(database: Database) -> IsolationContext:
                 "teaming_partner_name": "Alpha Partner Corp",
                 "teaming_partner_uei": "PARTNER12345",
                 "teaming_partner_pan": "ABCDE1234F",
+                **{key: str(row.id) for key, row in proof.items()},
+                "past_performance_title": "Alpha PP",
+                "personnel_name": "Alpha Person",
+                "registration_identifier": "ALPHA-SAM",
+                "boilerplate_title": "Alpha Overview",
+                "rate_card_category": "Alpha Architect",
             },
         )
         b = TenantCtx(

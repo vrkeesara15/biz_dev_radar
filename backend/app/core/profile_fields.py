@@ -77,6 +77,76 @@ class DeliveryModel(StrEnum):
     OFFSHORE = "offshore"
 
 
+class PerformanceRole(StrEnum):
+    PRIME = "prime"
+    SUB = "sub"
+
+
+class AgencyType(StrEnum):
+    FEDERAL = "federal"
+    STATE = "state"
+    LOCAL = "local"
+    CENTRAL_MINISTRY = "central_ministry"
+    STATE_GOVERNMENT = "state_government"
+    PSU = "psu"
+    COMMERCIAL = "commercial"
+    INTERNATIONAL = "international"
+    OTHER = "other"
+
+
+class CparsRating(StrEnum):
+    EXCEPTIONAL = "exceptional"
+    VERY_GOOD = "very_good"
+    SATISFACTORY = "satisfactory"
+    MARGINAL = "marginal"
+    UNSATISFACTORY = "unsatisfactory"
+    NOT_RATED = "not_rated"
+
+
+class RegistrationKind(StrEnum):
+    SAM = "sam"
+    DSC = "dsc"
+    GEM = "gem"
+    CPPP = "cppp"
+    STATE_PORTAL = "state_portal"
+
+
+class InsuranceKind(StrEnum):
+    GENERAL_LIABILITY = "general_liability"
+    PROFESSIONAL_LIABILITY = "professional_liability"
+    CYBER = "cyber"
+    WORKERS_COMP = "workers_comp"
+    AUTO = "auto"
+    UMBRELLA = "umbrella"
+    OTHER = "other"
+
+
+class BoilerplateKind(StrEnum):
+    COMPANY_OVERVIEW = "company_overview"
+    MANAGEMENT_APPROACH = "management_approach"
+    QA_PLAN = "qa_plan"
+    TRANSITION_PLAN = "transition_plan"
+    SECURITY_APPROACH = "security_approach"
+    DIVERSITY = "diversity"
+    SUSTAINABILITY = "sustainability"
+    OTHER = "other"
+
+
+class ProfileFileKind(StrEnum):
+    CAPABILITY_STATEMENT = "capability_statement"
+    BROCHURE = "brochure"
+    CASE_STUDY = "case_study"
+    PAST_PROPOSAL = "past_proposal"
+    BRAND = "brand"
+    TEMPLATE = "template"
+
+
+class RateUnit(StrEnum):
+    HOUR = "hour"
+    DAY = "day"
+    MONTH = "month"
+
+
 class CertificationKind(StrEnum):
     # socio-economic (US set-asides, SPEC 4.2)
     EIGHT_A = "8a"
@@ -132,7 +202,7 @@ def certification_allowed(region: Region | str, kind: CertificationKind | str) -
 
 # Fields that only exist for one region (SPEC 4.1 "Region" column).
 US_ONLY_FIELDS: frozenset[str] = frozenset(
-    {"uei", "cage_code", "sam_status", "sam_expires_on", "ein"}
+    {"uei", "cage_code", "sam_status", "sam_expires_on", "ein", "cleared_personnel_count"}
 )
 IN_ONLY_FIELDS: frozenset[str] = frozenset(
     {
@@ -319,3 +389,25 @@ def validate_service_description(text: str, limit: int = MAX_SERVICE_LINE_WORDS)
     if count > limit:
         raise ValueError(f"description has {count} words; the limit is {limit}")
     return cleaned
+
+
+# --- proof (SPEC 4.5) ----------------------------------------------------------------------
+
+US_ONLY_REGISTRATIONS: frozenset[RegistrationKind] = frozenset({RegistrationKind.SAM})
+IN_ONLY_REGISTRATIONS: frozenset[RegistrationKind] = frozenset(
+    {
+        RegistrationKind.DSC,
+        RegistrationKind.GEM,
+        RegistrationKind.CPPP,
+        RegistrationKind.STATE_PORTAL,
+    }
+)
+MIN_PAST_PERFORMANCE_FOR_DRAFTING = 3
+
+
+def registration_allowed(region: Region | str, kind: RegistrationKind | str) -> bool:
+    own = Region(region)
+    reg = RegistrationKind(kind)
+    if reg in US_ONLY_REGISTRATIONS:
+        return own is Region.US
+    return own is Region.IN

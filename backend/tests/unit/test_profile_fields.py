@@ -11,6 +11,7 @@ from app.core.profile_fields import (
     US_ONLY_CERTS,
     US_ONLY_FIELDS,
     CertificationKind,
+    RegistrationKind,
     certification_allowed,
     normalize_cage,
     normalize_ein,
@@ -19,6 +20,7 @@ from app.core.profile_fields import (
     normalize_tan,
     normalize_uei,
     region_foreign_fields,
+    registration_allowed,
 )
 
 
@@ -92,3 +94,11 @@ def test_certification_kinds_and_region_rules() -> None:
     with pytest.raises(ValueError):
         certification_allowed("us", "iso_14001")
     assert {"net_worth_amount", "solvency_certificate_available", "mse_ownership"} <= IN_ONLY_FIELDS
+
+
+def test_registration_kinds_follow_region() -> None:
+    assert {k.value for k in RegistrationKind} == {"sam", "dsc", "gem", "cppp", "state_portal"}
+    assert registration_allowed("us", "sam") and not registration_allowed("in", "sam")
+    for kind in ("dsc", "gem", "cppp", "state_portal"):
+        assert registration_allowed(Region.IN, kind) and not registration_allowed("us", kind)
+    assert "cleared_personnel_count" in US_ONLY_FIELDS

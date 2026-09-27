@@ -74,7 +74,43 @@ delivery_model_t = postgresql.ENUM(
 teaming_relationship_t = postgresql.ENUM(
     "prime", "sub", "jv", name="teaming_relationship", create_type=False
 )
+performance_role_t = postgresql.ENUM("prime", "sub", name="performance_role", create_type=False)
+agency_type_t = postgresql.ENUM(
+    "federal", "state", "local", "central_ministry", "state_government", "psu", "commercial",
+    "international", "other",
+    name="agency_type", create_type=False,
+)  # fmt: skip
+cpars_rating_t = postgresql.ENUM(
+    "exceptional", "very_good", "satisfactory", "marginal", "unsatisfactory", "not_rated",
+    name="cpars_rating", create_type=False,
+)  # fmt: skip
+registration_kind_t = postgresql.ENUM(
+    "sam", "dsc", "gem", "cppp", "state_portal", name="registration_kind", create_type=False
+)
+insurance_kind_t = postgresql.ENUM(
+    "general_liability", "professional_liability", "cyber", "workers_comp", "auto", "umbrella",
+    "other",
+    name="insurance_kind", create_type=False,
+)  # fmt: skip
+boilerplate_kind_t = postgresql.ENUM(
+    "company_overview", "management_approach", "qa_plan", "transition_plan", "security_approach",
+    "diversity", "sustainability", "other",
+    name="boilerplate_kind", create_type=False,
+)  # fmt: skip
+profile_file_kind_t = postgresql.ENUM(
+    "capability_statement", "brochure", "case_study", "past_proposal", "brand", "template",
+    name="profile_file_kind", create_type=False,
+)  # fmt: skip
+rate_unit_t = postgresql.ENUM("hour", "day", "month", name="rate_unit", create_type=False)
 NEW_ENUMS = (
+    performance_role_t,
+    agency_type_t,
+    cpars_rating_t,
+    registration_kind_t,
+    insurance_kind_t,
+    boilerplate_kind_t,
+    profile_file_kind_t,
+    rate_unit_t,
     teaming_relationship_t,
     code_scheme_t,
     keyword_kind_t,
@@ -97,6 +133,14 @@ TENANT_TABLES: list[str] = [
     "profile_keywords",
     "service_lines",
     "teaming_partners",
+    "past_performance",
+    "personnel",
+    "registrations",
+    "vehicles",
+    "insurance",
+    "boilerplate_blocks",
+    "profile_files",
+    "rate_card_entries",
 ]
 
 
@@ -269,6 +313,8 @@ def upgrade() -> None:
         _text_list("notice_types_wanted"),
         _text_list("contract_types_preferred"),
         _text_list("teaming_roles"),
+        # proof (4.5)
+        sa.Column("cleared_personnel_count", sa.Integer()),
         # bank details (encrypted)
         sa.Column("bank_name", sa.String(200)),
         sa.Column("bank_account_number", _encrypted()),
@@ -342,6 +388,105 @@ def upgrade() -> None:
         _text_list("capabilities"),
         sa.Column("website", sa.String(500)),
         sa.Column("contact_email", sa.String(320)),
+        sa.Column("notes", sa.Text()),
+    )
+
+    # --- proof for drafting (M1-05, SPEC 4.5) ---------------------------------------------
+    def _file_fk(
+        name: str, *, nullable: bool = True, ondelete: str = "SET NULL"
+    ) -> sa.Column[object]:
+        return sa.Column(
+            name,
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("files.id", ondelete=ondelete),
+            nullable=nullable,
+        )
+
+    _profile_child(
+        "past_performance",
+        sa.Column("title", sa.String(300), nullable=False),
+        sa.Column("customer", sa.String(300), nullable=False),
+        sa.Column("customer_anonymized", sa.Boolean(), nullable=False, server_default=sa.false()),
+        sa.Column("agency_type", agency_type_t),
+        sa.Column("value_amount", sa.Numeric(18, 2)),
+        sa.Column("value_currency", sa.String(3)),
+        sa.Column("period_start", sa.Date()),
+        sa.Column("period_end", sa.Date()),
+        sa.Column("role", performance_role_t, nullable=False),
+        sa.Column("naics", sa.String(6)),
+        sa.Column("contract_number", sa.String(100)),
+        sa.Column("scope", sa.Text(), nullable=False),
+        sa.Column("outcomes", sa.Text()),
+        _text_list("technologies"),
+        sa.Column(
+            "reference_contact",
+            postgresql.JSONB(),
+            nullable=False,
+            server_default=sa.text("'{}'::jsonb"),
+        ),
+        sa.Column("cpars_rating", cpars_rating_t),
+        sa.Column("is_public", sa.Boolean(), nullable=False, server_default=sa.false()),
+    )
+    _profile_child(
+        "personnel",
+        sa.Column("name", sa.String(200), nullable=False),
+        sa.Column("role", sa.String(200), nullable=False),
+        sa.Column("years_experience", sa.Integer()),
+        _text_list("clearances"),
+        _text_list("certifications"),
+        sa.Column("education", sa.Text()),
+        _file_fk("resume_file_id"),
+        sa.Column("is_key_personnel", sa.Boolean(), nullable=False, server_default=sa.false()),
+    )
+    _profile_child(
+        "registrations",
+        sa.Column("kind", registration_kind_t, nullable=False),
+        sa.Column("identifier", sa.String(200)),
+        sa.Column("holder", sa.String(200)),
+        sa.Column("portal", sa.String(200)),
+        sa.Column("expires_on", sa.Date()),
+        sa.Column("notes", sa.Text()),
+    )
+    _profile_child(
+        "vehicles",
+        sa.Column("vehicle", sa.String(200), nullable=False),
+        sa.Column("number", sa.String(100)),
+        sa.Column("expires_on", sa.Date()),
+        sa.Column("notes", sa.Text()),
+    )
+    _profile_child(
+        "insurance",
+        sa.Column("kind", insurance_kind_t, nullable=False),
+        sa.Column("carrier", sa.String(200)),
+        sa.Column("policy_number", sa.String(100)),
+        sa.Column("limit_amount", sa.Numeric(18, 2)),
+        sa.Column("limit_currency", sa.String(3)),
+        sa.Column("expires_on", sa.Date()),
+        _file_fk("file_id"),
+    )
+    _profile_child(
+        "boilerplate_blocks",
+        sa.Column("kind", boilerplate_kind_t, nullable=False),
+        sa.Column("title", sa.String(300), nullable=False),
+        sa.Column("body", sa.Text(), nullable=False),
+        sa.Column("body_format", sa.String(8), nullable=False, server_default=sa.text("'html'")),
+    )
+    _profile_child(
+        "profile_files",
+        _file_fk("file_id", nullable=False, ondelete="CASCADE"),
+        sa.Column("kind", profile_file_kind_t, nullable=False),
+        sa.Column("title", sa.String(300)),
+        sa.Column(
+            "meta", postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")
+        ),
+    )
+    _profile_child(
+        "rate_card_entries",
+        sa.Column("labor_category", sa.String(200), nullable=False),
+        sa.Column("unit", rate_unit_t, nullable=False),
+        sa.Column("rate_amount", sa.Numeric(18, 2), nullable=False),
+        sa.Column("rate_currency", sa.String(3), nullable=False),
+        sa.Column("min_years_experience", sa.Integer()),
         sa.Column("notes", sa.Text()),
     )
 

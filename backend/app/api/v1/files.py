@@ -26,6 +26,7 @@ from app.models import File, Tenant
 from app.services.audit import AuditHint
 from app.services.scanner import ScannerUnavailableError
 from app.services.uploads import REJECTED_ACTION, UPLOAD_ACTION, UploadService
+from app.services.users import ensure_user_membership
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -111,8 +112,12 @@ async def upload_file(
                 limit=MAX_UPLOAD_BYTES,
             ),
         )
+    # files.uploaded_by references users: provision the caller on first use (as /me does)
+    provisioned = await ensure_user_membership(
+        user_id=user.id, email=user.email, tenant_id=user.tenant_id, role=user.role
+    )
     tenant = await session.get(Tenant, user.tenant_id)
-    if tenant is None:
+    if provisioned is None or tenant is None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="unknown tenant")
     storage = storage_router.for_region(tenant.data_residency)
     service = UploadService(session, storage=storage, scanner=scanner)
@@ -123,7 +128,7 @@ async def upload_file(
             region=tenant.data_residency,
             filename=filename,
             data=data,
-            uploaded_by=user.id,
+            uploaded_by=provisioned.user_id,
         )
     except UploadRejected as exc:
         raise _reject(request, filename, exc) from exc
