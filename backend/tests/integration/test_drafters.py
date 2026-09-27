@@ -326,7 +326,10 @@ async def test_one_drafter_per_volume_writes_grounded_versions(
         assert tech.citations[0]["token"] == pp_token
         assert tech.citations[0]["source_type"] == "past_performance"
         assert tech.citations[0]["source_id"] == str(ctx["past_performance"])
-        assert tech.needs_input == [] and tech.flags == {}
+        assert tech.needs_input == []
+        # the grounding validator ran on the way in (M5-11): the cited sentence is supported
+        assert tech.flags["unsupported_count"] == 0 and tech.flags["supported_count"] >= 1
+        assert tech.flags["flags"] == []
         assert tech.model == SETTINGS.llm_model_sonnet_class
         assert (await session.execute(select(Task))).scalars().all() == []
 

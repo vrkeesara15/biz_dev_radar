@@ -1,8 +1,9 @@
 """Draft persistence (SPEC 8 agent 6, 10.2, 10.3).
 
 `save_version` is the ONLY place a draft_versions row is written -- by the drafting
-agent and by a writer's PUT alike -- so every version is numbered, grounded (M5-11 runs
-the validator here) and repointed as `drafts.current_version_id` in one place.
+agent and by a writer's PUT alike -- so every version is numbered, run through the
+grounding validator (core.grounding, M5-11) and repointed as
+`drafts.current_version_id` in one place.
 
     draft, version = await save_version(session, tenant_id, pursuit_id, "technical-approach",
                                         title="Technical Approach", body_html=..., author="agent")
@@ -13,15 +14,80 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.citations import kb_token
+from app.core.grounding import validate
 from app.core.html_text import html_to_text
 from app.core.markdown import sanitize_html
-from app.models import Draft, DraftVersion, Task
-from app.models.drafts import AUTHOR_AGENT, DRAFT_STATUS_DRAFT, TASK_OPEN
+from app.models import (
+    Certification,
+    CompanyProfile,
+    Draft,
+    DraftVersion,
+    KBChunk,
+    PastPerformance,
+    Pursuit,
+    Task,
+)
+from app.models.drafts import (
+    AUTHOR_AGENT,
+    DRAFT_STATUS_APPROVED,
+    DRAFT_STATUS_DRAFT,
+    DRAFT_STATUS_IN_REVIEW,
+    TASK_OPEN,
+)
+from app.services.evidence import evidence_tokens, load_evidence
+
+
+@dataclass(frozen=True, slots=True)
+class GroundingInputs:
+    """What core.grounding checks a body against: the tokens that resolve to one of this
+    tenant's own records, and the facts those records state."""
+
+    tokens: frozenset[str] = frozenset()
+    facts: tuple[str, ...] = ()
+
+
+async def grounding_inputs(session: AsyncSession, pursuit_id: uuid.UUID) -> GroundingInputs:
+    """Every citation token the pursuit's profile can back, plus its plain facts."""
+    pursuit = await session.get(Pursuit, pursuit_id)
+    if pursuit is None:
+        return GroundingInputs()
+    records = await load_evidence(session, pursuit.profile_id)
+    tokens = set(evidence_tokens(records))
+    facts: list[str] = [record.title for record in records]
+    chunks = (
+        await session.execute(
+            select(KBChunk.source_type, KBChunk.source_id, KBChunk.chunk_index).where(
+                KBChunk.profile_id == pursuit.profile_id
+            )
+        )
+    ).all()
+    tokens.update(kb_token(str(st), sid, int(index)) for st, sid, index in chunks)
+    profile = await session.get(CompanyProfile, pursuit.profile_id)
+    if profile is not None:
+        facts.append(profile.legal_name)
+        facts.extend(str(name) for name in (profile.dba_names or []))
+    customers = (
+        await session.execute(
+            select(PastPerformance.customer).where(PastPerformance.profile_id == pursuit.profile_id)
+        )
+    ).scalars()
+    facts.extend(str(customer) for customer in customers if customer)
+    certs = (
+        await session.execute(
+            select(Certification.kind).where(Certification.profile_id == pursuit.profile_id)
+        )
+    ).scalars()
+    # the certification rows are already citable (load_evidence); their names are facts, so
+    # naming a certification the profile really holds is not a third-party reference
+    facts.extend(str(kind).replace("_", " ") for kind in certs)
+    return GroundingInputs(tokens=frozenset(tokens), facts=tuple(f for f in facts if f))
 
 
 async def get_draft(session: AsyncSession, pursuit_id: uuid.UUID, section_id: str) -> Draft | None:
@@ -93,6 +159,7 @@ async def save_version(
     volume: str | None = None,
     citations: Sequence[dict[str, Any]] = (),
     needs_input: Sequence[dict[str, Any]] = (),
+    # extra keys merged over the grounding report (the red-team reviewer adds its own)
     flags: dict[str, Any] | None = None,
     author: str = AUTHOR_AGENT,
     author_user_id: uuid.UUID | None = None,
@@ -101,8 +168,9 @@ async def save_version(
 ) -> tuple[Draft, DraftVersion]:
     """Append a version to the section's draft (creating the draft row on first write).
 
-    The HTML is sanitised here whoever wrote it, `body_text` is derived from it and the
-    draft's `current_version_id` is repointed at the new row.
+    The HTML is sanitised here whoever wrote it, `body_text` is derived from it, the
+    grounding validator runs over the result (SPEC 8: unsupported company claims are
+    flagged for the UI) and the draft's `current_version_id` is repointed at the new row.
     """
     draft = await get_draft(session, pursuit_id, section_id)
     if draft is None:
@@ -121,15 +189,18 @@ async def save_version(
         if volume is not None:
             draft.volume = volume
     clean = sanitize_html(body_html)
+    body_text = html_to_text(clean)
+    grounding = await grounding_inputs(session, pursuit_id)
+    report = validate(body_text, list(citations), grounding.tokens, grounding.facts)
     row = DraftVersion(
         tenant_id=tenant_id,
         draft_id=draft.id,
         version=await latest_version_number(session, draft.id) + 1,
         body_html=clean,
-        body_text=html_to_text(clean),
+        body_text=body_text,
         citations=[dict(c) for c in citations],
         needs_input=[dict(n) for n in needs_input],
-        flags=dict(flags or {}),
+        flags={**report.as_dict(), **dict(flags or {})},
         author=author,
         author_user_id=author_user_id,
         model=model,
@@ -178,4 +249,60 @@ async def open_tasks(session: AsyncSession, pursuit_id: uuid.UUID) -> list[Task]
         )
         .scalars()
         .all()
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class DraftsSummary:
+    """What the pursuit header shows about its drafts (SPEC 8: the unsupported-claim
+    count travels with the pursuit, not only with the section)."""
+
+    count: int = 0
+    approved: int = 0
+    in_review: int = 0
+    unsupported_claims_count: int = 0
+    needs_input_count: int = 0
+    flagged_sections: int = 0
+
+    def as_dict(self) -> dict[str, int]:
+        return {
+            "count": self.count,
+            "approved": self.approved,
+            "in_review": self.in_review,
+            "unsupported_claims_count": self.unsupported_claims_count,
+            "needs_input_count": self.needs_input_count,
+            "flagged_sections": self.flagged_sections,
+        }
+
+
+async def summarise(session: AsyncSession, pursuit_id: uuid.UUID) -> DraftsSummary:
+    """Aggregate the pursuit's CURRENT draft versions (older versions do not count)."""
+    rows = (
+        await session.execute(
+            select(Draft, DraftVersion)
+            .outerjoin(DraftVersion, DraftVersion.id == Draft.current_version_id)
+            .where(Draft.pursuit_id == pursuit_id)
+        )
+    ).all()
+    unsupported = needs_input = flagged = approved = in_review = 0
+    for row in rows:
+        draft = row[0]
+        version: DraftVersion | None = row[1]
+        if draft.status == DRAFT_STATUS_APPROVED:
+            approved += 1
+        elif draft.status == DRAFT_STATUS_IN_REVIEW:
+            in_review += 1
+        if version is None:  # a draft row whose first version is still being written
+            continue
+        count = int((version.flags or {}).get("unsupported_count") or 0)
+        unsupported += count
+        flagged += 1 if count else 0
+        needs_input += len(version.needs_input or [])
+    return DraftsSummary(
+        count=len(rows),
+        approved=approved,
+        in_review=in_review,
+        unsupported_claims_count=unsupported,
+        needs_input_count=needs_input,
+        flagged_sections=flagged,
     )

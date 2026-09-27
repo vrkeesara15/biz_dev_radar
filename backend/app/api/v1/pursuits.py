@@ -54,8 +54,10 @@ from app.models import (
 )
 from app.models.agents import RUN_NEEDS_APPROVAL, RUN_PAUSED, RUN_QUEUED
 from app.models.pursuit import DECISION_BID, DECISIONS
+from app.services import drafts as draft_svc
 from app.services import pursuits as pursuit_svc
 from app.services.audit import AuditHint
+from app.services.drafts import DraftsSummary
 from app.services.events import PURSUIT_DECIDED, get_event_bus
 from app.services.users import ensure_user_membership
 
@@ -91,6 +93,18 @@ class RunOut(BaseModel):
     created_at: datetime
 
 
+class DraftsSummaryOut(BaseModel):
+    """Draft state of the pursuit; `unsupported_claims_count` is the grounding validator's
+    tally over the current version of every section (SPEC 8, M5-11)."""
+
+    count: int = 0
+    approved: int = 0
+    in_review: int = 0
+    unsupported_claims_count: int = 0
+    needs_input_count: int = 0
+    flagged_sections: int = 0
+
+
 class PursuitOut(BaseModel):
     id: uuid.UUID
     profile_id: uuid.UUID
@@ -111,6 +125,7 @@ class PursuitOut(BaseModel):
     budget_month_limit_usd: Decimal | None  # None = unlimited
     budget_month_spent_usd: Decimal
     budget_month_remaining_usd: Decimal | None
+    drafts: DraftsSummaryOut
     run: RunOut | None
 
 
@@ -248,7 +263,12 @@ def run_out(run: AgentRun) -> RunOut:
     )
 
 
-def pursuit_out(pursuit: Pursuit, costs: CostSnapshot, run: AgentRun | None) -> PursuitOut:
+def pursuit_out(
+    pursuit: Pursuit,
+    costs: CostSnapshot,
+    run: AgentRun | None,
+    drafts: DraftsSummary | None = None,
+) -> PursuitOut:
     return PursuitOut(
         id=pursuit.id,
         profile_id=pursuit.profile_id,
@@ -268,6 +288,7 @@ def pursuit_out(pursuit: Pursuit, costs: CostSnapshot, run: AgentRun | None) -> 
         budget_month_limit_usd=costs.month_budget_usd,
         budget_month_spent_usd=costs.month_spent_usd,
         budget_month_remaining_usd=costs.month_remaining_usd,
+        drafts=DraftsSummaryOut(**(drafts or DraftsSummary()).as_dict()),
         run=None if run is None else run_out(run),
     )
 
@@ -277,7 +298,12 @@ async def load_pursuit_out(
 ) -> PursuitOut:
     tenant = await pursuit_svc.get_tenant(session, tenant_id)
     costs = await cost_snapshot(session, pursuit, tenant)
-    return pursuit_out(pursuit, costs, await pursuit_svc.latest_run(session, pursuit.id))
+    return pursuit_out(
+        pursuit,
+        costs,
+        await pursuit_svc.latest_run(session, pursuit.id),
+        await draft_svc.summarise(session, pursuit.id),
+    )
 
 
 def app_llm(request: Request) -> LLMClient | None:

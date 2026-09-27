@@ -1617,7 +1617,7 @@
       "Flags are stored on draft_versions and rendered red in the UI; count exposed on the pursuit",
       "Unit tests for supported, unsupported and placeholder sentences"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-12",
