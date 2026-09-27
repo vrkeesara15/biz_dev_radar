@@ -11,13 +11,53 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, UniqueConstraint, func, text
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 STAGE_IDENTIFIED = "identified"
+STAGE_QUALIFYING = "qualifying"
+STAGE_BID_DECISION = "bid_decision"
+STAGE_DRAFTING = "drafting"
+STAGE_IN_REVIEW = "in_review"
+STAGE_FINAL_APPROVAL = "final_approval"
+STAGE_SUBMITTED = "submitted"
+STAGE_AWARDED = "awarded"
+STAGE_LOST = "lost"
+STAGE_CANCELLED = "cancelled"
+STAGE_NO_BID = "no_bid"
+
+# SPEC 9: Identified -> Qualifying -> Bid decision -> Drafting -> In review -> Final
+# approval -> Submitted -> Awarded / Lost / Cancelled / No-bid. M6-01 adds the ordering
+# rules and the board; M5-06 only enforces "no Drafting without a bid decision".
+STAGES: tuple[str, ...] = (
+    STAGE_IDENTIFIED,
+    STAGE_QUALIFYING,
+    STAGE_BID_DECISION,
+    STAGE_DRAFTING,
+    STAGE_IN_REVIEW,
+    STAGE_FINAL_APPROVAL,
+    STAGE_SUBMITTED,
+    STAGE_AWARDED,
+    STAGE_LOST,
+    STAGE_CANCELLED,
+    STAGE_NO_BID,
+)
+
+DECISION_BID = "bid"
+DECISION_NO_BID = "no_bid"
+DECISIONS: tuple[str, ...] = (DECISION_BID, DECISION_NO_BID)
 
 
 class Pursuit(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
@@ -47,6 +87,12 @@ class Pursuit(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
     decision: Mapped[str | None] = mapped_column(String(16))  # bid | no_bid
+    # Gate 1 (SPEC 8, 9): who recorded the decision, when, and why
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    decision_note: Mapped[str | None] = mapped_column(Text)
     internal_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")

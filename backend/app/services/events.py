@@ -25,6 +25,8 @@ log = structlog.get_logger(__name__)
 OPPORTUNITY_CREATED = "opportunity.created"
 OPPORTUNITY_AMENDED = "opportunity.amended"
 ADAPTER_FAILING = "adapter.failing"
+# SPEC 8 / 9 gates: a human recorded the bid/no-bid decision on a pursuit
+PURSUIT_DECIDED = "pursuit.decided"
 
 
 @dataclass(frozen=True, slots=True)

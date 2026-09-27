@@ -1527,7 +1527,7 @@
       "Run pauses at Gate 1; POST /api/v1/pursuits/{id}/decision records bid|no_bid by an allowed approver and resumes or closes",
       "Stage cannot move to Drafting without a bid decision"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-07",

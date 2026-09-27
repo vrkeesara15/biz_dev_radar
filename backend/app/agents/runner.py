@@ -178,6 +178,8 @@ class RunResult:
     # when the caller asked for a paused finish (gates / unimplemented steps)
     paused_step: str | None = None
     pause_reason: str | None = None
+    # the human gate the run stopped at (pipeline.GATE_1 / GATE_2), when it is one
+    gate: str | None = None
     decision: BudgetDecision | None = None
 
 
@@ -240,9 +242,11 @@ class AgentRunner:
         *,
         finish_status: str = RUN_DONE,
         finish_reason: str | None = None,
+        finish_gate: str | None = None,
     ) -> RunResult:
         """Execute the not-yet-done steps in order. `finish_status` (done or paused) is the
-        status once every given step is done; `finish_reason` explains a paused finish."""
+        status once every given step is done; `finish_reason` explains a paused finish and
+        `finish_gate` names the human gate it is waiting on (recorded in params["gate"])."""
         if finish_status not in (RUN_DONE, RUN_PAUSED):
             raise ValueError("finish_status must be done or paused")
         async with self.database.session(self.tenant_id) as session:
@@ -263,7 +267,7 @@ class AgentRunner:
             run.pause_reason = None
             done_outputs = await self._done_outputs(session, run_id)
             attempts = await self._attempts(session, run_id)
-            params = {k: v for k, v in (run.params or {}).items() if k != "paused_at"}
+            params = {k: v for k, v in (run.params or {}).items() if k not in ("paused_at", "gate")}
         result = RunResult(run_id, RUN_RUNNING, outputs=dict(done_outputs))
 
         for spec in steps:
@@ -301,8 +305,9 @@ class AgentRunner:
             elif finish_status == RUN_PAUSED:
                 run.status = RUN_PAUSED
                 run.pause_reason = finish_reason
-                run.params = params
+                run.params = params if finish_gate is None else {**params, "gate": finish_gate}
                 result.pause_reason = finish_reason
+                result.gate = finish_gate
             else:
                 run.status = RUN_DONE
                 run.params = params

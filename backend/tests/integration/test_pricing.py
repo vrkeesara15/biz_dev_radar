@@ -233,14 +233,16 @@ async def test_pricing_without_a_rate_card_writes_placeholders_and_a_warning(
     assert any("Warning: the profile has no rate card" in str(row[0]) for row in sheets["Summary"])
 
 
-async def test_run_endpoint_queues_the_pipeline_and_pauses_at_the_first_missing_step(
+async def test_run_endpoint_queues_the_pipeline_and_pauses_at_gate_one(
     app: Any,
     api_client: httpx.AsyncClient,
     database: Database,
     tmp_path: Path,
+    fake_llm: Any,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     app.state.agent_services = _services(tmp_path)
+    app.state.llm = fake_llm
     ctx = await _setup(database)
     owner = auth_headers(user_id=ctx["user_id"], tenant_id=ctx["tenant_id"], email=ctx["email"])
     writer = auth_headers(user_id=uuid.uuid4(), tenant_id=ctx["tenant_id"], role=Role.WRITER)
@@ -259,14 +261,29 @@ async def test_run_endpoint_queues_the_pipeline_and_pauses_at_the_first_missing_
     assert body["pursuit"]["run"]["id"] == body["run_id"]
     assert body["pursuit"]["run"]["status"] == "done"
 
-    # "all" runs what exists and stops at the first agent a later task still has to add
+    # "all" runs what exists and stops at Gate 1: nothing is drafted before a human
+    # approves the bid (SPEC 8, 9). The analyst needs a model, so a FakeLLM answers it.
+    fake_llm.queue(
+        {
+            "fit": 70,
+            "eligibility": 70,
+            "capacity": 70,
+            "competition": 70,
+            "value_fit": 70,
+            "win_probability": 70,
+            "recommendation": "watch",
+            "reasons": ["no requirements were extracted from this notice"],
+        }
+    )
     everything = await api_client.post(url, json={"step": "all", "inline": True}, headers=owner)
     assert everything.status_code == 202
     data = everything.json()
-    assert data["steps"] == ["collect", "extract", "matrix"]
+    assert data["steps"] == ["collect", "extract", "matrix", "bid_no_bid"]
     assert data["result"]["status"] == "paused"
-    assert "bid_no_bid" in data["result"]["pause_reason"]
+    assert data["result"]["gate"] == "gate1"
+    assert "bid/no-bid decision" in data["result"]["pause_reason"]
     assert data["pursuit"]["run"]["status"] == "paused"
+    assert data["pursuit"]["run"]["gate"] == "gate1"
 
     # queued when a broker answers: the task id comes back and nothing runs in-process
     monkeypatch.setattr("app.jobs.run_agents.enqueue_agents", lambda run_id, tenant_id: "task-1")

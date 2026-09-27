@@ -336,6 +336,14 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
     ),
+    ("PATCH", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"stage": "qualifying"}
+    ),
+    # M5-06 Gate 1: only an approver of A's profile may decide, and only inside A
+    ("POST", "/api/v1/pursuits/{pursuit_id}/decision"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={"decision": "no_bid", "note": "isolation probe"},
+    ),
     ("GET", "/api/v1/pursuits/{pursuit_id}/matrix"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
     ),

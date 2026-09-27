@@ -97,6 +97,10 @@ def upgrade() -> None:
         sa.Column("stage", sa.String(32), nullable=False, server_default=sa.text("'identified'")),
         _fk("owner_user_id", "users.id", ondelete="SET NULL", nullable=True),
         sa.Column("decision", sa.String(16)),
+        # Gate 1 (M5-06): who approved bid / no-bid, when and why
+        _fk("decided_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("decided_at"),
+        sa.Column("decision_note", sa.Text()),
         _ts("internal_due_at"),
         _fk("created_by", "users.id", ondelete="SET NULL", nullable=True),
         sa.Column("cost_cap_usd", sa.Numeric(12, 2)),

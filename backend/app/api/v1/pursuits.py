@@ -7,9 +7,11 @@ and the budget approval that resumes a run the cost guard paused.
     GET  /api/v1/pursuits/{pursuit_id}/packet              uploads, portal, signatures, deadline
     POST /api/v1/pursuits/{pursuit_id}/agents/run          {step: collect|...|all}
     POST /api/v1/pursuits/{pursuit_id}/agents/approve-budget {additional_usd, reason?}
+    PATCH /api/v1/pursuits/{pursuit_id}                    {stage}
+    POST /api/v1/pursuits/{pursuit_id}/decision            {decision: bid|no_bid, note?}
 
-M6-01 adds POST /opportunities/{id}/pursue|watch|pass, PATCH (stages) and the decision
-route; the second M5 pass adds drafts, matrix comments and exports.
+M6-01 adds POST /opportunities/{id}/pursue|watch|pass and the full stage rules on top of
+`services.pursuits.check_stage_transition`; the second M5 pass adds drafts and exports.
 """
 
 from __future__ import annotations
@@ -41,10 +43,21 @@ from app.core.config import Settings
 from app.core.packet import Packet, PacketContext, build_packet
 from app.core.roles import Role
 from app.jobs import run_agents as run_agents_job_module
-from app.models import AgentRun, ComplianceItem, Opportunity, Pursuit, Requirement, User
-from app.models.agents import RUN_NEEDS_APPROVAL, RUN_QUEUED
+from app.models import (
+    AgentRun,
+    CompanyProfile,
+    ComplianceItem,
+    Opportunity,
+    Pursuit,
+    Requirement,
+    User,
+)
+from app.models.agents import RUN_NEEDS_APPROVAL, RUN_PAUSED, RUN_QUEUED
+from app.models.pursuit import DECISION_BID, DECISIONS
 from app.services import pursuits as pursuit_svc
 from app.services.audit import AuditHint
+from app.services.events import PURSUIT_DECIDED, get_event_bus
+from app.services.users import ensure_user_membership
 
 router = APIRouter(prefix="/pursuits", tags=["pursuits"])
 
@@ -69,6 +82,7 @@ class RunOut(BaseModel):
     status: str
     pause_reason: str | None
     paused_at: str | None
+    gate: str | None
     cost_usd: Decimal
     tokens_in: int
     tokens_out: int
@@ -84,6 +98,9 @@ class PursuitOut(BaseModel):
     stage: str
     owner_user_id: uuid.UUID | None
     decision: str | None
+    decided_by: uuid.UUID | None
+    decided_at: datetime | None
+    decision_note: str | None
     internal_due_at: datetime | None
     created_by: uuid.UUID | None
     created_at: datetime
@@ -95,6 +112,37 @@ class PursuitOut(BaseModel):
     budget_month_spent_usd: Decimal
     budget_month_remaining_usd: Decimal | None
     run: RunOut | None
+
+
+class PursuitPatchIn(BaseModel):
+    """M5-06 keeps this small on purpose: M6-01 adds key dates and the rest of the board."""
+
+    stage: str | None = Field(default=None, max_length=32)
+    owner_user_id: uuid.UUID | None = None
+
+
+class DecisionIn(BaseModel):
+    decision: str = Field(max_length=16)
+    note: str | None = Field(default=None, max_length=2000)
+    # run the resumed pipeline in the API process (tests / no worker); otherwise queued
+    inline: bool = False
+
+    @field_validator("decision")
+    @classmethod
+    def _known(cls, value: str) -> str:
+        if value not in DECISIONS:
+            raise ValueError(f"decision must be one of {list(DECISIONS)}")
+        return value
+
+
+class DecisionOut(BaseModel):
+    pursuit: PursuitOut
+    decision: str
+    previous_stage: str
+    resumed_run_id: uuid.UUID | None
+    mode: str  # queued | inline | none
+    task_id: str | None = None
+    result: dict[str, Any] | None = None
 
 
 class MatrixRowOut(BaseModel):
@@ -190,6 +238,7 @@ def run_out(run: AgentRun) -> RunOut:
         status=run.status,
         pause_reason=run.pause_reason,
         paused_at=params.get("paused_at"),
+        gate=params.get("gate"),
         cost_usd=Decimal(run.cost_usd),
         tokens_in=run.tokens_in,
         tokens_out=run.tokens_out,
@@ -207,6 +256,9 @@ def pursuit_out(pursuit: Pursuit, costs: CostSnapshot, run: AgentRun | None) -> 
         stage=pursuit.stage,
         owner_user_id=pursuit.owner_user_id,
         decision=pursuit.decision,
+        decided_by=pursuit.decided_by,
+        decided_at=pursuit.decided_at,
+        decision_note=pursuit.decision_note,
         internal_due_at=pursuit.internal_due_at,
         created_by=pursuit.created_by,
         created_at=pursuit.created_at,
@@ -286,6 +338,114 @@ async def get_pursuit(
 ) -> PursuitOut:
     pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
     return await load_pursuit_out(session, pursuit, user.tenant_id)
+
+
+@router.patch("/{pursuit_id}", response_model=PursuitOut)
+async def patch_pursuit(
+    pursuit_id: uuid.UUID,
+    body: PursuitPatchIn,
+    session: TenantSessionDep,
+    user: ManagerDep,
+    request: Request,
+) -> PursuitOut:
+    """Move a pursuit through the pipeline stages (SPEC 9; M6-01 adds the full board).
+
+    The stage rules live in `services.pursuits.check_stage_transition`: entering Drafting
+    without an approved bid decision is 409 (Gate 1).
+    """
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    meta: dict[str, Any] = {}
+    if body.stage is not None:
+        meta["previous_stage"] = pursuit_svc.move_stage(pursuit, body.stage)
+        meta["stage"] = body.stage
+    if body.owner_user_id is not None:
+        pursuit.owner_user_id = body.owner_user_id
+        meta["owner_user_id"] = str(body.owner_user_id)
+    request.state.audit = AuditHint(
+        action="pursuit.updated", object_type="pursuit", object_id=str(pursuit.id), meta=meta
+    )
+    await session.flush()
+    await session.refresh(pursuit)  # updated_at is a server-side onupdate
+    return await load_pursuit_out(session, pursuit, user.tenant_id)
+
+
+@router.post("/{pursuit_id}/decision", response_model=DecisionOut)
+async def record_decision(
+    pursuit_id: uuid.UUID,
+    body: DecisionIn,
+    session: TenantSessionDep,
+    user: ReaderDep,
+    request: Request,
+    settings: SettingsDep,
+) -> DecisionOut:
+    """Gate 1 (SPEC 8, 9): an approver records bid or no-bid.
+
+    Only the roles the profile's `required_approver_roles` names (plus the tenant owner)
+    may decide. A `bid` moves the pursuit to Drafting and resumes the run the pipeline
+    left paused at Gate 1; a `no_bid` closes the pursuit and resumes nothing.
+    """
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    profile = await session.get(CompanyProfile, pursuit.profile_id)
+    allowed = pursuit_svc.approver_roles(profile)
+    if user.role not in allowed:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            detail=(
+                f"role {user.role.value} may not approve bid/no-bid; "
+                f"allowed: {sorted(r.value for r in allowed)}"
+            ),
+        )
+    # decided_by references users: make sure the JIT row exists (OQ-16)
+    await ensure_user_membership(
+        user_id=user.id, email=user.email, tenant_id=user.tenant_id, role=user.role
+    )
+    previous_stage = pursuit_svc.record_decision(pursuit, body.decision, user.id, note=body.note)
+    run = await pursuit_svc.latest_run(session, pursuit.id)
+    resumed: AgentRun | None = None
+    if body.decision == DECISION_BID and run is not None and run.status == RUN_PAUSED:
+        run.status = RUN_QUEUED
+        resumed = run
+    request.state.audit = AuditHint(
+        action="pursuit.decided",
+        object_type="pursuit",
+        object_id=str(pursuit.id),
+        meta={
+            "decision": body.decision,
+            "previous_stage": previous_stage,
+            "stage": pursuit.stage,
+            "note": body.note,
+            "run_id": None if resumed is None else str(resumed.id),
+        },
+    )
+    await session.commit()  # the worker / inline job reads the run in its own session
+    await get_event_bus().publish(
+        PURSUIT_DECIDED,
+        {
+            "tenant_id": str(user.tenant_id),
+            "pursuit_id": str(pursuit.id),
+            "profile_id": str(pursuit.profile_id),
+            "opportunity_id": str(pursuit.opportunity_id),
+            "decision": body.decision,
+            "decided_by": str(user.id),
+            "stage": pursuit.stage,
+        },
+    )
+    mode, task_id, result = "none", None, None
+    if resumed is not None:
+        mode, task_id, result = await dispatch_run(
+            request, settings, resumed.id, user.tenant_id, inline=body.inline
+        )
+    session.expire_all()
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    return DecisionOut(
+        pursuit=await load_pursuit_out(session, pursuit, user.tenant_id),
+        decision=body.decision,
+        previous_stage=previous_stage,
+        resumed_run_id=None if resumed is None else resumed.id,
+        mode=mode,
+        task_id=task_id,
+        result=result,
+    )
 
 
 async def _matrix_artifacts(
@@ -417,7 +577,9 @@ async def run_agents(
     (`bidradar.run_agents`) or executed in the API process; the cost guard still decides
     before every step, so a run can come back needs_approval having spent nothing."""
     pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
-    specs, _finish = pipeline.plan_steps(body.step)
+    specs, _finish = pipeline.plan_steps(
+        body.step, gates_cleared=pursuit_svc.cleared_gates(pursuit)
+    )
     runner = AgentRunner(tenant_id=user.tenant_id, llm=app_llm(request) or _NO_LLM)
     run_id = await runner.start(
         kind=pursuit_svc.PIPELINE_RUN_KIND, pursuit_id=pursuit.id, params={"step": body.step}
