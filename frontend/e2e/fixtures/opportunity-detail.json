@@ -1,0 +1,110 @@
+{
+  "id": "7c1d2e3f-0000-4000-8000-000000000001",
+  "source_id": "sam_opps",
+  "external_id": "36C24825R0042",
+  "region": "us",
+  "country": "US",
+  "currency": "USD",
+  "notice_type": "rfp",
+  "status": "open",
+  "title": "Cloud migration and managed services for VA regional offices",
+  "summary_ai": "Migration of 14 on-premise applications to a FedRAMP High cloud with 24x7 managed services.\nDepartment of Veterans Affairs, Veterans Health Administration, Network Contracting Office 8; full RFP.\nSmall business set-aside; FedRAMP High authorization and two similar migrations in the last five years required.\nEstimated value $2.5M to $4M over a base year and four options.\nQuestions due Oct 1, 2026; proposals due Oct 14, 2026 2:00 PM EDT.",
+  "solicitation_number": "36C24825R0042",
+  "buyer_org": "Department of Veterans Affairs",
+  "buyer_sub_org": "Veterans Health Administration",
+  "buyer_office": "Network Contracting Office 8",
+  "naics": ["541512", "541519"],
+  "psc": ["DA10"],
+  "aln": [],
+  "set_aside": "SBA",
+  "reservation": null,
+  "estimated_value_min": "2500000",
+  "estimated_value_max": "4000000",
+  "estimated_value_min_usd": "2500000",
+  "estimated_value_max_usd": "4000000",
+  "posted_at": "2026-09-15T13:05:00Z",
+  "response_due_at": "2026-10-14T18:00:00Z",
+  "source_tz": "America/New_York",
+  "incumbent": "Example Federal Systems LLC",
+  "prior_award_value": "3100000",
+  "prior_pop_end": "2026-12-31",
+  "version": 2,
+  "parent_opportunity_id": null,
+  "duplicate_of": null,
+  "match": null,
+  "attribution": {
+    "source_id": "sam_opps",
+    "source_name": "SAM.gov",
+    "source_url": "https://sam.gov/opp/36C24825R0042/view"
+  },
+  "disclaimer": "Verify every detail on the official portal before submitting.",
+  "description_text": "The Department of Veterans Affairs requires migration of fourteen on-premise applications to a FedRAMP High authorized cloud environment together with 24x7 managed services. Offerors must hold a FedRAMP High authorization or partner with an authorized CSP and demonstrate two comparable migrations completed within the last five years.",
+  "buyer_hierarchy": ["Department of Veterans Affairs", "Veterans Health Administration", "Network Contracting Office 8"],
+  "india_category": [],
+  "place_of_performance": { "city": "Bay Pines", "state": "FL", "country": "US", "remote": true },
+  "emd_amount": null,
+  "tender_fee": null,
+  "questions_due_at": "2026-10-01T16:00:00Z",
+  "prebid_meeting_at": null,
+  "opening_at": null,
+  "archive_at": null,
+  "contacts": [
+    { "name": "Jordan Ellis", "title": "Contracting Officer", "email": "jordan.ellis@example.va.gov", "phone": "+1 727 555 0142", "kind": "primary" },
+    { "name": "Priya Raman", "title": "Contract Specialist", "email": "priya.raman@example.va.gov", "phone": null, "kind": "secondary" }
+  ],
+  "eligibility": {
+    "min_experience_years": 5,
+    "required_certifications": ["FedRAMP High", "ISO 27001"],
+    "eligibility_text": "Small business set-aside under NAICS 541512; offerors must be registered in SAM.gov at time of offer."
+  },
+  "detail_status": "full",
+  "content_hash": "d4c3b2a1",
+  "also_from": [
+    { "source_id": "highergov", "external_id": "HG-99123", "source_url": "https://www.highergov.com/contract-opportunity/HG-99123" }
+  ],
+  "last_seen_at": "2026-09-26T02:10:00Z",
+  "created_at": "2026-09-15T13:10:00Z",
+  "updated_at": "2026-09-25T09:00:00Z",
+  "versions": [
+    { "version": 1, "diff": {}, "changes": [], "created_at": "2026-09-15T13:10:00Z" },
+    {
+      "version": 2,
+      "diff": {
+        "response_due_at": { "old": "2026-10-07T18:00:00Z", "new": "2026-10-14T18:00:00Z" },
+        "documents": {
+          "old": [{ "url": "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/aaa/download", "file_name": "RFP-36C24825R0042.pdf" }],
+          "new": [
+            { "url": "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/aaa/download", "file_name": "RFP-36C24825R0042.pdf" },
+            { "url": "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/bbb/download", "file_name": "Amendment-0001.pdf" }
+          ]
+        }
+      },
+      "changes": ["deadline_moved", "new_attachment"],
+      "created_at": "2026-09-25T09:00:00Z"
+    }
+  ],
+  "documents": [
+    {
+      "id": "d0c00000-0000-4000-8000-000000000001",
+      "file_name": "RFP-36C24825R0042.pdf",
+      "url": "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/aaa/download",
+      "kind": "attachment",
+      "mime_type": "application/pdf",
+      "size": 2621440,
+      "pages": 24,
+      "status": "parsed",
+      "hash": "abc123"
+    },
+    {
+      "id": "d0c00000-0000-4000-8000-000000000002",
+      "file_name": "Amendment-0001.pdf",
+      "url": "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/bbb/download",
+      "kind": "amendment",
+      "mime_type": null,
+      "size": null,
+      "pages": null,
+      "status": "pending",
+      "hash": null
+    }
+  ]
+}

@@ -4,6 +4,44 @@
  */
 
 export interface paths {
+    "/api/v1/admin/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sources */
+        get: operations["list_sources_api_v1_admin_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sources/{source_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Source Now
+         * @description Platform admins only. No owner session here: the job opens its own sessions and
+         *     the audit middleware records the mutation (one row, like every other POST).
+         */
+        post: operations["run_source_now_api_v1_admin_sources__source_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/tenants": {
         parameters: {
             query?: never;
@@ -136,6 +174,40 @@ export interface paths {
         get: operations["read_prefs_api_v1_me_notification_prefs_get"];
         /** Update Prefs */
         put: operations["update_prefs_api_v1_me_notification_prefs_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Opportunities */
+        get: operations["search_opportunities_api_v1_opportunities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Opportunity */
+        get: operations["get_opportunity_api_v1_opportunities__opportunity_id__get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -730,6 +802,15 @@ export interface components {
          * @enum {string}
          */
         AgencyType: "federal" | "state" | "local" | "central_ministry" | "state_government" | "psu" | "commercial" | "international" | "other";
+        /** Attribution */
+        Attribution: {
+            /** Source Id */
+            source_id: string;
+            /** Source Name */
+            source_name: string;
+            /** Source Url */
+            source_url: string | null;
+        };
         /** AverageTurnoverOut */
         AverageTurnoverOut: {
             /** Amount */
@@ -950,6 +1031,30 @@ export interface components {
          * @enum {string}
          */
         DeliveryModel: "onsite" | "remote" | "hybrid" | "offshore";
+        /** DocumentOut */
+        DocumentOut: {
+            /** File Name */
+            file_name: string | null;
+            /** Hash */
+            hash: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Mime Type */
+            mime_type: string | null;
+            /** Pages */
+            pages: number | null;
+            /** Size */
+            size: number | null;
+            /** Status */
+            status: string;
+            /** Url */
+            url: string;
+        };
         /** FileOut */
         FileOut: {
             /** Content Type */
@@ -1204,6 +1309,230 @@ export interface components {
              */
             user_id: string;
         };
+        /** OpportunityDetail */
+        OpportunityDetail: {
+            /** Aln */
+            aln: string[];
+            /** Also From */
+            also_from?: {
+                [key: string]: unknown;
+            }[];
+            /** Archive At */
+            archive_at: string | null;
+            attribution: components["schemas"]["Attribution"];
+            /** Buyer Hierarchy */
+            buyer_hierarchy: string[];
+            /** Buyer Office */
+            buyer_office: string | null;
+            /** Buyer Org */
+            buyer_org: string | null;
+            /** Buyer Sub Org */
+            buyer_sub_org: string | null;
+            /** Contacts */
+            contacts: unknown[];
+            /** Content Hash */
+            content_hash: string | null;
+            /** Country */
+            country: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Currency */
+            currency: string;
+            /** Description Text */
+            description_text: string | null;
+            /** Detail Status */
+            detail_status: string;
+            /**
+             * Disclaimer
+             * @default Verify every detail on the official portal before submitting.
+             */
+            disclaimer: string;
+            /** Documents */
+            documents: components["schemas"]["DocumentOut"][];
+            /** Duplicate Of */
+            duplicate_of: string | null;
+            /** Eligibility */
+            eligibility: {
+                [key: string]: unknown;
+            };
+            /** Emd Amount */
+            emd_amount: string | null;
+            /** Estimated Value Max */
+            estimated_value_max: string | null;
+            /** Estimated Value Max Usd */
+            estimated_value_max_usd: string | null;
+            /** Estimated Value Min */
+            estimated_value_min: string | null;
+            /** Estimated Value Min Usd */
+            estimated_value_min_usd: string | null;
+            /** External Id */
+            external_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Incumbent */
+            incumbent: string | null;
+            /** India Category */
+            india_category: string[];
+            /** Last Seen At */
+            last_seen_at: string | null;
+            /** Match */
+            match?: {
+                [key: string]: unknown;
+            } | null;
+            /** Naics */
+            naics: string[];
+            notice_type: components["schemas"]["NoticeType"];
+            /** Opening At */
+            opening_at: string | null;
+            /** Parent Opportunity Id */
+            parent_opportunity_id: string | null;
+            /** Place Of Performance */
+            place_of_performance: {
+                [key: string]: unknown;
+            } | null;
+            /** Posted At */
+            posted_at: string | null;
+            /** Prebid Meeting At */
+            prebid_meeting_at: string | null;
+            /** Prior Award Value */
+            prior_award_value: string | null;
+            /** Prior Pop End */
+            prior_pop_end: string | null;
+            /** Psc */
+            psc: string[];
+            /** Questions Due At */
+            questions_due_at: string | null;
+            region: components["schemas"]["Region"];
+            /** Reservation */
+            reservation: string | null;
+            /** Response Due At */
+            response_due_at: string | null;
+            /** Set Aside */
+            set_aside: string | null;
+            /** Solicitation Number */
+            solicitation_number: string | null;
+            /** Source Id */
+            source_id: string;
+            /** Source Tz */
+            source_tz: string;
+            status: components["schemas"]["OpportunityStatus"];
+            /** Summary Ai */
+            summary_ai: string | null;
+            /** Tender Fee */
+            tender_fee: string | null;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+            /** Versions */
+            versions: components["schemas"]["VersionOut"][];
+        };
+        /** OpportunityItem */
+        OpportunityItem: {
+            /** Aln */
+            aln: string[];
+            attribution: components["schemas"]["Attribution"];
+            /** Buyer Office */
+            buyer_office: string | null;
+            /** Buyer Org */
+            buyer_org: string | null;
+            /** Buyer Sub Org */
+            buyer_sub_org: string | null;
+            /** Country */
+            country: string;
+            /** Currency */
+            currency: string;
+            /**
+             * Disclaimer
+             * @default Verify every detail on the official portal before submitting.
+             */
+            disclaimer: string;
+            /** Duplicate Of */
+            duplicate_of: string | null;
+            /** Estimated Value Max */
+            estimated_value_max: string | null;
+            /** Estimated Value Max Usd */
+            estimated_value_max_usd: string | null;
+            /** Estimated Value Min */
+            estimated_value_min: string | null;
+            /** Estimated Value Min Usd */
+            estimated_value_min_usd: string | null;
+            /** External Id */
+            external_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Incumbent */
+            incumbent: string | null;
+            /** Match */
+            match?: {
+                [key: string]: unknown;
+            } | null;
+            /** Naics */
+            naics: string[];
+            notice_type: components["schemas"]["NoticeType"];
+            /** Parent Opportunity Id */
+            parent_opportunity_id: string | null;
+            /** Posted At */
+            posted_at: string | null;
+            /** Prior Award Value */
+            prior_award_value: string | null;
+            /** Prior Pop End */
+            prior_pop_end: string | null;
+            /** Psc */
+            psc: string[];
+            region: components["schemas"]["Region"];
+            /** Reservation */
+            reservation: string | null;
+            /** Response Due At */
+            response_due_at: string | null;
+            /** Set Aside */
+            set_aside: string | null;
+            /** Solicitation Number */
+            solicitation_number: string | null;
+            /** Source Id */
+            source_id: string;
+            /** Source Tz */
+            source_tz: string;
+            status: components["schemas"]["OpportunityStatus"];
+            /** Summary Ai */
+            summary_ai: string | null;
+            /** Title */
+            title: string;
+            /** Version */
+            version: number;
+        };
+        /** OpportunityPage */
+        OpportunityPage: {
+            /** Items */
+            items: components["schemas"]["OpportunityItem"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Pages */
+            pages: number;
+            /** Total */
+            total: number;
+        };
+        /**
+         * OpportunityStatus
+         * @enum {string}
+         */
+        OpportunityStatus: "open" | "closing_soon" | "closed" | "cancelled" | "awarded";
         /** PastPerformanceIn */
         PastPerformanceIn: {
             agency_type?: components["schemas"]["AgencyType"] | null;
@@ -2026,6 +2355,27 @@ export interface components {
          * @enum {string}
          */
         Role: "platform_admin" | "tenant_owner" | "bid_manager" | "writer" | "reviewer" | "viewer";
+        /** RunSourceIn */
+        RunSourceIn: {
+            /**
+             * Inline
+             * @default false
+             */
+            inline: boolean;
+        };
+        /** RunSourceOut */
+        RunSourceOut: {
+            /** Mode */
+            mode: string;
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
+            /** Source Id */
+            source_id: string;
+            /** Task Id */
+            task_id?: string | null;
+        };
         /**
          * SamStatus
          * @enum {string}
@@ -2130,6 +2480,57 @@ export interface components {
             status: components["schemas"]["SizeStatus"];
             /** Threshold */
             threshold: string | null;
+        };
+        /** SourceOut */
+        SourceOut: {
+            /** Consecutive Failures */
+            consecutive_failures: number;
+            /** Enabled */
+            enabled: boolean;
+            /** Health Message */
+            health_message: string | null;
+            /** Health Status */
+            health_status: string;
+            /** Last Run At */
+            last_run_at: string | null;
+            /** Last Status */
+            last_status: string | null;
+            region: components["schemas"]["Region"];
+            /** Registered */
+            registered: boolean;
+            /** Runs */
+            runs: components["schemas"]["SourceRunOut"][];
+            /** Schedule */
+            schedule: string;
+            /** Source Id */
+            source_id: string;
+            /** Watermark At */
+            watermark_at: string | null;
+        };
+        /** SourceRunOut */
+        SourceRunOut: {
+            /** Error Count */
+            error_count: number;
+            /** Fetched */
+            fetched: number;
+            /** Finished At */
+            finished_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Error */
+            last_error: string | null;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Status */
+            status: string;
+            /** Upserted */
+            upserted: number;
         };
         /** SupportAccessIn */
         SupportAccessIn: {
@@ -2311,6 +2712,22 @@ export interface components {
             /** Vehicle */
             vehicle?: string | null;
         };
+        /** VersionOut */
+        VersionOut: {
+            /** Changes */
+            changes: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Diff */
+            diff: {
+                [key: string]: unknown;
+            };
+            /** Version */
+            version: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -2320,6 +2737,61 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_sources_api_v1_admin_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceOut"][];
+                };
+            };
+        };
+    };
+    run_source_now_api_v1_admin_sources__source_id__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RunSourceIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunSourceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tenants_api_v1_admin_tenants_get: {
         parameters: {
             query?: never;
@@ -2563,6 +3035,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationPrefsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_opportunities_api_v1_opportunities_get: {
+        parameters: {
+            query?: {
+                due_before?: string | null;
+                include_duplicates?: boolean;
+                /** @description accepted now, applied once matches exist (M4) */
+                min_score?: number | null;
+                /** @description NAICS codes, comma-separated */
+                naics?: string | null;
+                page?: number;
+                page_size?: number;
+                /** @description websearch syntax */
+                q?: string | null;
+                region?: components["schemas"]["Region"] | null;
+                /** @description statuses, comma-separated */
+                status?: string | null;
+                /** @description notice types, comma-separated */
+                type?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_opportunity_api_v1_opportunities__opportunity_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpportunityDetail"];
                 };
             };
             /** @description Validation Error */

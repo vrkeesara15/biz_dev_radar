@@ -196,6 +196,12 @@ class AgentRunner:
             run.status = RUN_RUNNING
             run.started_at = run.started_at or self._now()
             run.error = None
+            self.tracer.run_started(
+                run_id=str(run_id),
+                kind=run.kind,
+                tenant_id=str(self.tenant_id),
+                pursuit_id=None if run.pursuit_id is None else str(run.pursuit_id),
+            )
             done_outputs = await self._done_outputs(session, run_id)
             attempts = await self._attempts(session, run_id)
             params = dict(run.params or {})

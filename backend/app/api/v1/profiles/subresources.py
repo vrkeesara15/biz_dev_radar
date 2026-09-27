@@ -7,7 +7,10 @@
     )
 
 Routes (all under /profiles/{profile_id}/<name>): GET list, POST 201, GET/PUT/DELETE one.
-Every write bumps the parent profile's version and sets an audit hint.
+Every write bumps the parent profile's version and sets an audit hint; with
+`reindex=True` (knowledge-base sources: files, boilerplate, past performance, service
+lines) every write also re-indexes the knowledge base (inline when Celery is eager, else a
+Celery task enqueued after commit; M1-12).
 
 No `from __future__ import annotations` here: FastAPI must evaluate the closure-local
 schema classes and role dependencies used in the route signatures.
@@ -26,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import TENANT_ROLES, CurrentUser, TenantSessionDep, require_role
 from app.api.v1.profiles.common import bump_version, get_profile
 from app.core.roles import Role
+from app.jobs.index_profile import schedule_reindex
 from app.models import CompanyProfile
 from app.services.audit import AuditHint
 
@@ -58,6 +62,7 @@ def crud_router(
     validate: Validator | None = None,
     order_by: Sequence[Any] = (),
     to_out: Callable[[Any], BaseModel] | None = None,
+    reindex: bool = False,
 ) -> APIRouter:
     router = APIRouter(prefix="/{profile_id}/" + name, tags=[f"profiles:{name}"])
     writer = Annotated[CurrentUser, Depends(require_role(*write_roles))]
@@ -77,6 +82,19 @@ def crud_router(
             object_type=name,
             object_id=str(row.id),
             meta={"profile_id": str(profile.id), **meta},
+        )
+
+    async def _reindex(request: Request, session: AsyncSession, profile: CompanyProfile) -> None:
+        if not reindex:
+            return
+        state = request.app.state
+        await schedule_reindex(
+            session,
+            profile.tenant_id,
+            profile.id,
+            settings=state.settings,
+            embeddings=getattr(state, "embeddings", None),
+            storage=getattr(state, "storage_router", None),
         )
 
     def _dump(body: BaseModel) -> dict[str, Any]:
@@ -124,6 +142,7 @@ def crud_router(
         await _flush(session, singular)
         await session.refresh(row)
         request.state.audit = _hint("create", row, profile)
+        await _reindex(request, session, profile)
         return render(row)
 
     @router.get("/{item_id}", response_model=out, name=f"read_{singular}")
@@ -156,6 +175,7 @@ def crud_router(
         await _flush(session, singular)
         await session.refresh(row)
         request.state.audit = _hint("update", row, profile, fields=sorted(changes))
+        await _reindex(request, session, profile)
         return render(row)
 
     @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, name=f"delete_{singular}")
@@ -172,5 +192,6 @@ def crud_router(
         await session.delete(row)
         bump_version(profile)
         await session.flush()
+        await _reindex(request, session, profile)
 
     return router

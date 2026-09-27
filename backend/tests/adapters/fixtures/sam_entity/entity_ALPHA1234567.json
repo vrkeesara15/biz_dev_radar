@@ -1,0 +1,146 @@
+{
+  "totalRecords": 1,
+  "entityData": [
+    {
+      "entityRegistration": {
+        "samRegistered": "Yes",
+        "ueiSAM": "ALPHA1234567",
+        "entityEFTIndicator": null,
+        "cageCode": "7ABC1",
+        "dodaac": null,
+        "legalBusinessName": "ALPHA FEDERAL SOLUTIONS, LLC",
+        "dbaName": "Alpha Federal",
+        "purposeOfRegistrationCode": "Z2",
+        "purposeOfRegistrationDesc": "All Awards",
+        "registrationStatus": "Active",
+        "evsSource": "E&Y",
+        "registrationDate": "2019-04-19",
+        "lastUpdateDate": "2026-03-02",
+        "registrationExpirationDate": "2027-03-01",
+        "activationDate": "2026-03-02",
+        "ueiStatus": "Active",
+        "ueiExpirationDate": null,
+        "ueiCreationDate": "2022-04-04",
+        "publicDisplayFlag": "Y",
+        "exclusionStatusFlag": "N",
+        "exclusionURL": null,
+        "dnbOpenData": null
+      },
+      "coreData": {
+        "entityInformation": {
+          "entityURL": "https://www.alphafederal.example",
+          "entityDivisionName": null,
+          "entityDivisionNumber": null,
+          "entityStartDate": "2009-06-15",
+          "fiscalYearEndCloseDate": "12/31",
+          "submissionDate": "2026-03-02"
+        },
+        "physicalAddress": {
+          "addressLine1": "1750 TYSONS BLVD",
+          "addressLine2": "STE 1500",
+          "city": "MCLEAN",
+          "stateOrProvinceCode": "VA",
+          "zipCode": "22102",
+          "zipCodePlus4": "4201",
+          "countryCode": "USA"
+        },
+        "mailingAddress": {
+          "addressLine1": "PO BOX 9021",
+          "addressLine2": null,
+          "city": "MCLEAN",
+          "stateOrProvinceCode": "VA",
+          "zipCode": "22102",
+          "zipCodePlus4": "9021",
+          "countryCode": "USA"
+        },
+        "congressionalDistrict": "11",
+        "generalInformation": {
+          "entityStructureCode": "2L",
+          "entityStructureDesc": "Corporate Entity (Not Tax Exempt)",
+          "entityTypeCode": "F",
+          "entityTypeDesc": "Business or Organization",
+          "profitStructureCode": "2X",
+          "profitStructureDesc": "For Profit Organization",
+          "organizationStructureCode": null,
+          "organizationStructureDesc": null,
+          "stateOfIncorporationCode": "DE",
+          "stateOfIncorporationDesc": "DELAWARE",
+          "countryOfIncorporationCode": "USA",
+          "countryOfIncorporationDesc": "UNITED STATES"
+        },
+        "businessTypes": {
+          "businessTypeList": [
+            { "businessTypeCode": "2X", "businessTypeDesc": "For Profit Organization" },
+            { "businessTypeCode": "A2", "businessTypeDesc": "Woman Owned Business" },
+            { "businessTypeCode": "A5", "businessTypeDesc": "Veteran Owned Business" }
+          ],
+          "sbaBusinessTypeList": [
+            {
+              "sbaBusinessTypeCode": "A6",
+              "sbaBusinessTypeDesc": "8(a) Program Participant",
+              "certificationEntryDate": "2022-09-01",
+              "certificationExitDate": "2031-08-31"
+            },
+            {
+              "sbaBusinessTypeCode": "XX",
+              "sbaBusinessTypeDesc": "HUBZone",
+              "certificationEntryDate": "2023-02-14",
+              "certificationExitDate": null
+            }
+          ]
+        },
+        "financialInformation": {
+          "creditCardUsage": "Y",
+          "debtSubjectToOffset": "N"
+        }
+      },
+      "assertions": {
+        "goodsAndServices": {
+          "primaryNaics": "541512",
+          "naicsList": [
+            {
+              "naicsCode": "541512",
+              "naicsDescription": "Computer Systems Design Services",
+              "sbaSmallBusiness": "Y",
+              "naicsException": null
+            },
+            {
+              "naicsCode": "541511",
+              "naicsDescription": "Custom Computer Programming Services",
+              "sbaSmallBusiness": "Y",
+              "naicsException": null
+            },
+            {
+              "naicsCode": "999999",
+              "naicsDescription": "Not a real NAICS code (dropped by validation)",
+              "sbaSmallBusiness": "N",
+              "naicsException": null
+            }
+          ],
+          "pscList": [
+            { "pscCode": "D302", "pscDescription": "IT AND TELECOM- SYSTEMS DEVELOPMENT" },
+            { "pscCode": "D399", "pscDescription": "IT AND TELECOM- OTHER IT AND TELECOMMUNICATIONS" }
+          ]
+        },
+        "disasterReliefData": { "disasterRegistryFlag": "N" },
+        "ediInformation": { "ediInformationFlag": "N" }
+      },
+      "repsAndCerts": {},
+      "pointsOfContact": {
+        "governmentBusinessPOC": {
+          "firstName": "PAT",
+          "lastName": "QUINN",
+          "title": "CEO",
+          "addressLine1": "1750 TYSONS BLVD",
+          "city": "MCLEAN",
+          "stateOrProvinceCode": "VA",
+          "zipCode": "22102",
+          "countryCode": "USA"
+        }
+      }
+    }
+  ],
+  "links": {
+    "selfLink": "https://api.sam.gov/entity-information/v3/entities?ueiSAM=ALPHA1234567&page=0&size=10"
+  }
+}

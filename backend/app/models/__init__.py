@@ -3,8 +3,9 @@
 from app.models.agents import AgentRun, AgentStep
 from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
-from app.models.billing import PlanLimit, UsageLedger
+from app.models.billing import BillingCustomer, BillingEventRecord, PlanLimit, UsageLedger
 from app.models.files import File
+from app.models.knowledge import KBChunk
 from app.models.notify import UserNotificationPrefs
 from app.models.opportunities import (
     AwardsEnrichment,
@@ -13,6 +14,7 @@ from app.models.opportunities import (
     OpportunityDocument,
     OpportunityVersion,
 )
+from app.models.privacy import Consent, DataRequest
 from app.models.profile import CompanyProfile
 from app.models.profile_items import (
     Certification,
@@ -42,12 +44,17 @@ __all__ = [
     "AuditLog",
     "AwardsEnrichment",
     "Base",
+    "BillingCustomer",
+    "BillingEventRecord",
     "BoilerplateBlock",
     "Certification",
     "CompanyProfile",
+    "Consent",
+    "DataRequest",
     "DocumentChunk",
     "File",
     "Insurance",
+    "KBChunk",
     "Membership",
     "Opportunity",
     "OpportunityDocument",

@@ -2,7 +2,11 @@
  * In-memory stand-in for the backend, wired through `page.route("**\/api/v1/**")`.
  * It mirrors the routes the wizard uses (profiles, 13 sub-resources, files,
  * notification prefs, autofill) and recomputes a simplified completeness
- * score on every read so the meter visibly moves as steps are saved.
+ * score on every read so the meter visibly moves as steps are saved. It also
+ * serves the opportunities search/detail routes (M2-15) from fixtures with the
+ * same filter semantics as the API, and answers 404 for the pipeline actions
+ * (M6-01) and saved searches (M4-08) that do not exist yet, so the screens'
+ * "not available yet" paths are exercised for real.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -37,6 +41,10 @@ export type MockOptions = {
   /** When false, POST /autofill answers 404 like a server without M1-10. */
   autofill?: boolean;
   region?: "us" | "in";
+  /** When true, GET/POST /saved-searches work in memory (M4-08 contract); default 404. */
+  savedSearches?: boolean;
+  /** When true, POST /opportunities/{id}/pursue|watch|pass answer 201 (M6-01 contract); default 404. */
+  pipelineActions?: boolean;
 };
 
 export class MockApi {
@@ -44,7 +52,10 @@ export class MockApi {
   prefs: Json = fixture("notification-prefs.json");
   prefsSaved = false;
   collections = Object.fromEntries(RESOURCES.map((r) => [r, [] as Json[]])) as unknown as Record<Resource, Json[]>;
-  requests: { method: string; path: string; body: unknown }[] = [];
+  requests: { method: string; path: string; search: string; body: unknown }[] = [];
+  opportunities: Json[] = fixture<Json[]>("opportunities.json");
+  opportunityDetail: Json = fixture<Json>("opportunity-detail.json");
+  savedSearches: Json[] = [];
   private seq = 0;
 
   constructor(private readonly options: MockOptions = {}) {}
@@ -162,10 +173,34 @@ export class MockApi {
         body = raw;
       }
     }
-    this.requests.push({ method, path: pathname, body });
+    this.requests.push({ method, path: pathname, search: url.search, body });
     const json = (status: number, payload: unknown) =>
       route.fulfill({ status, contentType: "application/json", body: JSON.stringify(payload) });
 
+    if (pathname === "/api/v1/opportunities" && method === "GET") {
+      return json(200, this.searchOpportunities(url.searchParams));
+    }
+    const actionMatch = pathname.match(/^\/api\/v1\/opportunities\/([^/]+)\/(pursue|watch|pass)$/);
+    if (actionMatch && method === "POST") {
+      if (!this.options.pipelineActions) return json(404, { detail: "Not Found" });
+      const [, opportunityId, action] = actionMatch;
+      return json(201, { id: this.nextId("pursuit"), opportunity_id: opportunityId, action, ...(body as Json) });
+    }
+    const opportunityMatch = pathname.match(/^\/api\/v1\/opportunities\/([^/]+)$/);
+    if (opportunityMatch && method === "GET") {
+      const [, opportunityId] = opportunityMatch;
+      if (this.opportunityDetail.id === opportunityId) return json(200, this.opportunityDetail);
+      return json(404, { detail: "opportunity not found" });
+    }
+    if (pathname === "/api/v1/saved-searches") {
+      if (!this.options.savedSearches) return json(404, { detail: "Not Found" });
+      if (method === "GET") return json(200, this.savedSearches);
+      if (method === "POST") {
+        const item = { id: this.nextId("saved"), created_at: new Date().toISOString(), ...(body as Json) };
+        this.savedSearches.push(item);
+        return json(201, item);
+      }
+    }
     if (pathname === "/api/v1/files" && method === "POST") {
       return json(201, { ...fixture<Json>("file.json"), id: this.nextId("file") });
     }
@@ -232,6 +267,40 @@ export class MockApi {
       }
     }
     return json(404, { detail: `Unhandled ${method} ${pathname}` });
+  }
+
+  /** GET /opportunities with the API's filter semantics over the fixture rows. */
+  private searchOpportunities(params: URLSearchParams): Json {
+    const csv = (key: string) => (params.get(key) ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+    const q = (params.get("q") ?? "").trim().toLowerCase();
+    const region = params.get("region");
+    const types = csv("type");
+    const statuses = csv("status");
+    const naics = csv("naics");
+    const dueBefore = params.get("due_before") ? Date.parse(params.get("due_before")!) : null;
+    const rows = this.opportunities.filter((row) => {
+      const text = `${row.title ?? ""} ${row.summary_ai ?? ""}`.toLowerCase();
+      if (q && !q.split(/\s+/).every((term) => text.includes(term))) return false;
+      if (region && row.region !== region) return false;
+      if (types.length && !types.includes(String(row.notice_type))) return false;
+      if (statuses.length && !statuses.includes(String(row.status))) return false;
+      if (naics.length && !(row.naics as string[]).some((code) => naics.includes(code))) return false;
+      if (dueBefore !== null) {
+        const due = row.response_due_at ? Date.parse(String(row.response_due_at)) : null;
+        if (due === null || due > dueBefore) return false;
+      }
+      return true;
+    });
+    const page = Math.max(1, Number(params.get("page") ?? 1));
+    const pageSize = Math.max(1, Number(params.get("page_size") ?? 25));
+    const start = (page - 1) * pageSize;
+    return {
+      items: rows.slice(start, start + pageSize),
+      total: rows.length,
+      page,
+      page_size: pageSize,
+      pages: Math.max(1, Math.ceil(rows.length / pageSize)),
+    };
   }
 
   private regionForeign(region: string, body: Json): string[] {
