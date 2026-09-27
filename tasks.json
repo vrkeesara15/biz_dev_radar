@@ -485,7 +485,7 @@
       "Signed download URLs expire (default 15 min)",
       "Raw archive path helper builds raw/{source}/{yyyy}/{mm}/{dd}/{external_id}/{fetched_at}"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-12",

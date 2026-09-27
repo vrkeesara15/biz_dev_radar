@@ -19,7 +19,9 @@ from app.core.config import Settings, get_settings
 from app.core.plan import PlanLimitExceeded
 from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
+from app.services.scanner import scanner_from_settings
 from app.services.sources import sync_sources_on_startup
+from app.services.storage import StorageRouter
 
 
 @asynccontextmanager
@@ -53,6 +55,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.auth_limiter = FixedWindowLimiter(
         limit=settings.auth_rate_limit_per_minute, window_seconds=60
     )
+    # Storage per residency region and the virus scanner; tests swap these on app.state.
+    app.state.storage_router = StorageRouter(settings)
+    app.state.scanner = scanner_from_settings(settings)
     # add_middleware wraps outward: the LAST added is the outermost. Final order:
     # RequestId (outermost) -> CORS -> Audit -> routes.
     app.add_middleware(AuditMiddleware, trust_proxy=settings.trust_proxy_headers)

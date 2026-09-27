@@ -1,7 +1,7 @@
 """M2 ingestion: sources, source_runs, opportunities and related global tables.
 
 Revision ID: 0003_m2_opportunities
-Revises: 0001_m0_foundation  (re-pointed to 0002_m1_profile by the orchestrator at merge)
+Revises: 0002_m1_profile
 
 One migration per milestone (CLAUDE.md). Later M2 tasks edit this file in place.
 
@@ -20,7 +20,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0003_m2_opportunities"
-down_revision: str | None = "0001_m0_foundation"
+down_revision: str | None = "0002_m1_profile"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

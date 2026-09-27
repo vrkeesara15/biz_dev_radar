@@ -31,6 +31,11 @@ class EmbeddingProviderName(StrEnum):
     FAKE = "fake"
 
 
+class ScannerBackend(StrEnum):
+    CLAMAV = "clamav"
+    NOOP = "noop"
+
+
 # The only place a Claude model id literal may appear (tests enforce this).
 DEFAULT_OPUS_CLASS = "claude-opus-5"
 DEFAULT_SONNET_CLASS = "claude-sonnet-5"
@@ -58,12 +63,23 @@ class Settings(BaseSettings):
     database_url_owner: str = "postgresql+asyncpg://bidradar:bidradar@localhost:5433/bidradar"
     redis_url: str = "redis://localhost:6380/0"
 
-    # files
+    # files (SPEC sections 10.1, 11): one bucket per data-residency region
     storage_backend: StorageBackend = StorageBackend.LOCAL
+    local_storage_root: str = ".storage"
     s3_endpoint_url: str = "http://localhost:9000"
+    s3_region: str = "us-east-1"
     s3_access_key: str = "minioadmin"
     s3_secret_key: str = "minioadmin"
-    s3_bucket: str = "bidradar-local"
+    s3_bucket_us: str = "bidradar-us"
+    s3_bucket_in: str = "bidradar-in"
+    gcs_bucket_us: str = "bidradar-us"
+    gcs_bucket_in: str = "bidradar-in"
+    signed_url_expires_seconds: int = 900
+    # virus scanning before parsing (SPEC section 11); noop only for local/test
+    scanner_backend: ScannerBackend = ScannerBackend.NOOP
+    clamav_host: str = "localhost"
+    clamav_port: int = 3310
+    clamav_unix_socket: str = ""
 
     # tenancy / residency
     region: Region = Region.US
