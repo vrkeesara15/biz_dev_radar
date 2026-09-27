@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crypto import is_masked
 from app.core.plan import Resource
-from app.core.profile_fields import ENCRYPTED_FIELDS
-from app.models import CompanyProfile
+from app.core.profile_fields import ENCRYPTED_FIELDS, CodeScheme
+from app.models import CompanyProfile, ProfileCode
 
 
 async def count_profiles(session: AsyncSession, tenant_id: uuid.UUID) -> int:
@@ -42,3 +42,13 @@ def apply_changes(row: CompanyProfile, changes: Mapping[str, Any]) -> list[str]:
     if written:
         row.version = (row.version or 1) + 1
     return sorted(written)
+
+
+async def naics_codes_for(session: AsyncSession, profile_id: uuid.UUID) -> list[str]:
+    """The profile's NAICS codes, primary first (for size status and matching)."""
+    rows = await session.execute(
+        select(ProfileCode.code)
+        .where(ProfileCode.profile_id == profile_id, ProfileCode.scheme == CodeScheme.NAICS)
+        .order_by(ProfileCode.is_primary.desc(), ProfileCode.code)
+    )
+    return [str(code) for code in rows.scalars()]

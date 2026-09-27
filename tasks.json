@@ -402,7 +402,7 @@
       "Unit tests: receipts-based and employee-based codes, missing data -> unknown",
       "Computed statuses exposed on GET /profiles/{id} as size_status_by_naics"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-08",

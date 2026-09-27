@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.core.config import Region
 from app.core.crypto import is_masked, mask_last4
+from app.core.eligibility import SizeStatus, size_status_by_naics
 from app.core.finance import CURRENCIES, FiscalYearRevenue, average_turnover
 from app.core.geo import (
     normalize_countries,
@@ -75,6 +76,14 @@ class AverageTurnoverOut(BaseModel):
     amount: Decimal
     currency: str
     fiscal_years: list[int]
+
+
+class SizeStatusOut(BaseModel):
+    status: SizeStatus
+    basis: str | None
+    threshold: str | None
+    measured: str | None
+    reason: str
 
 
 class ProfileWrite(BaseModel):
@@ -373,14 +382,38 @@ class ProfileOut(BaseModel):
     bid_no_bid_weights: dict[str, int]
     required_approver_roles: list[Role]
     output_languages: list[str]
+    # computed (M1-07): SBA status per NAICS code from USD average receipts / head count
+    size_status_by_naics: dict[str, SizeStatusOut]
 
     @classmethod
-    def from_row(cls, row: CompanyProfile) -> ProfileOut:
+    def from_row(cls, row: CompanyProfile, *, naics_codes: list[str] | None = None) -> ProfileOut:
         values = {name: getattr(row, name, None) for name in cls.model_fields}
         for name in ENCRYPTED_FIELDS:
             values[name] = mask_last4(values[name])
-        values["average_turnover"] = compute_average_turnover(row.annual_revenue)
+        avg = compute_average_turnover(row.annual_revenue)
+        values["average_turnover"] = avg
+        values["size_status_by_naics"] = compute_size_status(
+            naics_codes or [], avg, row.employee_count_total
+        )
         return cls.model_validate(values)
+
+
+def compute_size_status(
+    naics_codes: list[str], avg: AverageTurnoverOut | None, employees: int | None
+) -> dict[str, SizeStatusOut]:
+    """SBA receipts are USD: an INR turnover average cannot be compared, so it counts as
+    unknown receipts (employee-based codes still resolve)."""
+    receipts = avg.amount if avg is not None and avg.currency == "USD" else None
+    return {
+        code: SizeStatusOut(
+            status=det.status,
+            basis=det.basis,
+            threshold=None if det.threshold is None else str(det.threshold),
+            measured=None if det.measured is None else str(det.measured),
+            reason=det.reason,
+        )
+        for code, det in size_status_by_naics(naics_codes, receipts, employees).items()
+    }
 
 
 def compute_average_turnover(entries: list[dict[str, Any]]) -> AverageTurnoverOut | None:

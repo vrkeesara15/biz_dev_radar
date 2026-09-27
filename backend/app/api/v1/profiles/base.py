@@ -14,7 +14,7 @@ from app.core.plan import Resource
 from app.models import CompanyProfile, Tenant
 from app.services.audit import AuditHint
 from app.services.plan import PlanService
-from app.services.profiles import PROFILE_COUNTERS, apply_changes
+from app.services.profiles import PROFILE_COUNTERS, apply_changes, naics_codes_for
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
@@ -73,7 +73,8 @@ async def create_profile(
 async def read_profile(
     profile_id: uuid.UUID, user: ReaderDep, session: TenantSessionDep
 ) -> ProfileOut:
-    return ProfileOut.from_row(await get_profile(session, profile_id))
+    row = await get_profile(session, profile_id)
+    return ProfileOut.from_row(row, naics_codes=await naics_codes_for(session, row.id))
 
 
 @router.put("/{profile_id}", response_model=ProfileOut)
@@ -102,4 +103,4 @@ async def update_profile(
         object_id=str(row.id),
         meta={"fields": written},
     )
-    return ProfileOut.from_row(row)
+    return ProfileOut.from_row(row, naics_codes=await naics_codes_for(session, row.id))
