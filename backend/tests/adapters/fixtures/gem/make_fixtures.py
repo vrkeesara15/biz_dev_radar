@@ -14,6 +14,9 @@ for the golden extraction set under evals/golden/in/gem/ (written by this script
                               a string numFound
     layout_change.json        the docs key renamed to results
     GEM-2026-B-1234567.pdf    the bid document served for the adapter download test
+
+and, under evals/golden/in/gem/, one <bid>.pdf, <bid>.expected.json (the hand label) and
+<bid>.llm.json (the extractor answer FakeLLM replays, M3-04) per bid.
 """
 
 from __future__ import annotations
@@ -277,6 +280,48 @@ BIDS: list[BidSpec] = [
 ]
 
 
+# --- golden extraction answers (M3-04) -----------------------------------------------------
+# The pages the build_bid_pdf() layout puts each value on; the recorded FakeLLM answer
+# cites them, so a layout change here must be reflected in the citations.
+PAGE_DETAILS = 1
+PAGE_EMD = 2
+PAGE_CONSIGNEES = 3
+
+
+def llm_answer(spec: BidSpec) -> dict[str, Any]:
+    """The extractor answer replayed by FakeLLM: values exactly as printed in the PDF,
+    every stated field cited with the page it appears on."""
+    emd_text = spec.emd_text if spec.emd_required else None
+    citations = {
+        "item_or_service": PAGE_DETAILS,
+        "quantity": PAGE_DETAILS,
+        "min_avg_turnover_inr": PAGE_DETAILS,
+        "min_experience_years": PAGE_DETAILS,
+        "mse_exemption_allowed": PAGE_DETAILS,
+        "startup_exemption_allowed": PAGE_DETAILS,
+        "bid_end_at": PAGE_DETAILS,
+    }
+    if spec.estimated_value_text:
+        citations["estimated_value_inr"] = PAGE_DETAILS
+    if emd_text:
+        citations["emd_amount_inr"] = PAGE_EMD
+    if spec.consignees:
+        citations["consignee_locations"] = PAGE_CONSIGNEES
+    return {
+        "item_or_service": spec.category,
+        "quantity": spec.quantity,
+        "estimated_value_inr": spec.estimated_value_text,
+        "emd_amount_inr": emd_text,
+        "min_avg_turnover_inr": spec.turnover_text,
+        "min_experience_years": int(spec.experience_text.split()[0]),
+        "mse_exemption_allowed": spec.mse_exemption == "Yes",
+        "startup_exemption_allowed": spec.startup_exemption == "Yes",
+        "bid_end_at": spec.end_pdf,
+        "consignee_locations": list(spec.expected["consignee_locations"]),
+        "citations": citations,
+    }
+
+
 def listing_doc(spec: BidSpec) -> dict[str, Any]:
     return {
         "id": str(spec.bid_id),
@@ -449,6 +494,7 @@ def write_all() -> None:
         (GOLDEN / f"{stem}.pdf").write_bytes(build_bid_pdf(spec))
         expected = {"bid_number": spec.bid_number, **spec.expected}
         (GOLDEN / f"{stem}.expected.json").write_text(json.dumps(expected, indent=1) + "\n")
+        (GOLDEN / f"{stem}.llm.json").write_text(json.dumps(llm_answer(spec), indent=1) + "\n")
     (GOLDEN / "README.md").write_text(
         "# Golden GeM bid documents (SPEC 12 agent evals)\n\n"
         "Synthetic bid PDFs in the layout of a real GeM bid document (bidplus.gem.gov.in "

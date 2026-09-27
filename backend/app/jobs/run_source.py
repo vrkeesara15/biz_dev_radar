@@ -32,6 +32,7 @@ from app.services import sources as source_svc
 from app.services.awards import run_awards_enrichment
 from app.services.enrichment import install_enrichment
 from app.services.events import EventBus, get_event_bus
+from app.services.gem_extraction import install_gem_extraction
 from app.services.source_runner import RunResult, run_source
 from app.services.spend import run_spend_stats
 from app.services.storage import StorageRouter
@@ -102,9 +103,12 @@ async def _run_with_fresh_database(source_id: str, mode: str) -> dict[str, Any]:
     settings = get_settings()
     db = Database(settings.database_url, settings.database_url_owner)
     try:
-        # the ingest events need their subscribers in this process too (summary_ai)
+        # the ingest events need their subscribers in this process too (gem extraction,
+        # then summary_ai so the summary sees the extracted eligibility)
         bus = EventBus()
-        install_enrichment(settings, db, StorageRouter(settings), bus)
+        storage = StorageRouter(settings)
+        install_gem_extraction(settings, db, storage, bus)
+        install_enrichment(settings, db, storage, bus)
         return await run_source_job(source_id, database=db, settings=settings, bus=bus, mode=mode)
     finally:
         await db.dispose()

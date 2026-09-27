@@ -974,7 +974,7 @@
       "Golden GeM fixtures: exact match >= 90% on turnover, EMD and experience fields",
       "Values parsed with core.money.parse_inr"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-05",

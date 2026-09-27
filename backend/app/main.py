@@ -22,6 +22,7 @@ from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
 from app.services.enrichment import install_enrichment
 from app.services.events import get_event_bus
+from app.services.gem_extraction import install_gem_extraction
 from app.services.scanner import scanner_from_settings
 from app.services.sources import sync_sources_on_startup
 from app.services.storage import StorageRouter
@@ -34,7 +35,9 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     # One `sources` row per registered adapter (SPEC 10.2); best-effort, never fatal.
     load_builtin_adapters()
     await sync_sources_on_startup()
-    # summary_ai on opportunity.created/amended, only when an LLM is configured (M2-13)
+    # GeM bid-PDF extraction (M3-04) before summary_ai (M2-13) so the summary sees the
+    # extracted eligibility; both only when an LLM is configured
+    install_gem_extraction(settings, get_database(), app.state.storage_router, get_event_bus())
     install_enrichment(settings, get_database(), app.state.storage_router, get_event_bus())
     yield
 
