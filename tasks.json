@@ -2126,7 +2126,7 @@
       "Billing page shows plan, usage vs limits and checkout via Stripe or Razorpay",
       "Data page triggers export/delete and shows request status"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-10",

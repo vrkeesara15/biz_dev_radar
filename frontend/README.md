@@ -149,6 +149,35 @@ is not installed (`pnpm exec playwright install chromium`).
   `matches`, `dashboard`, `alertRules` and `feedback` options switch the
   not-yet-merged routes on).
 
+## Tenant settings (M7-09)
+
+`/app/settings` is a routed tab layout; the owner-only tabs are hidden for
+other roles and their routes redirect (the API enforces it too).
+
+- **Profile** — the completeness meter and a link into each of the seven
+  wizard steps, which is where the company profile is edited.
+- **Users & roles** (owner) — the member table with a role select, an invite
+  dialog and all six SPEC 3 roles described. The endpoints
+  (`GET /tenant/members`, `POST /tenant/members/invite`,
+  `PATCH`/`DELETE /tenant/members/{id}`) are a contract: they answer 404 today
+  and the page says so (OQ-92).
+- **Integrations** (owner) — Slack, Teams, WhatsApp (Gupshup/Twilio + template
+  names), Google and Microsoft calendar, each with an enabled toggle,
+  `config` fields and write-only secrets shown as a "configured" indicator.
+  `src/lib/settings/integrations.ts` holds the field table and makes the
+  API's own checks first (https webhook, secrets *or* a `secret_ref`, never a
+  secret inside `config`).
+- **Billing** (owner) — plan, status, usage bars against `plan_limits`, the
+  Free/Pro/Enterprise comparison from SPEC 3 and Upgrade →
+  `POST /billing/checkout` → redirect to the provider. Razorpay tenants get
+  GSTIN / place of supply / registered name. Plan arithmetic lives in
+  `src/lib/settings/plans.ts`.
+- **Data & privacy** — consent status per notice version, access / correction
+  / erasure requests with their SLA date, and (owner only) tenant export and
+  erasure behind a typed confirmation, plus the grievance officer and
+  sub-processors from `GET /privacy`.
+- E2E: `e2e/settings.spec.ts` with `e2e/fixtures/settings.json`.
+
 ## Scripts
 
 | Script | What it does |

@@ -14,8 +14,15 @@ export type SettingsTab = {
 };
 
 export const SETTINGS_TABS: readonly SettingsTab[] = [
+  { href: "/app/settings/profile", label: "Profile" },
+  { href: "/app/settings/users", label: "Users & roles", ownerOnly: true },
   { href: "/app/settings/notifications", label: "Notifications" },
   { href: "/app/settings/saved-searches", label: "Saved searches" },
+  { href: "/app/settings/integrations", label: "Integrations", ownerOnly: true },
+  { href: "/app/settings/billing", label: "Billing", ownerOnly: true },
+  // Consent and personal data requests are everyone's; the tenant-wide export
+  // and erasure inside are the owner's, and the screen hides them.
+  { href: "/app/settings/privacy", label: "Data & privacy" },
 ] as const;
 
 /** Tabs this role may see. */

@@ -4,6 +4,7 @@
  * notification prefs, autofill) and recomputes a simplified completeness
  * score on every read so the meter visibly moves as steps are saved. It also
  * serves the M4 bell, push-subscription, action-link and preference routes,
+ * the M7-09 settings routes (members, integrations, billing, privacy),
  * the opportunities search/detail routes (M2-15) from fixtures with the
  * same filter semantics as the API, the platform-admin console routes (M7-08:
  * sources, run history, tenants, usage, health, support access) with in-memory
@@ -17,6 +18,15 @@ import path from "node:path";
 import type { Page, Route } from "@playwright/test";
 
 type Json = Record<string, unknown>;
+
+/** Shape of e2e/fixtures/settings.json (the M7-09 settings routes). */
+type SettingsFixture = {
+  members: Json[];
+  integrations: Json[];
+  billing: Json;
+  privacy: Json;
+  consents: Json[];
+};
 
 /** Shape of e2e/fixtures/admin.json (the M7-08 console routes). */
 type AdminFixture = {
@@ -75,6 +85,10 @@ export type MockOptions = {
   matches?: boolean;
   /** When true, POST /opportunities/{id}/pursue|watch|pass answer 201 (M6-01 contract); default 404. */
   pipelineActions?: boolean;
+  /** When true, the tenant member routes work in memory (M7-09 contract); default 404. */
+  members?: boolean;
+  /** Billing provider to serve: "stripe" (default) or "razorpay" for an IN tenant. */
+  billingProvider?: "stripe" | "razorpay";
 };
 
 /** Scores attached to the three opportunity fixtures when `matches` is on. */
@@ -99,6 +113,13 @@ export class MockApi {
   feedback: Json[] = [];
   dashboard: Json = fixture<Json>("dashboard.json");
   actionsTaken: { action: string; token: string; reason: string | null }[] = [];
+  settings: SettingsFixture = fixture<SettingsFixture>("settings.json");
+  members: Json[] = this.settings.members;
+  integrations: Json[] = this.settings.integrations;
+  billing: Json = this.settings.billing;
+  consents: Json[] = this.settings.consents;
+  dataRequests: Json[] = [];
+  checkouts: Json[] = [];
   admin: AdminFixture = fixture<AdminFixture>("admin.json");
   adminSources: Json[] = this.admin.sources;
   adminTenants: Json[] = this.admin.tenants;
@@ -106,6 +127,9 @@ export class MockApi {
   private seq = 0;
 
   constructor(private readonly options: MockOptions = {}) {
+    if (options.billingProvider === "razorpay") {
+      this.billing = { ...this.billing, provider: "razorpay", currency: "INR" };
+    }
     if (options.matches) {
       this.opportunities = this.opportunities.map((row) => ({
         ...row,
@@ -254,6 +278,8 @@ export class MockApi {
       if (this.opportunityDetail.id === opportunityId) return json(200, this.opportunityDetail);
       return json(404, { detail: "opportunity not found" });
     }
+    const settingsHandled = this.handleSettings(pathname, method, body, json);
+    if (settingsHandled) return settingsHandled;
     const notificationsHandled = this.handleNotifications(pathname, method, body, url.searchParams, json, route);
     if (notificationsHandled) return notificationsHandled;
     if (pathname === "/api/v1/dashboard" && method === "GET") {
@@ -545,6 +571,158 @@ export class MockApi {
         }
         return json(200, { ...page([]), grant });
       }
+    }
+    return null;
+  }
+
+  /** The M7-09 settings routes: members, integrations, billing, privacy. */
+  private handleSettings(
+    pathname: string,
+    method: string,
+    body: unknown,
+    json: (status: number, payload: unknown) => Promise<void>,
+  ): Promise<void> | null {
+    if (pathname === "/api/v1/tenant/members" && method === "GET") {
+      if (!this.options.members) return json(404, { detail: "Not Found" });
+      return json(200, this.members);
+    }
+    if (pathname === "/api/v1/tenant/members/invite" && method === "POST") {
+      if (!this.options.members) return json(404, { detail: "Not Found" });
+      const payload = (body ?? {}) as Json;
+      const member = {
+        id: this.nextId("mem"),
+        user_id: this.nextId("user"),
+        email: payload.email,
+        name: null,
+        role: payload.role ?? "viewer",
+        status: "invited",
+        invited_at: new Date().toISOString(),
+        last_seen_at: null,
+      };
+      this.members.push(member);
+      return json(201, member);
+    }
+    const memberMatch = pathname.match(/^\/api\/v1\/tenant\/members\/([^/]+)$/);
+    if (memberMatch && (method === "PATCH" || method === "DELETE")) {
+      if (!this.options.members) return json(404, { detail: "Not Found" });
+      const [, memberId] = memberMatch;
+      const index = this.members.findIndex((row) => row.id === memberId);
+      if (index === -1) return json(404, { detail: "member not found" });
+      if (method === "PATCH") {
+        this.members[index] = { ...this.members[index], ...(body as Json) };
+        return json(200, this.members[index]);
+      }
+      const [removed] = this.members.splice(index, 1);
+      return json(200, removed);
+    }
+    if (pathname === "/api/v1/integrations" && method === "GET") {
+      return json(200, this.integrations);
+    }
+    const integrationMatch = pathname.match(/^\/api\/v1\/integrations\/([^/]+)$/);
+    if (integrationMatch && (method === "PUT" || method === "GET")) {
+      const [, kind] = integrationMatch;
+      const index = this.integrations.findIndex((row) => row.kind === kind);
+      if (method === "GET") {
+        if (index === -1) return json(404, { detail: `${kind} is not connected` });
+        return json(200, this.integrations[index]);
+      }
+      const payload = (body ?? {}) as Json;
+      const pasted = ["webhook_url", "signing_secret"].some((name) => payload[name]);
+      const row = {
+        kind,
+        enabled: payload.enabled ?? true,
+        config: payload.config ?? {},
+        secret_scheme: pasted
+          ? "enc"
+          : typeof payload.secret_ref === "string"
+            ? String(payload.secret_ref).split(":")[0].replace("sm//", "sm")
+            : ((this.integrations[index]?.secret_scheme ?? null) as string | null),
+        secret_set: pasted || Boolean(payload.secret_ref) || Boolean(this.integrations[index]?.secret_set),
+      };
+      if (index === -1) this.integrations.push(row);
+      else this.integrations[index] = row;
+      return json(200, row);
+    }
+    if (pathname === "/api/v1/billing" && method === "GET") {
+      return json(200, this.billing);
+    }
+    if (pathname === "/api/v1/billing/checkout" && method === "POST") {
+      const payload = (body ?? {}) as Json;
+      const provider = String(this.billing.provider);
+      const checkout = {
+        provider,
+        url: `https://checkout.${provider}.test/session/${this.nextId("cs")}`,
+        session_id: this.nextId("session"),
+        plan: payload.plan,
+        currency: this.billing.currency,
+      };
+      this.checkouts.push({ ...checkout, body: payload });
+      return json(201, checkout);
+    }
+    if (pathname === "/api/v1/privacy" && method === "GET") {
+      return json(200, this.settings.privacy);
+    }
+    if (pathname === "/api/v1/me/consents") {
+      if (method === "GET") return json(200, this.consents);
+      if (method === "POST") {
+        const payload = (body ?? {}) as Json;
+        const row = {
+          id: this.nextId("con"),
+          kind: payload.kind,
+          version: payload.version,
+          accepted_at: new Date().toISOString(),
+          created: true,
+        };
+        this.consents = [...this.consents.filter((c) => c.kind !== payload.kind), row];
+        return json(201, row);
+      }
+    }
+    if (pathname === "/api/v1/me/data-requests") {
+      if (method === "GET") return json(200, this.dataRequests);
+      if (method === "POST") {
+        const payload = (body ?? {}) as Json;
+        const now = new Date();
+        const row = {
+          id: this.nextId("dr"),
+          kind: payload.kind,
+          status: payload.kind === "access" ? "done" : "received",
+          created_at: now.toISOString(),
+          sla_due_at: new Date(now.getTime() + 30 * 86400_000).toISOString(),
+          completed_at: payload.kind === "access" ? now.toISOString() : null,
+          overdue: false,
+          details: payload.note ? { note: payload.note } : {},
+          result_file_id: null,
+          data: payload.kind === "access" ? { user: { email: "e2e@example.com" } } : null,
+        };
+        this.dataRequests = [row, ...this.dataRequests];
+        return json(201, row);
+      }
+    }
+    const tenantJob = pathname.match(/^\/api\/v1\/tenant\/(export|delete)$/);
+    if (tenantJob && method === "POST") {
+      const [, kind] = tenantJob;
+      const now = new Date();
+      const row = {
+        request_id: this.nextId("dr"),
+        kind: kind === "export" ? "tenant_export" : "tenant_delete",
+        status: "received",
+        sla_due_at: new Date(now.getTime() + 30 * 86400_000).toISOString(),
+        scheduling: "queued",
+        details: {},
+        result_file_id: null,
+      };
+      this.dataRequests = [
+        {
+          ...row,
+          id: row.request_id,
+          created_at: now.toISOString(),
+          completed_at: null,
+          overdue: false,
+          data: null,
+        },
+        ...this.dataRequests,
+      ];
+      return json(202, row);
     }
     return null;
   }

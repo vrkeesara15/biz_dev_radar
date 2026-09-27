@@ -1,0 +1,70 @@
+{
+  "members": [
+    {
+      "id": "mem-1",
+      "user_id": "00000000-0000-0000-0000-0000000000e2",
+      "email": "e2e@example.com",
+      "name": "E2E Owner",
+      "role": "tenant_owner",
+      "status": "active",
+      "invited_at": "2026-08-01T10:00:00Z",
+      "last_seen_at": "2026-09-27T08:00:00Z"
+    },
+    {
+      "id": "mem-2",
+      "user_id": "00000000-0000-0000-0000-0000000000e3",
+      "email": "writer@example.com",
+      "name": "Priya Writer",
+      "role": "writer",
+      "status": "active",
+      "invited_at": "2026-08-04T10:00:00Z",
+      "last_seen_at": "2026-09-20T08:00:00Z"
+    }
+  ],
+  "integrations": [
+    {
+      "kind": "slack",
+      "enabled": true,
+      "config": { "channel": "#bids" },
+      "secret_scheme": "enc",
+      "secret_set": true
+    }
+  ],
+  "billing": {
+    "plan": "free",
+    "provider": "stripe",
+    "currency": "USD",
+    "status": "none",
+    "subscription_id": null,
+    "current_period_end": null,
+    "next_invoice_at": null,
+    "gst_details": {},
+    "limits": [
+      { "resource": "profiles", "limit": 1, "used": 1, "remaining": 0 },
+      { "resource": "source_regions", "limit": 1, "used": 1, "remaining": 0 },
+      { "resource": "instant_alerts", "limit": 0, "used": 0, "remaining": 0 },
+      { "resource": "agent_drafts_per_month", "limit": 0, "used": 0, "remaining": 0 }
+    ],
+    "last_invoice": null
+  },
+  "privacy": {
+    "dpdp_notice_version": "2026-01",
+    "privacy_policy_version": "2026-01",
+    "terms_version": "2026-01",
+    "data_request_sla_days": 30,
+    "grievance_officer": { "name": "A. Officer", "email": "grievance@bidradar.test" },
+    "sub_processors": [
+      { "name": "Anthropic", "purpose": "LLM drafting", "region": "US" },
+      { "name": "Google Cloud", "purpose": "Hosting and storage", "region": "US / India" }
+    ]
+  },
+  "consents": [
+    {
+      "id": "con-1",
+      "kind": "terms",
+      "version": "2026-01",
+      "accepted_at": "2026-08-01T10:00:00Z",
+      "created": true
+    }
+  ]
+}
