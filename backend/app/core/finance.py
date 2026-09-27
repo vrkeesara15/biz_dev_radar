@@ -13,6 +13,8 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
+from app.core.money import to_usd as convert_to_usd
+
 CURRENCIES = ("USD", "INR")
 CENTS = Decimal("0.01")
 MILLION = Decimal("1000000")
@@ -88,12 +90,9 @@ def average_turnover(
 
 
 def to_usd(money: Money, fx_rates: Mapping[str, float | Decimal]) -> Decimal:
-    """Convert with a currency -> USD rate table (Settings.fx_rates)."""
-    try:
-        rate = Decimal(str(fx_rates[money.currency]))
-    except KeyError as exc:
-        raise ValueError(f"no USD rate for {money.currency}") from exc
-    return quantize_money(money.amount * rate)
+    """Convert with a currency -> USD rate table (Settings.fx_rates); see core.money.to_usd
+    for the variant that also reports the rate used."""
+    return convert_to_usd(money.amount, money.currency, fx_rates).usd
 
 
 def in_millions(amount: Decimal) -> Decimal:
