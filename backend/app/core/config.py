@@ -51,6 +51,33 @@ DEFAULT_LLM_PRICES: dict[str, dict[str, float]] = {
 }
 
 
+# Settings whose value is a credential: they are never baked into an image, a Cloud Run
+# manifest or a Terraform state. Terraform creates one Secret Manager secret per name
+# (empty version) and the Cloud Run manifests reference them with secretKeyRef, so the
+# deployed containers read them as ordinary env vars. `tests/unit/test_secret_settings.py`
+# fails when a new credential-looking field is added without listing it here.
+SECRET_SETTINGS: tuple[str, ...] = (
+    "database_url",
+    "database_url_owner",
+    "redis_url",
+    "auth_secret",
+    "field_encryption_key",
+    "s3_access_key",
+    "s3_secret_key",
+    "sam_api_key",
+    "anthropic_api_key",
+    "voyage_api_key",
+    "stripe_secret_key",
+    "stripe_webhook_secret",
+    "razorpay_key_id",
+    "razorpay_key_secret",
+    "razorpay_webhook_secret",
+    "sentry_dsn",
+    "langfuse_public_key",
+    "langfuse_secret_key",
+)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",

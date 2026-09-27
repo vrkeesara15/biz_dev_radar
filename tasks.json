@@ -1966,7 +1966,7 @@
       "Same image runs in us-east1 and asia-south1 with REGION env selecting buckets and DB",
       "docker build succeeds in CI"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-02",
