@@ -832,7 +832,7 @@
       "Every record carries source attribution, source_url and the disclaimer 'Verify every detail on the official portal before submitting.'",
       "Search response p95 < 500 ms on 50k seeded rows in the load test script"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-16",

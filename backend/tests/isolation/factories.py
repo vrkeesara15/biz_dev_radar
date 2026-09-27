@@ -23,6 +23,7 @@ from typing import Any
 from app.core.config import Region
 from app.core.db import Database
 from app.core.notice_types import TeamingRole
+from app.core.opportunity import NoticeType
 from app.core.profile_fields import (
     BoilerplateKind,
     CertificationKind,
@@ -42,6 +43,7 @@ from app.models import (
     CompanyProfile,
     File,
     Insurance,
+    Opportunity,
     PastPerformance,
     Personnel,
     ProfileCode,
@@ -90,6 +92,9 @@ class TenantCtx:
 class IsolationContext:
     a: TenantCtx
     b: TenantCtx
+    # GLOBAL (public) objects owned by no tenant, e.g. an opportunity: any tenant may read
+    # them, so their ids are deliberately NOT in a.ids (a 200 for B is correct there).
+    shared: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -233,6 +238,12 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         "certification",
         {"kind": "8a", "cert_number": "PROBE-1"},
         {"cert_number": "PROBE-2"},
+    ),
+    # --- opportunities (M2-15): global public notices, readable by every tenant role; the
+    # harness only checks that B's 200 carries none of A's identifiers.
+    ("GET", "/api/v1/opportunities"): lambda ctx: RouteCall(params={"q": "isolation", "page": 1}),
+    ("GET", "/api/v1/opportunities/{opportunity_id}"): lambda ctx: RouteCall(
+        path_params={"opportunity_id": ctx.shared["opportunity"]}
     ),
     # --- files (M1-11)
     ("POST", "/api/v1/files"): lambda ctx: RouteCall(
@@ -416,4 +427,16 @@ async def build_context(database: Database) -> IsolationContext:
             owner_email=ub.email,
             ids={"tenant": str(tb.id), "owner_user": str(ub.id), "membership": str(mb.id)},
         )
-    return IsolationContext(a=a, b=b)
+        opportunity = Opportunity(
+            source_id="sam_opps",
+            external_id=f"iso-{uuid.uuid4().hex[:8]}",
+            region=Region.US,
+            country="US",
+            currency="USD",
+            notice_type=NoticeType.RFP,
+            title="Isolation probe notice",
+        )
+        session.add(opportunity)
+        await session.flush()
+        shared = {"opportunity": str(opportunity.id)}
+    return IsolationContext(a=a, b=b, shared=shared)
