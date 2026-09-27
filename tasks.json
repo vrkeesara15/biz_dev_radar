@@ -200,7 +200,7 @@
       "backend-test fails when core coverage < 85% or any test fails",
       "Workflow YAML validates with a yaml parser test in tests/unit/test_ci_config.py"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-11",
