@@ -3,13 +3,25 @@
 from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import PlanLimit, UsageLedger
+from app.models.opportunities import (
+    AwardsEnrichment,
+    DocumentChunk,
+    Opportunity,
+    OpportunityDocument,
+    OpportunityVersion,
+)
 from app.models.sources import Source, SourceRun
 from app.models.tenancy import Membership, Tenant, User
 
 __all__ = [
     "AuditLog",
+    "AwardsEnrichment",
     "Base",
+    "DocumentChunk",
     "Membership",
+    "Opportunity",
+    "OpportunityDocument",
+    "OpportunityVersion",
     "PlanLimit",
     "Source",
     "SourceRun",

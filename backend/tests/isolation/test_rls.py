@@ -20,6 +20,11 @@ RLS_EXEMPT_TABLES = {
     # adapter bookkeeping and spend statistics. No tenant_id, no policy, app-role DML grants.
     "sources",
     "source_runs",
+    "opportunities",
+    "opportunity_versions",
+    "opportunity_documents",
+    "document_chunks",
+    "awards_enrichment",
 }
 
 

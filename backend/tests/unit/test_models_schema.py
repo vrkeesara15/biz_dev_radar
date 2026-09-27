@@ -2,8 +2,13 @@
 
 from app.models import (
     AuditLog,
+    AwardsEnrichment,
     Base,
+    DocumentChunk,
     Membership,
+    Opportunity,
+    OpportunityDocument,
+    OpportunityVersion,
     PlanLimit,
     Source,
     SourceRun,
@@ -32,7 +37,18 @@ def test_tenant_scoped_tables_have_not_null_tenant_id() -> None:
 
 
 def test_global_tables_have_no_tenant_id() -> None:
-    for model in (Tenant, User, PlanLimit, Source, SourceRun):
+    for model in (
+        Tenant,
+        User,
+        PlanLimit,
+        Source,
+        SourceRun,
+        Opportunity,
+        OpportunityVersion,
+        OpportunityDocument,
+        DocumentChunk,
+        AwardsEnrichment,
+    ):
         assert "tenant_id" not in model.__table__.c
 
 
