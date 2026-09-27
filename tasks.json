@@ -1194,7 +1194,7 @@
       "Invalid JSON retried up to 2x then rationale=null with flag",
       "Cached by (opportunity version, profile version); FakeLLM test asserts one call for two scorings"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-06",
