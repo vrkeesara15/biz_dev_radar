@@ -270,6 +270,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/integrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Integrations */
+        get: operations["list_integrations_api_v1_integrations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Integration */
+        get: operations["read_integration_api_v1_integrations__kind__get"];
+        /**
+         * Upsert Integration
+         * @description Connect or update one integration. Pasted secrets are encrypted into `secret_ref`;
+         *     a `secret_ref` of "env:..." / "sm://..." points at a platform-held secret instead.
+         */
+        put: operations["upsert_integration_api_v1_integrations__kind__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integrations/slack/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Slack Actions
+         * @description Record a Pursue / Pass / Assign click made from a Slack Block Kit message.
+         */
+        post: operations["slack_actions_api_v1_integrations_slack_actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -357,6 +416,126 @@ export interface paths {
         /** Update Prefs */
         put: operations["update_prefs_api_v1_me_notification_prefs_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Notifications
+         * @description Newest first, with the unread count for the badge.
+         */
+        get: operations["read_notifications_api_v1_me_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read One */
+        post: operations["read_one_api_v1_me_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read All */
+        post: operations["read_all_api_v1_me_notifications_read_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/push-subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Subscribe Push
+         * @description Store (or refresh) this browser's push subscription; the endpoint is the identity.
+         */
+        post: operations["subscribe_push_api_v1_me_push_subscriptions_post"];
+        /** Unsubscribe Push */
+        delete: operations["unsubscribe_push_api_v1_me_push_subscriptions_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/actions/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Take Action
+         * @description Record a Pursue / Watch / Pass (with reason) / Assign click and answer with the
+         *     redirect target (202: the pursuit itself is created by the M6 endpoints).
+         */
+        get: operations["take_action_api_v1_notifications_actions__token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/unsubscribe/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unsubscribe
+         * @description CAN-SPAM per-category opt-out clicked from the email footer.
+         */
+        get: operations["unsubscribe_api_v1_notifications_unsubscribe__token__get"];
+        put?: never;
+        /**
+         * Unsubscribe One Click
+         * @description RFC 8058 one-click target named by the List-Unsubscribe-Post header.
+         */
+        post: operations["unsubscribe_one_click_api_v1_notifications_unsubscribe__token__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -954,6 +1133,131 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pursuits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Pursuit
+         * @description Idempotent: the (profile, opportunity) pair has one pursuit; 201 when created.
+         */
+        post: operations["create_pursuit_api_v1_pursuits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Pursuit */
+        get: operations["get_pursuit_api_v1_pursuits__pursuit_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/agents/approve-budget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Budget
+         * @description Raise the pursuit's cap by `additional_usd` (audited) and resume the run the cost
+         *     guard left in needs_approval, if any. Never bypasses the tenant's monthly budget.
+         */
+        post: operations["approve_budget_api_v1_pursuits__pursuit_id__agents_approve_budget_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/agents/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Agents
+         * @description Start the pursuit pipeline (SPEC 8, 10.3). The run is queued on Celery
+         *     (`bidradar.run_agents`) or executed in the API process; the cost guard still decides
+         *     before every step, so a run can come back needs_approval having spent nothing.
+         */
+        post: operations["run_agents_api_v1_pursuits__pursuit_id__agents_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/matrix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Matrix
+         * @description The compliance matrix with the solicitation's format rules and the region's
+         *     submission checklist. Empty until the matrix agent has run.
+         */
+        get: operations["get_matrix_api_v1_pursuits__pursuit_id__matrix_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/packet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Packet
+         * @description What to upload where, the portal link, the signatures / DSC steps and the final
+         *     deadline in the buyer's and the reader's time zone.
+         *
+         *     Read-only by construction: the route makes no outbound call and nothing it returns
+         *     submits anything (SPEC 1 -- a human always submits on the portal).
+         */
+        get: operations["get_packet_api_v1_pursuits__pursuit_id__packet_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/info": {
         parameters: {
             query?: never;
@@ -1075,6 +1379,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActionOut */
+        ActionOut: {
+            action: components["schemas"]["NotificationAction"];
+            /**
+             * Notification Id
+             * Format: uuid
+             */
+            notification_id: string;
+            /** Opportunity Id */
+            opportunity_id: string | null;
+            /** Pursuit Id */
+            pursuit_id: string | null;
+            /** Recorded */
+            recorded: boolean;
+            /** Redirect */
+            redirect: string;
+        };
         /** AdapterHealthOut */
         AdapterHealthOut: {
             /** Consecutive Failures */
@@ -1119,14 +1440,48 @@ export interface components {
          * @enum {string}
          */
         AgencyType: "federal" | "state" | "local" | "central_ministry" | "state_government" | "psu" | "commercial" | "international" | "other";
+        /** ApproveBudgetIn */
+        ApproveBudgetIn: {
+            /** Additional Usd */
+            additional_usd: number | string;
+            /**
+             * Inline
+             * @default false
+             */
+            inline: boolean;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** ApproveBudgetOut */
+        ApproveBudgetOut: {
+            /** Mode */
+            mode: string;
+            /** New Cap Usd */
+            new_cap_usd: string;
+            /** Previous Cap Usd */
+            previous_cap_usd: string;
+            pursuit: components["schemas"]["PursuitOut"];
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
+            /** Resumed Run Id */
+            resumed_run_id: string | null;
+            /** Task Id */
+            task_id?: string | null;
+        };
         /** Attribution */
         Attribution: {
+            /** Footer */
+            footer: string;
             /** Source Id */
             source_id: string;
             /** Source Name */
             source_name: string;
             /** Source Url */
             source_url: string | null;
+            /** Text */
+            text: string;
         };
         /** AuditLogPage */
         AuditLogPage: {
@@ -1366,6 +1721,21 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** ChecklistItem */
+        ChecklistItem: {
+            /** Category */
+            category: string;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Note */
+            note?: string | null;
+            /** Required */
+            required: boolean;
+            /** Source Req Ids */
+            source_req_ids?: string[];
+        };
         /** CheckoutIn */
         CheckoutIn: {
             /** Cancel Url */
@@ -1596,6 +1966,37 @@ export interface components {
             /** Size Bytes */
             size_bytes: number;
         };
+        /**
+         * FormatRules
+         * @description What the solicitation says about the shape of the response. Every field is None /
+         *     empty unless a requirement actually stated it -- nothing is guessed.
+         */
+        FormatRules: {
+            /** Copies */
+            copies?: number | null;
+            /** Email */
+            email?: string | null;
+            /** File Naming */
+            file_naming?: string | null;
+            /** File Types */
+            file_types?: string[];
+            /** Font */
+            font?: string | null;
+            /** Font Size Pt */
+            font_size_pt?: number | null;
+            /** Margins */
+            margins?: string | null;
+            /** Page Limit */
+            page_limit?: number | null;
+            /** Portal */
+            portal?: string | null;
+            /** Sources */
+            sources?: {
+                [key: string]: string;
+            };
+            /** Submission Method */
+            submission_method?: string | null;
+        };
         /** GrievanceOfficer */
         GrievanceOfficer: {
             /** Email */
@@ -1714,6 +2115,43 @@ export interface components {
             /** Policy Number */
             policy_number?: string | null;
         };
+        /** IntegrationIn */
+        IntegrationIn: {
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Secret Ref */
+            secret_ref?: string | null;
+            /** Signing Secret */
+            signing_secret?: string | null;
+            /** Webhook Url */
+            webhook_url?: string | null;
+        };
+        /**
+         * IntegrationKind
+         * @enum {string}
+         */
+        IntegrationKind: "slack" | "teams" | "whatsapp" | "google_calendar" | "microsoft_calendar";
+        /** IntegrationOut */
+        IntegrationOut: {
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /** Enabled */
+            enabled: boolean;
+            kind: components["schemas"]["IntegrationKind"];
+            /** Secret Scheme */
+            secret_scheme: string | null;
+            /** Secret Set */
+            secret_set: boolean;
+        };
         /** InvoiceOut */
         InvoiceOut: {
             /** Amount */
@@ -1799,6 +2237,68 @@ export interface components {
          * @enum {string}
          */
         LocalSupplierClass: "class_1" | "class_2" | "non_local";
+        /** MarkAllReadOut */
+        MarkAllReadOut: {
+            /** Marked */
+            marked: number;
+        };
+        /** MarkReadOut */
+        MarkReadOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Read At
+             * Format: date-time
+             */
+            read_at: string;
+        };
+        /**
+         * MatrixRowOut
+         * @description One compliance item joined with the requirement it answers (SPEC 8: the citation
+         *     travels with the row so the UI can link to the document page).
+         */
+        MatrixRowOut: {
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Notes */
+            notes: string | null;
+            /** Owner User Id */
+            owner_user_id: string | null;
+            /** Page */
+            page: number;
+            /** Quote */
+            quote: string;
+            /** Reason */
+            reason: string;
+            /** Req Id */
+            req_id: string;
+            /**
+             * Requirement Id
+             * Format: uuid
+             */
+            requirement_id: string;
+            /** Section */
+            section: string;
+            /** Status */
+            status: string;
+            /** Text */
+            text: string;
+            /** Type */
+            type: string;
+            /** Volume */
+            volume: string | null;
+        };
         /** MeOut */
         MeOut: {
             /** Email */
@@ -1843,6 +2343,45 @@ export interface components {
          * @enum {string}
          */
         NoticeType: "rfi" | "sources_sought" | "presolicitation" | "rfp" | "rfq" | "combined" | "grant" | "forecast" | "award" | "eoi" | "gem_bid" | "reverse_auction" | "corrigendum" | "special";
+        /**
+         * NotificationAction
+         * @enum {string}
+         */
+        NotificationAction: "pursue" | "watch" | "pass" | "assign";
+        /** NotificationOut */
+        NotificationOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Event Type */
+            event_type: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Opportunity Id */
+            opportunity_id: string | null;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Pursuit Id */
+            pursuit_id: string | null;
+            /** Read At */
+            read_at: string | null;
+            /** Version */
+            version: number;
+        };
+        /** NotificationPage */
+        NotificationPage: {
+            /** Items */
+            items: components["schemas"]["NotificationOut"][];
+            /** Unread */
+            unread: number;
+        };
         /** NotificationPrefsIn */
         NotificationPrefsIn: {
             /** Channels By Event */
@@ -2115,6 +2654,35 @@ export interface components {
          * @enum {string}
          */
         OpportunityStatus: "open" | "closing_soon" | "closed" | "cancelled" | "awarded";
+        /** Packet */
+        Packet: {
+            /** Copies */
+            copies?: number | null;
+            deadline?: components["schemas"]["TzDateOut"] | null;
+            /**
+             * Disclaimer
+             * @default BidRadar never submits a bid. A person signs in to the portal and submits; Verify every detail on the official portal before submitting.
+             */
+            disclaimer: string;
+            /** Dsc Steps */
+            dsc_steps?: string[];
+            /** Email */
+            email: string | null;
+            /** Page Limit */
+            page_limit?: number | null;
+            /** Portal */
+            portal: string | null;
+            /** Portal Url */
+            portal_url: string | null;
+            /** Sam Login Note */
+            sam_login_note?: string | null;
+            /** Signatures */
+            signatures?: components["schemas"]["SignatureStep"][];
+            /** Submission Method */
+            submission_method: string | null;
+            /** Upload Steps */
+            upload_steps?: components["schemas"]["UploadStep"][];
+        };
         /** PastPerformanceIn */
         PastPerformanceIn: {
             agency_type?: components["schemas"]["AgencyType"] | null;
@@ -2790,6 +3358,137 @@ export interface components {
             /** Year Founded */
             year_founded?: number | null;
         };
+        /** PursuitCreateIn */
+        PursuitCreateIn: {
+            /**
+             * Opportunity Id
+             * Format: uuid
+             */
+            opportunity_id: string;
+            /**
+             * Profile Id
+             * Format: uuid
+             */
+            profile_id: string;
+        };
+        /** PursuitMatrixOut */
+        PursuitMatrixOut: {
+            /** Checklist */
+            checklist: components["schemas"]["ChecklistItem"][];
+            /** Checklist Version */
+            checklist_version: number | null;
+            format_rules: components["schemas"]["FormatRules"] | null;
+            /** Format Rules Version */
+            format_rules_version: number | null;
+            /** Generated At */
+            generated_at: string | null;
+            /** Items */
+            items: components["schemas"]["MatrixRowOut"][];
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+        };
+        /** PursuitOut */
+        PursuitOut: {
+            /** Budget Month Limit Usd */
+            budget_month_limit_usd: string | null;
+            /** Budget Month Remaining Usd */
+            budget_month_remaining_usd: string | null;
+            /** Budget Month Spent Usd */
+            budget_month_spent_usd: string;
+            /** Cost Cap Usd */
+            cost_cap_usd: string;
+            /** Cost So Far Usd */
+            cost_so_far_usd: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: string | null;
+            /** Decision */
+            decision: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Internal Due At */
+            internal_due_at: string | null;
+            /**
+             * Opportunity Id
+             * Format: uuid
+             */
+            opportunity_id: string;
+            /** Owner User Id */
+            owner_user_id: string | null;
+            /**
+             * Profile Id
+             * Format: uuid
+             */
+            profile_id: string;
+            run: components["schemas"]["RunOut"] | null;
+            /** Stage */
+            stage: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PursuitPacketOut */
+        PursuitPacketOut: {
+            /** Checklist */
+            checklist: components["schemas"]["ChecklistItem"][];
+            /** Checklist Version */
+            checklist_version: number | null;
+            /** Generated At */
+            generated_at: string | null;
+            /**
+             * Opportunity Id
+             * Format: uuid
+             */
+            opportunity_id: string;
+            packet: components["schemas"]["Packet"];
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+        };
+        /** PushDeleteIn */
+        PushDeleteIn: {
+            /** Endpoint */
+            endpoint: string;
+        };
+        /** PushKeys */
+        PushKeys: {
+            /** Auth */
+            auth: string;
+            /** P256Dh */
+            p256dh: string;
+        };
+        /** PushSubscriptionIn */
+        PushSubscriptionIn: {
+            /** Endpoint */
+            endpoint: string;
+            keys: components["schemas"]["PushKeys"];
+        };
+        /** PushSubscriptionOut */
+        PushSubscriptionOut: {
+            /** Created */
+            created: boolean;
+            /** Endpoint */
+            endpoint: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
         /** RateCardIn */
         RateCardIn: {
             /** Labor Category */
@@ -2953,6 +3652,77 @@ export interface components {
          * @enum {string}
          */
         Role: "platform_admin" | "tenant_owner" | "bid_manager" | "writer" | "reviewer" | "viewer";
+        /**
+         * RunAgentsIn
+         * @description `step` is one agent name or "all"; "all" runs every implemented step in order and
+         *     pauses at the first one a later task still has to add.
+         */
+        RunAgentsIn: {
+            /**
+             * Inline
+             * @default false
+             */
+            inline: boolean;
+            /**
+             * Step
+             * @default all
+             */
+            step: string;
+        };
+        /** RunAgentsOut */
+        RunAgentsOut: {
+            /** Mode */
+            mode: string;
+            pursuit: components["schemas"]["PursuitOut"];
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /** Step */
+            step: string;
+            /** Steps */
+            steps: string[];
+            /** Task Id */
+            task_id?: string | null;
+        };
+        /** RunOut */
+        RunOut: {
+            /** Cost Usd */
+            cost_usd: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Finished At */
+            finished_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Pause Reason */
+            pause_reason: string | null;
+            /** Paused At */
+            paused_at: string | null;
+            /** Started At */
+            started_at: string | null;
+            /** Status */
+            status: string;
+            /** Step */
+            step: string | null;
+            /** Tokens In */
+            tokens_in: number;
+            /** Tokens Out */
+            tokens_out: number;
+        };
         /** RunSourceIn */
         RunSourceIn: {
             /**
@@ -3045,6 +3815,17 @@ export interface components {
             /** Tools */
             tools?: string[] | null;
         };
+        /** SignatureStep */
+        SignatureStep: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Note */
+            note?: string | null;
+            /** Signed By */
+            signed_by: string;
+        };
         /** SignedUrlOut */
         SignedUrlOut: {
             /**
@@ -3078,6 +3859,20 @@ export interface components {
             status: components["schemas"]["SizeStatus"];
             /** Threshold */
             threshold: string | null;
+        };
+        /** SlackActionOut */
+        SlackActionOut: {
+            /** Action */
+            action: string;
+            /**
+             * Notification Id
+             * Format: uuid
+             */
+            notification_id: string;
+            /** Recorded */
+            recorded: boolean;
+            /** Text */
+            text: string;
         };
         /** SourceOut */
         SourceOut: {
@@ -3397,10 +4192,61 @@ export interface components {
             slug: string;
         };
         /**
+         * TzDateOut
+         * @description One deadline in every zone the reader cares about (JSON: utc as ISO-8601 'Z').
+         */
+        TzDateOut: {
+            /** Buyer Display */
+            buyer_display: string;
+            /** Buyer Local */
+            buyer_local: string;
+            /** Buyer Tz */
+            buyer_tz: string;
+            /** Display */
+            display: string;
+            /** User Display */
+            user_display?: string | null;
+            /** User Local */
+            user_local?: string | null;
+            /** User Tz */
+            user_tz?: string | null;
+            /**
+             * Utc
+             * Format: date-time
+             */
+            utc: string;
+        };
+        /**
          * UdyamCategory
          * @enum {string}
          */
         UdyamCategory: "micro" | "small" | "medium";
+        /** UnsubscribeOut */
+        UnsubscribeOut: {
+            /** Category */
+            category: string;
+            /** Redirect */
+            redirect: string;
+            /** Unsubscribed Categories */
+            unsubscribed_categories: string[];
+        };
+        /** UploadStep */
+        UploadStep: {
+            /** Destination */
+            destination: string;
+            /** File Name */
+            file_name?: string | null;
+            /** Formats */
+            formats?: string[];
+            /** Label */
+            label: string;
+            /** Note */
+            note?: string | null;
+            /** Order */
+            order: number;
+            /** Source Req Ids */
+            source_req_ids?: string[];
+        };
         /** UsagePage */
         UsagePage: {
             /** Items */
@@ -4002,6 +4848,112 @@ export interface operations {
             };
         };
     };
+    list_integrations_api_v1_integrations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationOut"][];
+                };
+            };
+        };
+    };
+    read_integration_api_v1_integrations__kind__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: components["schemas"]["IntegrationKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_integration_api_v1_integrations__kind__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: components["schemas"]["IntegrationKind"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntegrationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    slack_actions_api_v1_integrations_slack_actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlackActionOut"];
+                };
+            };
+        };
+    };
     read_me_api_v1_me_get: {
         parameters: {
             query?: never;
@@ -4201,6 +5153,250 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationPrefsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_notifications_api_v1_me_notifications_get: {
+        parameters: {
+            query?: {
+                before?: string | null;
+                limit?: number;
+                unread?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_one_api_v1_me_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkReadOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_all_api_v1_me_notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllReadOut"];
+                };
+            };
+        };
+    };
+    subscribe_push_api_v1_me_push_subscriptions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscriptionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushSubscriptionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsubscribe_push_api_v1_me_push_subscriptions_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushDeleteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    take_action_api_v1_notifications_actions__token__get: {
+        parameters: {
+            query?: {
+                assignee?: string | null;
+                reason?: string | null;
+            };
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsubscribe_api_v1_notifications_unsubscribe__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnsubscribeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsubscribe_one_click_api_v1_notifications_unsubscribe__token__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnsubscribeOut"];
                 };
             };
             /** @description Validation Error */
@@ -6584,6 +7780,202 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_pursuit_api_v1_pursuits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PursuitCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pursuit_api_v1_pursuits__pursuit_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_budget_api_v1_pursuits__pursuit_id__agents_approve_budget_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveBudgetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApproveBudgetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_agents_api_v1_pursuits__pursuit_id__agents_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunAgentsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunAgentsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_matrix_api_v1_pursuits__pursuit_id__matrix_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitMatrixOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_packet_api_v1_pursuits__pursuit_id__packet_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitPacketOut"];
+                };
             };
             /** @description Validation Error */
             422: {
