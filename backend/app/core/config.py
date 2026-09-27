@@ -69,9 +69,11 @@ class Settings(BaseSettings):
     region: Region = Region.US
 
     # auth & crypto
-    auth_secret: str = "dev-only-change-me"
+    auth_secret: str = "dev-only-change-me-0123456789abcdef0123456789abcdef"
     field_encryption_key: str = "dev-only-32-byte-key-change-me!!"
     auth_rate_limit_per_minute: int = 20
+    # Only enable behind a proxy that overwrites X-Forwarded-For (Cloud Run does).
+    trust_proxy_headers: bool = False
 
     # contact / compliance
     contact_email: str = "ops@example.com"

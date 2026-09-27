@@ -141,7 +141,7 @@
       "Tenant id is taken from the token, never from the request body or query",
       "Auth rate limit: more than 20 failed auth attempts per IP per minute returns 429"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-08",

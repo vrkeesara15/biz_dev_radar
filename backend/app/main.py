@@ -13,6 +13,7 @@ from app.api import health
 from app.api.middleware import RequestIdMiddleware
 from app.api.v1 import api_router
 from app.core.config import Settings, get_settings
+from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
 
 
@@ -34,6 +35,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url="/openapi.json",
     )
     app.state.settings = settings
+    app.state.auth_limiter = FixedWindowLimiter(
+        limit=settings.auth_rate_limit_per_minute, window_seconds=60
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

@@ -91,3 +91,15 @@ async def client(app):  # type: ignore[no-untyped-def]
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as ac:
         yield ac
+
+
+@pytest.fixture()
+async def api_client(app, clean_db):  # type: ignore[no-untyped-def]
+    """HTTP client over the app with a clean, migrated database behind it."""
+    import httpx
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app, client=("203.0.113.10", 51000)),
+        base_url="http://test",
+    ) as ac:
+        yield ac

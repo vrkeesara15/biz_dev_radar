@@ -74,6 +74,9 @@ async def test_downgrade_base_leaves_no_application_tables(database: Database) -
             await conn.execute(text("DROP EXTENSION IF EXISTS pg_trgm"))
     finally:
         alembic("upgrade", "head")
+        # Enum types were recreated with new OIDs: drop pooled asyncpg connections whose
+        # type caches would otherwise be stale ("cache lookup failed for type").
+        await database.dispose()
     async with database.owner_engine.connect() as conn:
         names = set((await conn.execute(text("SELECT extname FROM pg_extension"))).scalars().all())
     assert {"vector", "pg_trgm"} <= names
