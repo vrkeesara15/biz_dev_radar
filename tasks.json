@@ -1174,7 +1174,7 @@
       "US path uses SBA size status; IN path uses evaluate_in",
       "Per-criterion results stored in breakdown.eligibility for the UI pass/fail/unknown list"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-05",

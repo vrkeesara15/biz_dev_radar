@@ -33,12 +33,23 @@ class HeldCertification:
 
 
 @dataclass(frozen=True, slots=True)
+class HeldRegistration:
+    kind: str  # app.core.profile_fields.RegistrationKind value (sam, dsc, gem, cppp, state_portal)
+    identifier: str | None = None
+    expires_on: date | None = None
+
+    def valid_on(self, day: date) -> bool:
+        return self.expires_on is None or self.expires_on >= day
+
+
+@dataclass(frozen=True, slots=True)
 class MatchProfile:
     """What matching needs to know about one company profile (SPEC 4.1-4.6)."""
 
     region: str  # us | in
     id: str | None = None
     version: int = 1
+    year_founded: int | None = None
     # where and how big (SPEC 4.4)
     target_countries: tuple[str, ...] = ()
     target_us_states: tuple[str, ...] = ()
@@ -60,6 +71,7 @@ class MatchProfile:
     avg_receipts_usd: Decimal | None = None
     employee_count_total: int | None = None
     certifications: tuple[HeldCertification, ...] = ()
+    registrations: tuple[HeldRegistration, ...] = ()
     sam_status: str | None = None
     sam_expires_on: date | None = None
     # India statuses

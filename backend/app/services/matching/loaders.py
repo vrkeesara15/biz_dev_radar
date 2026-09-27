@@ -14,7 +14,13 @@ from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.finance import FiscalYearRevenue, MixedCurrencyError, average_turnover
-from app.core.matching.types import HeldCertification, KeywordWeight, MatchOpportunity, MatchProfile
+from app.core.matching.types import (
+    HeldCertification,
+    HeldRegistration,
+    KeywordWeight,
+    MatchOpportunity,
+    MatchProfile,
+)
 from app.core.profile_fields import KeywordKind
 from app.models import (
     AwardsEnrichment,
@@ -24,6 +30,7 @@ from app.models import (
     PastPerformance,
     ProfileCode,
     ProfileKeyword,
+    Registration,
 )
 from app.services.profiles import load_eligibility_snapshot
 
@@ -85,6 +92,13 @@ async def load_match_profile(session: AsyncSession, profile: CompanyProfile) -> 
             )
         )
     ).all()
+    reg_rows = (
+        await session.execute(
+            select(Registration.kind, Registration.identifier, Registration.expires_on)
+            .where(Registration.profile_id == pid)
+            .order_by(Registration.created_at)
+        )
+    ).all()
     customers = (
         await session.execute(
             select(PastPerformance.customer)
@@ -100,6 +114,7 @@ async def load_match_profile(session: AsyncSession, profile: CompanyProfile) -> 
         region=profile.region.value,
         id=str(profile.id),
         version=int(profile.version or 1),
+        year_founded=profile.year_founded,
         target_countries=_tuple(profile.target_countries),
         target_us_states=_tuple(profile.target_us_states),
         target_in_states=_tuple(profile.target_in_states),
@@ -119,6 +134,10 @@ async def load_match_profile(session: AsyncSession, profile: CompanyProfile) -> 
         employee_count_total=profile.employee_count_total,
         certifications=tuple(
             HeldCertification(str(kind.value), expires_on) for kind, expires_on in cert_rows
+        ),
+        registrations=tuple(
+            HeldRegistration(str(kind.value), ident, expires_on)
+            for kind, ident, expires_on in reg_rows
         ),
         sam_status=_enum_value(profile.sam_status),
         sam_expires_on=profile.sam_expires_on,

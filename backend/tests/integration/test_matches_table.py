@@ -367,3 +367,54 @@ def test_usd_receipts_rules() -> None:
     assert usd_receipts([{"fiscal_year": 2025, "amount": "5.00", "currency": "USD"}]) == Decimal(
         "5.00"
     )
+
+
+async def test_loaded_profile_feeds_the_eligibility_signal(database: Database) -> None:
+    """M4-04: registrations / SAM status reach the US path through the loader."""
+    from app.core.matching.eligibility_signal import eligibility_signal
+    from app.core.profile_fields import SamStatus
+
+    tenant_id, profile_id, opp_id = await _seed(database)
+    async with database.owner_session() as session:
+        profile_row = await session.get(CompanyProfile, profile_id)
+        assert profile_row is not None
+        profile_row.sam_status = SamStatus.ACTIVE
+        profile_row.sam_expires_on = date(2027, 3, 1)
+        profile_row.year_founded = 2010
+        session.add(
+            Registration(
+                tenant_id=tenant_id,
+                profile_id=profile_id,
+                kind=RegistrationKind.STATE_PORTAL,
+                identifier="eVA",
+                expires_on=date(2027, 1, 1),
+            )
+        )
+        opp_row = await session.get(Opportunity, opp_id)
+        assert opp_row is not None
+        opp_row.eligibility = {
+            "min_experience_years": 5,
+            "required_certifications": ["WOSB"],
+            "required_registrations": ["sam", "state_portal"],
+        }
+        await session.flush()
+    async with database.session(tenant_id) as session:
+        row = await session.get(CompanyProfile, profile_id)
+        assert row is not None
+        profile = await load_match_profile(session, row)
+    async with database.session(None) as session:
+        opp_row = await session.get(Opportunity, opp_id)
+        assert opp_row is not None
+        opp = match_opportunity_from_row(opp_row)
+    assert profile.year_founded == 2010 and profile.sam_status == "active"
+    assert [(r.kind, r.identifier) for r in profile.registrations] == [("state_portal", "eVA")]
+    signal = eligibility_signal(profile, opp, NOW.date())
+    statuses = {c["name"]: c["status"] for c in signal.detail["criteria"]}
+    assert statuses == {
+        "size_status": "pass",  # SBA set-aside, $20M avg receipts under the 541511 cap
+        "experience": "pass",
+        "certification:wosb": "pass",
+        "registration:sam": "pass",
+        "registration:state_portal": "pass",
+    }
+    assert signal.raw == Decimal("1")

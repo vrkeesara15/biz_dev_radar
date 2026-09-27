@@ -419,7 +419,18 @@ def test_evaluate_scores_a_kept_notice_with_defaults_for_missing_signals() -> No
     assert breakdown["filters"]["keep"] is True
     assert breakdown["signals"]["semantic_similarity"]["note"] == NOT_COMPUTED
     assert breakdown["uncapped_score"] == 70.0
-    assert "label" not in breakdown and "eligibility" not in breakdown
+    assert "label" not in breakdown
+    # no extracted criteria: one unknown criterion, scored 0.5 (M4-04)
+    assert breakdown["signals"]["eligibility"]["raw"] == 0.5
+    assert breakdown["eligibility"] == [
+        {
+            "name": "criteria",
+            "status": "unknown",
+            "reason": "no eligibility criteria extracted",
+            "required": None,
+            "measured": None,
+        }
+    ]
 
 
 def test_evaluate_uses_precomputed_signals_and_profile_weights() -> None:

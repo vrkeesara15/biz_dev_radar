@@ -7,7 +7,8 @@
     outcome.filtered_reason, outcome.ineligible_set_aside
 
 The embedding / keyword signals arrive precomputed (M4-03) or default to 0.5; the
-eligibility signal is passed in as well (M4-04 computes it from the extracted criteria).
+eligibility signal is computed here from the notice's extracted criteria (M4-04) unless a
+caller passes one in.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
+from app.core.matching.eligibility_signal import eligibility_signal
 from app.core.matching.filters import FilterResult, hard_filters
 from app.core.matching.score import (
     ScoreResult,
@@ -85,7 +87,9 @@ def evaluate(
         semantic=semantic,
         keyword=keyword,
         past_performance=past_performance,
-        eligibility=eligibility,
+        eligibility=eligibility
+        if eligibility is not None
+        else eligibility_signal(profile, opp, now.date()),
     )
     result = weighted_score(signals, resolve_weights(profile.scoring_weights), cap=filters.cap)
     return MatchOutcome(filters, signals, result)
