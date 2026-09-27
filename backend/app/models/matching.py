@@ -1,14 +1,26 @@
 """matches (SPEC 6, 10.2): one row per (profile, opportunity, opportunity version, profile
-version). Tenant-scoped (RLS). Later M4 tasks add match_feedback, saved_searches, alert_rules."""
+version), plus the learning loop it feeds - match_feedback (thumbs) and
+keyword_suggestions (the weekly re-tune proposals). All tenant-scoped (RLS)."""
 
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -59,4 +71,73 @@ class Match(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     filtered_reason: Mapped[str | None] = mapped_column(Text)
     ineligible_set_aside: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
+    )
+
+
+class Thumb(StrEnum):
+    UP = "up"
+    DOWN = "down"
+
+
+class SuggestionStatus(StrEnum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class MatchFeedback(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
+    """SPEC 6 learning loop: thumbs up/down and "not relevant because..." on an alert.
+
+    One row per (match, user): a second opinion from the same person replaces the first.
+    """
+
+    __tablename__ = "match_feedback"
+    __table_args__ = (UniqueConstraint("match_id", "user_id", name="uq_match_feedback_match_user"),)
+
+    match_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("matches.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    thumb: Mapped[str] = mapped_column(String(8), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
+
+
+class KeywordSuggestion(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
+    """A weekly re-tune proposal (SPEC 6: never silently applied).
+
+    One live row per (profile, kind, term); the weekly job refreshes a `pending` row and
+    leaves an already decided one alone, so a rejected term is not proposed again.
+    """
+
+    __tablename__ = "keyword_suggestions"
+    __table_args__ = (
+        UniqueConstraint(
+            "profile_id", "kind", "term", name="uq_keyword_suggestions_profile_kind_term"
+        ),
+        Index("ix_keyword_suggestions_tenant_status", "tenant_id", "status"),
+    )
+
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("company_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    term: Mapped[str] = mapped_column(String(100), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)  # include | exclude
+    # signed change to profile_keywords.weight on approve (include), or 0 for exclude
+    delta_weight: Mapped[Decimal] = mapped_column(
+        Numeric(3, 1), nullable=False, server_default="0.0"
+    )
+    # {support, positives, negatives, rate, baseline, lift}
+    evidence: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, server_default="pending")
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )

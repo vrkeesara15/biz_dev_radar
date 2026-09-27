@@ -1235,7 +1235,7 @@
       "Suggestions are never auto-applied; owner approves via PUT /profiles/{id}/keyword-suggestions/{id}",
       "Unit test on the lift computation"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-08",

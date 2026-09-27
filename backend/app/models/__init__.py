@@ -8,7 +8,14 @@ from app.models.compliance import ComplianceItem, PursuitArtifact
 from app.models.files import File
 from app.models.integrations import Integration, IntegrationKind
 from app.models.knowledge import KBChunk
-from app.models.matching import Match, MatchBand
+from app.models.matching import (
+    KeywordSuggestion,
+    Match,
+    MatchBand,
+    MatchFeedback,
+    SuggestionStatus,
+    Thumb,
+)
 from app.models.notifications import (
     DeliveryChannel,
     DeliveryStatus,
@@ -73,8 +80,10 @@ __all__ = [
     "Integration",
     "IntegrationKind",
     "KBChunk",
+    "KeywordSuggestion",
     "Match",
     "MatchBand",
+    "MatchFeedback",
     "Membership",
     "Notification",
     "NotificationDelivery",
@@ -96,10 +105,12 @@ __all__ = [
     "ServiceLine",
     "Source",
     "SourceRun",
+    "SuggestionStatus",
     "SupportAccessGrant",
     "TeamingPartner",
     "Tenant",
     "TenantMixin",
+    "Thumb",
     "TimestampMixin",
     "UUIDPrimaryKeyMixin",
     "UsageLedger",

@@ -24,6 +24,8 @@ depends_on: str | Sequence[str] | None = None
 
 TENANT_TABLES = (
     "matches",
+    "match_feedback",
+    "keyword_suggestions",
     "notifications",
     "notification_deliveries",
     "integrations",
@@ -104,6 +106,48 @@ def upgrade() -> None:
         op.create_index(f"ix_matches_{col}", "matches", [col])
     op.create_index(
         "ix_matches_tenant_band_created", "matches", ["tenant_id", "band", "created_at"]
+    )
+
+    # --- learning loop (M4-07): thumbs and the weekly keyword re-tune proposals -----------------
+    op.create_table(
+        "match_feedback",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("match_id", "matches.id"),
+        _fk("user_id", "users.id"),
+        sa.Column("thumb", sa.String(8), nullable=False),
+        sa.Column("reason", sa.Text()),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("match_id", "user_id", name="uq_match_feedback_match_user"),
+    )
+    for col in ("tenant_id", "match_id", "user_id"):
+        op.create_index(f"ix_match_feedback_{col}", "match_feedback", [col])
+
+    op.create_table(
+        "keyword_suggestions",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("profile_id", "company_profiles.id"),
+        sa.Column("term", sa.String(100), nullable=False),
+        sa.Column("kind", sa.String(16), nullable=False),
+        sa.Column("delta_weight", sa.Numeric(3, 1), nullable=False, server_default="0.0"),
+        _jsonb("evidence"),
+        sa.Column("status", sa.String(16), nullable=False, server_default="pending"),
+        _ts("decided_at"),
+        sa.Column(
+            "decided_by",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="SET NULL"),
+        ),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint(
+            "profile_id", "kind", "term", name="uq_keyword_suggestions_profile_kind_term"
+        ),
+    )
+    for col in ("tenant_id", "profile_id"):
+        op.create_index(f"ix_keyword_suggestions_{col}", "keyword_suggestions", [col])
+    op.create_index(
+        "ix_keyword_suggestions_tenant_status", "keyword_suggestions", ["tenant_id", "status"]
     )
 
     # --- notifications + deliveries (M4-09) -----------------------------------------------------

@@ -19,6 +19,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 from app.core.config import Region
@@ -49,6 +50,9 @@ from app.models import (
     File,
     Insurance,
     Integration,
+    KeywordSuggestion,
+    Match,
+    MatchFeedback,
     Notification,
     Opportunity,
     PastPerformance,
@@ -319,6 +323,25 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/opportunities/{opportunity_id}"): lambda ctx: RouteCall(
         path_params={"opportunity_id": ctx.shared["opportunity"]}
     ),
+    # --- learning loop (M4-07): feedback is about the CALLER's match, so B posting on the
+    # same (global) notice must never touch A's match row; B has none, so it gets 404.
+    ("POST", "/api/v1/opportunities/{opportunity_id}/feedback"): lambda ctx: RouteCall(
+        path_params={"opportunity_id": ctx.shared["opportunity"]},
+        json={"thumb": "down", "reason": "isolation probe"},
+        owner_expect=frozenset({201}),
+    ),
+    ("GET", "/api/v1/profiles/{profile_id}/keyword-suggestions"): lambda ctx: RouteCall(
+        path_params={"profile_id": ctx.a.ids["profile"]}
+    ),
+    ("PUT", "/api/v1/profiles/{profile_id}/keyword-suggestions/{id}"): (
+        lambda ctx: RouteCall(
+            path_params={
+                "profile_id": ctx.a.ids["profile"],
+                "id": ctx.a.ids["keyword_suggestion"],
+            },
+            json={"status": "rejected"},
+        )
+    ),
     # --- integrations (M4-11): tenant owners only; B probes with its own body because the
     # row is addressed by (tenant, kind), so a 200 must still never show A's connection
     ("GET", "/api/v1/integrations"): lambda ctx: RouteCall(),
@@ -587,6 +610,31 @@ async def build_context(database: Database) -> IsolationContext:
         )
         session.add(opportunity)
         await session.flush()
+        # M4-01/M4-07: A's own match on the shared notice, plus a pending re-tune proposal
+        match = Match(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            opportunity_id=opportunity.id,
+            opportunity_version=1,
+            profile_version=profile.version or 1,
+            score=Decimal("81.00"),
+            band="high",
+            breakdown={"signals": {}},
+        )
+        keyword_suggestion = KeywordSuggestion(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            term="alpha suggested term",
+            kind="include",
+            delta_weight=Decimal("0.4"),
+            evidence={"support": 4, "lift": 0.3},
+        )
+        session.add_all([match, keyword_suggestion])
+        await session.flush()
+        feedback = MatchFeedback(
+            tenant_id=ta.id, match_id=match.id, user_id=ua.id, thumb="up", reason="alpha reason"
+        )
+        session.add(feedback)
         pursuit = Pursuit(
             tenant_id=ta.id,
             profile_id=profile.id,
@@ -637,6 +685,10 @@ async def build_context(database: Database) -> IsolationContext:
                 "rate_card_category": "Alpha Architect",
                 "notification_prefs": str(prefs.id),
                 "pursuit": str(pursuit.id),
+                "match": str(match.id),
+                "match_feedback": str(feedback.id),
+                "keyword_suggestion": str(keyword_suggestion.id),
+                "keyword_suggestion_term": "alpha suggested term",
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",

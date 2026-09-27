@@ -49,6 +49,8 @@ def test_beat_schedule_from_registry_skips_disabled_and_adds_status() -> None:
         # M4-13: the notification beat
         "notify:digests",
         "notify:flush",
+        # M4-07: the weekly keyword re-tune
+        "matching:retune",
     }
     weekly = schedule["source:weekly"]
     assert weekly["task"] == RUN_SOURCE_TASK and weekly["args"] == ("weekly",)

@@ -4,6 +4,7 @@ read them; every record carries source attribution and the portal disclaimer (SP
 
     GET /api/v1/opportunities?q=&region=&type=&naics=&due_before=&min_score=&status=&page=
     GET /api/v1/opportunities/{opportunity_id}
+    POST /api/v1/opportunities/{opportunity_id}/feedback     (M4-07 learning loop)
 """
 
 from __future__ import annotations
@@ -11,9 +12,9 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import ColumnClause, Select, String, cast, func, literal_column, select
 from sqlalchemy.dialects.postgresql import ARRAY, array
@@ -26,6 +27,8 @@ from app.core.disclaimers import VERIFY_ON_PORTAL, attribution_text, record_foot
 from app.core.opportunity import NoticeType, OpportunityStatus
 from app.models import Opportunity, OpportunityDocument, OpportunityVersion
 from app.models.opportunities import FTS_EXPR
+from app.services.audit import AuditHint
+from app.services.matching.learning import latest_match, record_feedback
 
 router = APIRouter(prefix="/opportunities", tags=["opportunities"])
 ReaderDep = Annotated[CurrentUser, Depends(require_role(*TENANT_ROLES))]
@@ -346,6 +349,67 @@ async def get_opportunity(
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="opportunity not found")
     return detail_out(row)
+
+
+class FeedbackIn(BaseModel):
+    """SPEC 6: thumbs up/down and "not relevant because..." on an alert."""
+
+    thumb: Literal["up", "down"]
+    reason: str | None = Field(default=None, max_length=2000)
+    # which profile's match this is about; the newest match of the tenant when omitted
+    profile_id: uuid.UUID | None = None
+
+
+class FeedbackOut(BaseModel):
+    id: uuid.UUID
+    match_id: uuid.UUID
+    opportunity_id: uuid.UUID
+    profile_id: uuid.UUID
+    thumb: str
+    reason: str | None
+    created_at: datetime
+
+
+@router.post(
+    "/{opportunity_id}/feedback",
+    response_model=FeedbackOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def post_feedback(
+    opportunity_id: uuid.UUID,
+    body: FeedbackIn,
+    session: TenantSessionDep,
+    user: ReaderDep,
+    request: Request,
+) -> FeedbackOut:
+    """Record a thumb on the tenant's match for this notice (M4-07).
+
+    Feedback is about a MATCH, not about the global notice, so a tenant that has never
+    scored the notice gets 404 - there is nothing of theirs to rate.
+    """
+    match = await latest_match(session, opportunity_id, profile_id=body.profile_id)
+    if match is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, detail="no match for this opportunity and profile"
+        )
+    row = await record_feedback(
+        session, match=match, user_id=user.id, thumb=body.thumb, reason=body.reason
+    )
+    request.state.audit = AuditHint(
+        action="opportunity.feedback",
+        object_type="match_feedback",
+        object_id=str(row.id),
+        meta={"opportunity_id": str(opportunity_id), "thumb": row.thumb},
+    )
+    return FeedbackOut(
+        id=row.id,
+        match_id=match.id,
+        opportunity_id=opportunity_id,
+        profile_id=match.profile_id,
+        thumb=row.thumb,
+        reason=row.reason,
+        created_at=row.created_at,
+    )
 
 
 __all__ = ["OpportunityDocument", "OpportunityVersion", "router", "search_statement"]
