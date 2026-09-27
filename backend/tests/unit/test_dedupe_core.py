@@ -72,6 +72,58 @@ def test_normalized_buyer(raw: str | None, expected: str | None) -> None:
     assert normalized_buyer(raw) == expected
 
 
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        # abbreviations
+        ("Govt. of Tamil Nadu", "government of tamil nadu"),
+        ("Government of Tamil Nadu", "government of tamil nadu"),
+        ("GOVT OF TAMIL NADU", "government of tamil nadu"),
+        ("Dept of Rural Development", "department of rural development"),
+        ("Deptt. of Rural Development", "department of rural development"),
+        ("Department of Rural Development", "department of rural development"),
+        # transliterations
+        ("Gramin Vikas Vibhag", "gramin vikas department"),
+        ("Uttar Pradesh Jal Nigam", "uttar pradesh jal"),
+        ("Uttar Pradesh Jal Corporation", "uttar pradesh jal"),
+        ("Lucknow Nagar Nigam", "lucknow municipal"),
+        ("Lucknow Municipal Corporation", "lucknow municipal"),
+        ("Zilla Parishad, Pune", "district parishad pune"),
+        ("Zila Parishad Pune", "district parishad pune"),
+        ("District Parishad Pune", "district parishad pune"),
+        ("Bharat Sanchar Nigam Ltd", "bharat sanchar"),
+        ("Bharat Sanchar Nigam Limited", "bharat sanchar"),
+        ("Rail Vikas Nigam Limited", "rail vikas"),
+        # "Office of the" / "O/o" are noise on Indian portals
+        ("O/o the Chief Engineer, PWD", "chief engineer pwd"),
+        ("Office of the Chief Engineer (PWD)", "chief engineer pwd"),
+        ("O/o Chief Engineer PWD", "chief engineer pwd"),
+        ("Chief Engineer PWD", "chief engineer pwd"),
+        # & and "and" are the same conjunction
+        ("Dept. of Health & Family Welfare", "department of health and family welfare"),
+        ("Department of Health and Family Welfare", "department of health and family welfare"),
+        # Hindi / mixed names keep their Devanagari (M3-07 fixtures)
+        ("रेल विकास निगम", "रेल विकास निगम"),
+        (
+            "मुख्य अभियंता / Chief Engineer, PWD",
+            "मुख्य अभियंता chief engineer pwd",
+        ),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_normalized_buyer_in_region(raw: str | None, expected: str | None) -> None:
+    assert normalized_buyer(raw, region="in") == expected
+
+
+def test_india_table_only_applies_to_the_in_region() -> None:
+    # a US buyer keeps its words: "Nigam"/"Zilla" never appear, and mapping them would
+    # change keys already stored for US records
+    assert normalized_buyer("Rail Vikas Nigam Limited") == "rail vikas nigam"
+    assert normalized_buyer("Rail Vikas Nigam Limited", region="us") == "rail vikas nigam"
+    assert normalized_buyer("Rail Vikas Nigam Limited", region="in") == "rail vikas"
+
+
 def test_richness_counts_non_empty_fields_and_documents() -> None:
     values = {
         "title": "Cloud",

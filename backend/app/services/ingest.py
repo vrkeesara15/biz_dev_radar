@@ -122,7 +122,8 @@ def _apply(
         extra["also_from"] = previous["also_from"]
     row.extra = extra
     row.reference_norm = normalized_reference(opp.solicitation_number)
-    row.buyer_norm = normalized_buyer(opp.buyer_org)
+    # the region picks the India transliteration table (M3-06)
+    row.buyer_norm = normalized_buyer(opp.buyer_org, region=opp.region.value)
     row.detail_status = opp.detail_status.value
     row.estimated_value_min_usd = to_usd_or_none(
         opp.estimated_value_min, opp.currency, settings.fx_rates

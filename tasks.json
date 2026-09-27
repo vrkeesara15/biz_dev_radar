@@ -1013,7 +1013,7 @@
       "CPPP record mirroring a state or GeM tender merges with duplicate_of pointing to the richer record and both links kept",
       "Unit tests with Hindi/English mixed titles"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-07",
