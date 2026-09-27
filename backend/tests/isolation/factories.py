@@ -328,6 +328,7 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("PUT", "/api/v1/integrations/{kind}"): lambda ctx: RouteCall(
         path_params={"kind": "slack"},
         json={"enabled": True, "config": {"channel": "#probe"}},
+    ),
     # --- pursuits (M5-02): tenant-scoped; B posting A's profile id gets 404 (RLS hides it)
     ("POST", "/api/v1/pursuits"): lambda ctx: RouteCall(
         json={"profile_id": ctx.a.ids["profile"], "opportunity_id": ctx.shared["opportunity"]}

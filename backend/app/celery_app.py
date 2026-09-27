@@ -135,6 +135,8 @@ def flush_scheduled_task(self: Any) -> dict[str, Any]:
     from app.jobs.notify import run_flush_scheduled
 
     return run_flush_scheduled()
+
+
 @celery_app.task(name=RUN_AGENTS_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
 def run_agents_task(self: Any, run_id: str, tenant_id: str) -> dict[str, Any]:
     """Run / resume one pursuit agent run (SPEC 8); enqueued by the pursuits API."""
