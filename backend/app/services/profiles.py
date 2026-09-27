@@ -10,6 +10,7 @@ from sqlalchemy import func, inspect, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.crypto import is_masked
+from app.core.eligibility_in import ProfileSnapshotIn, snapshot_from_values
 from app.core.plan import Resource
 from app.core.preferences import DEFAULT_SCORING_WEIGHTS
 from app.core.profile_completeness import ProfileCompleteness, ProfileSnapshot, completeness
@@ -25,6 +26,7 @@ from app.models import (
     ProfileFile,
     ProfileKeyword,
     RateCardEntry,
+    Registration,
     ServiceLine,
     UserNotificationPrefs,
 )
@@ -171,3 +173,34 @@ async def profile_completeness(
     session: AsyncSession, profile: CompanyProfile
 ) -> ProfileCompleteness:
     return completeness(await load_snapshot(session, profile))
+
+
+async def load_eligibility_snapshot(
+    session: AsyncSession, profile: CompanyProfile
+) -> ProfileSnapshotIn:
+    """Plain-value view of an Indian profile for core.eligibility_in.evaluate_in."""
+    pid = profile.id
+    certs = (
+        await session.execute(
+            select(Certification.kind, Certification.expires_on).where(
+                Certification.profile_id == pid
+            )
+        )
+    ).all()
+    regs = (
+        await session.execute(
+            select(Registration.kind, Registration.identifier, Registration.expires_on)
+            .where(Registration.profile_id == pid)
+            .order_by(Registration.created_at)
+        )
+    ).all()
+    return snapshot_from_values(
+        annual_revenue=profile.annual_revenue,
+        year_founded=profile.year_founded,
+        udyam_number=profile.udyam_number,
+        udyam_category=None if profile.udyam_category is None else profile.udyam_category.value,
+        dpiit_number=profile.dpiit_number,
+        gem_seller_id=profile.gem_seller_id,
+        certifications=[(str(kind.value), expires_on) for kind, expires_on in certs],
+        registrations=[(str(kind.value), ident, expires_on) for kind, ident, expires_on in regs],
+    )

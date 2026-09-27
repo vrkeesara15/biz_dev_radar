@@ -1054,7 +1054,7 @@
       "Turnover compared as average of last 3 FY in INR; expired DSC or missing GeM ID yields a blocking warning",
       "Table-driven unit tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-09",
