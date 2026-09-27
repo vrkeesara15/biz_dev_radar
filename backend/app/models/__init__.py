@@ -5,7 +5,7 @@ from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMix
 from app.models.billing import PlanLimit, UsageLedger
 from app.models.files import File
 from app.models.profile import CompanyProfile
-from app.models.profile_items import Certification
+from app.models.profile_items import Certification, ProfileCode, ProfileKeyword, ServiceLine
 from app.models.tenancy import Membership, Tenant, User
 
 __all__ = [
@@ -16,6 +16,9 @@ __all__ = [
     "File",
     "Membership",
     "PlanLimit",
+    "ProfileCode",
+    "ProfileKeyword",
+    "ServiceLine",
     "Tenant",
     "TenantMixin",
     "TimestampMixin",

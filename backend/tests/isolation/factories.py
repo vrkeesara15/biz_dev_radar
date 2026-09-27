@@ -22,9 +22,18 @@ from typing import Any
 
 from app.core.config import Region
 from app.core.db import Database
-from app.core.profile_fields import CertificationKind
+from app.core.profile_fields import CertificationKind, CodeScheme, KeywordKind
 from app.core.roles import Role
-from app.models import AuditLog, Certification, CompanyProfile, File, UsageLedger
+from app.models import (
+    AuditLog,
+    Certification,
+    CompanyProfile,
+    File,
+    ProfileCode,
+    ProfileKeyword,
+    ServiceLine,
+    UsageLedger,
+)
 
 from tests.factories import create_tenant_with_owner
 
@@ -123,6 +132,16 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         path_params={"profile_id": ctx.a.ids["profile"]}, json={"legal_name": "Renamed"}
     ),
     # --- profile sub-resources (M1-02..M1-05)
+    **child_routes("codes", "code", {"scheme": "psc", "code": "D302"}, {"is_primary": True}),
+    **child_routes(
+        "keywords", "keyword", {"kind": "include", "term": "probe term"}, {"weight": "2.5"}
+    ),
+    **child_routes(
+        "service-lines",
+        "service_line",
+        {"name": "Probe line", "description": "probe"},
+        {"name": "Probe line 2"},
+    ),
     **child_routes(
         "certifications",
         "certification",
@@ -179,7 +198,27 @@ async def build_context(database: Database) -> IsolationContext:
             kind=CertificationKind.EIGHT_A,
             cert_number="A-8A-0001",
         )
-        session.add(certification)
+        code = ProfileCode(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            scheme=CodeScheme.NAICS,
+            code="541511",
+            title="Custom Computer Programming Services",
+            is_primary=True,
+        )
+        keyword = ProfileKeyword(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            kind=KeywordKind.INCLUDE,
+            term="alpha secret term",
+        )
+        service_line = ServiceLine(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            name="Alpha Cloud Line",
+            description="alpha desc",
+        )
+        session.add_all([certification, code, keyword, service_line])
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -201,6 +240,11 @@ async def build_context(database: Database) -> IsolationContext:
                 "profile_ein": "12-3456789",
                 "certification": str(certification.id),
                 "certification_number": "A-8A-0001",
+                "code": str(code.id),
+                "keyword": str(keyword.id),
+                "keyword_term": "alpha secret term",
+                "service_line": str(service_line.id),
+                "service_line_name": "Alpha Cloud Line",
             },
         )
         b = TenantCtx(

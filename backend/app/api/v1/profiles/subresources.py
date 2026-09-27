@@ -20,6 +20,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import TENANT_ROLES, CurrentUser, TenantSessionDep, require_role
@@ -30,6 +31,19 @@ from app.services.audit import AuditHint
 
 # (session, profile, changes, existing row or None) -> may raise HTTPException
 Validator = Callable[[AsyncSession, CompanyProfile, dict[str, Any], Any], Awaitable[None]]
+
+
+async def _flush(session: AsyncSession, singular: str) -> None:
+    """Flush; a unique-constraint violation becomes 409 instead of a 500."""
+    try:
+        await session.flush()
+    except IntegrityError as exc:
+        await session.rollback()
+        if "unique" in str(exc.orig).lower() or "duplicate" in str(exc.orig).lower():
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, detail=f"{singular} already exists"
+            ) from exc
+        raise
 
 
 def crud_router(
@@ -107,7 +121,7 @@ def crud_router(
         row = model(tenant_id=profile.tenant_id, profile_id=profile.id, **changes)
         session.add(row)
         bump_version(profile)
-        await session.flush()
+        await _flush(session, singular)
         await session.refresh(row)
         request.state.audit = _hint("create", row, profile)
         return render(row)
@@ -139,7 +153,7 @@ def crud_router(
         for key, value in changes.items():
             setattr(row, key, value)
         bump_version(profile)
-        await session.flush()
+        await _flush(session, singular)
         await session.refresh(row)
         request.state.audit = _hint("update", row, profile, fields=sorted(changes))
         return render(row)

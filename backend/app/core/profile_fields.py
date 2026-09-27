@@ -57,6 +57,26 @@ class MseOwnership(StrEnum):
     SC_ST_WOMEN = "sc_st_women"
 
 
+class CodeScheme(StrEnum):
+    NAICS = "naics"
+    PSC = "psc"
+    ALN = "aln"
+    GEM = "gem"
+    INDIA_CATEGORY = "india_category"
+
+
+class KeywordKind(StrEnum):
+    INCLUDE = "include"
+    EXCLUDE = "exclude"
+
+
+class DeliveryModel(StrEnum):
+    ONSITE = "onsite"
+    REMOTE = "remote"
+    HYBRID = "hybrid"
+    OFFSHORE = "offshore"
+
+
 class CertificationKind(StrEnum):
     # socio-economic (US set-asides, SPEC 4.2)
     EIGHT_A = "8a"
@@ -223,3 +243,79 @@ NORMALIZERS = {
     "tan": normalize_tan,
     "gstin": normalize_gstin,
 }
+
+
+# --- what we sell (SPEC 4.3) -------------------------------------------------------------
+
+US_CODE_SCHEMES: frozenset[CodeScheme] = frozenset(
+    {CodeScheme.NAICS, CodeScheme.PSC, CodeScheme.ALN}
+)
+IN_CODE_SCHEMES: frozenset[CodeScheme] = frozenset({CodeScheme.GEM, CodeScheme.INDIA_CATEGORY})
+MIN_KEYWORD_WEIGHT = 0.1
+MAX_KEYWORD_WEIGHT = 5.0
+MAX_SERVICE_LINE_WORDS = 150
+
+_PSC = re.compile(r"^[A-Z0-9]{4}$")
+_ALN = re.compile(r"^\d{2}\.\d{3}$")
+
+
+def code_scheme_allowed(region: Region | str, scheme: CodeScheme | str) -> bool:
+    own = Region(region)
+    kind = CodeScheme(scheme)
+    if kind in US_CODE_SCHEMES:
+        return own is Region.US
+    return own is Region.IN
+
+
+def normalize_code(scheme: CodeScheme | str, code: str) -> str:
+    """Format check per scheme (NAICS existence is checked against the bundled table by
+    the caller, see app.core.reference)."""
+    kind = CodeScheme(scheme)
+    text = code.strip()
+    if kind is CodeScheme.NAICS:
+        digits = text.replace("-", "")
+        if not (digits.isdigit() and len(digits) == 6):
+            raise ValueError("NAICS code must be 6 digits")
+        return digits
+    if kind is CodeScheme.PSC:
+        text = text.upper()
+        if not _PSC.match(text):
+            raise ValueError("PSC code must be 4 alphanumeric characters")
+        return text
+    if kind is CodeScheme.ALN:
+        if not _ALN.match(text):
+            raise ValueError("ALN must look like 12.345")
+        return text
+    text = " ".join(text.split())
+    if not text:
+        raise ValueError("code must not be empty")
+    if len(text) > 200:
+        raise ValueError("code must be at most 200 characters")
+    return text
+
+
+def normalize_keyword(term: str) -> str:
+    text = " ".join(term.split()).lower()
+    if not text:
+        raise ValueError("keyword must not be empty")
+    if len(text) > 100:
+        raise ValueError("keyword must be at most 100 characters")
+    return text
+
+
+def validate_keyword_weight(weight: float) -> float:
+    if not MIN_KEYWORD_WEIGHT <= weight <= MAX_KEYWORD_WEIGHT:
+        raise ValueError(f"weight must be between {MIN_KEYWORD_WEIGHT} and {MAX_KEYWORD_WEIGHT}")
+    return round(float(weight), 1)
+
+
+def word_count(text: str) -> int:
+    return len(text.split())
+
+
+def validate_service_description(text: str, limit: int = MAX_SERVICE_LINE_WORDS) -> str:
+    cleaned = text.strip()
+    count = word_count(cleaned)
+    if count > limit:
+        raise ValueError(f"description has {count} words; the limit is {limit}")
+    return cleaned

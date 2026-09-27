@@ -44,12 +44,37 @@ mse_ownership_t = postgresql.ENUM(
     "none", "sc_st", "women", "sc_st_women", name="mse_ownership", create_type=False
 )
 certification_kind_t = postgresql.ENUM(
-    "8a", "hubzone", "wosb", "edwosb", "sdvosb", "vosb", "sdb",
-    "fcl", "cmmc", "fedramp", "soc2", "iso_27001", "iso_9001", "iso_20000", "cmmi",
-    "stqc", "cert_in",
-    name="certification_kind", create_type=False,
+    "8a",
+    "hubzone",
+    "wosb",
+    "edwosb",
+    "sdvosb",
+    "vosb",
+    "sdb",
+    "fcl",
+    "cmmc",
+    "fedramp",
+    "soc2",
+    "iso_27001",
+    "iso_9001",
+    "iso_20000",
+    "cmmi",
+    "stqc",
+    "cert_in",
+    name="certification_kind",
+    create_type=False,
+)
+code_scheme_t = postgresql.ENUM(
+    "naics", "psc", "aln", "gem", "india_category", name="code_scheme", create_type=False
+)
+keyword_kind_t = postgresql.ENUM("include", "exclude", name="keyword_kind", create_type=False)
+delivery_model_t = postgresql.ENUM(
+    "onsite", "remote", "hybrid", "offshore", name="delivery_model", create_type=False
 )
 NEW_ENUMS = (
+    code_scheme_t,
+    keyword_kind_t,
+    delivery_model_t,
     legal_structure_t,
     sam_status_t,
     udyam_category_t,
@@ -60,7 +85,14 @@ NEW_ENUMS = (
 
 # Every tenant-scoped table created here, in creation order (reversed for downgrade).
 # Each gets DML grants for the app role and the standard tenant_isolation RLS policy.
-TENANT_TABLES: list[str] = ["files", "company_profiles", "certifications"]
+TENANT_TABLES: list[str] = [
+    "files",
+    "company_profiles",
+    "certifications",
+    "profile_codes",
+    "profile_keywords",
+    "service_lines",
+]
 
 
 def _uuid_pk() -> sa.Column[object]:
@@ -233,6 +265,45 @@ def upgrade() -> None:
             "file_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("files.id", ondelete="SET NULL")
         ),
         sa.Column("notes", sa.Text()),
+    )
+
+    # --- what we sell (M1-03, SPEC 4.3) ---------------------------------------------------
+    _profile_child(
+        "profile_codes",
+        sa.Column("scheme", code_scheme_t, nullable=False),
+        sa.Column("code", sa.String(200), nullable=False),
+        sa.Column("title", sa.String(300)),
+        sa.Column("is_primary", sa.Boolean(), nullable=False, server_default=sa.false()),
+        sa.UniqueConstraint(
+            "profile_id", "scheme", "code", name="uq_profile_codes_profile_scheme_code"
+        ),
+    )
+    _profile_child(
+        "profile_keywords",
+        sa.Column("kind", keyword_kind_t, nullable=False),
+        sa.Column("term", sa.String(100), nullable=False),
+        sa.Column("weight", sa.Numeric(3, 1), nullable=False, server_default=sa.text("1.0")),
+        sa.UniqueConstraint(
+            "profile_id", "kind", "term", name="uq_profile_keywords_profile_kind_term"
+        ),
+    )
+    _profile_child(
+        "service_lines",
+        sa.Column("name", sa.String(200), nullable=False),
+        sa.Column("description", sa.Text(), nullable=False),
+        sa.Column(
+            "differentiators",
+            postgresql.ARRAY(sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{}'::text[]"),
+        ),
+        sa.Column(
+            "tools",
+            postgresql.ARRAY(sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{}'::text[]"),
+        ),
+        sa.Column("delivery_model", delivery_model_t),
     )
 
     # --- privileges + RLS for every tenant table above --------------------------------------

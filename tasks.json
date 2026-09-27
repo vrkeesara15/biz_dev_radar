@@ -322,7 +322,7 @@
       "service_lines(name, description <= 150 words enforced, differentiators, tools, delivery_model)",
       "Unit tests for validation edge cases"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-04",
