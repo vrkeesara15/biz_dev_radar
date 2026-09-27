@@ -2165,7 +2165,7 @@
       "tests/integration/test_india_checklist.py covers dates, INR formatting, Hindi parsing, MSME/Startup exemptions and residency configuration",
       "Manual items (WhatsApp delivery, SES Mumbai deliverability, Razorpay test payment, ISP latency, pilot bids) have step-by-step instructions"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-12",
