@@ -163,9 +163,23 @@ async def get_admin_session(
         yield session
 
 
+async def get_admin_write_session(
+    user: Annotated[CurrentUser, Depends(require_role(Role.PLATFORM_ADMIN))],
+) -> AsyncIterator[AsyncSession]:
+    """Owner-role session for MUTATING platform-admin routes.
+
+    Unlike get_admin_session it writes no admin_access row: the audit middleware already
+    records exactly one row per mutating request (and tests/integration/test_audit.py
+    asserts exactly one), so a second row here would double-count every admin write.
+    """
+    async with get_database().owner_session(user.tenant_id) as session:
+        yield session
+
+
 CurrentUserDep = Annotated[CurrentUser, Depends(get_current_user)]
 SettingsDep = Annotated[Settings, Depends(get_app_settings)]
 StorageRouterDep = Annotated[StorageRouter, Depends(get_storage_router)]
 ScannerDep = Annotated[Scanner, Depends(get_scanner)]
 TenantSessionDep = Annotated[AsyncSession, Depends(get_tenant_session)]
 AdminSessionDep = Annotated[AsyncSession, Depends(get_admin_session)]
+AdminWriteSessionDep = Annotated[AsyncSession, Depends(get_admin_write_session)]

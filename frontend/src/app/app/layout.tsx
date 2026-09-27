@@ -25,7 +25,7 @@ export default async function AppLayout({
         <div className="flex h-14 items-center px-5 text-sm font-semibold tracking-tight">
           BidRadar
         </div>
-        <AppNav />
+        <AppNav role={session.user.role} />
       </aside>
       <div className="flex min-w-0 flex-col">
         <header className="flex h-14 items-center justify-between gap-4 border-b px-6">

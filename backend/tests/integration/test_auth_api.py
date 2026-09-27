@@ -103,7 +103,7 @@ async def test_require_role_admin_route(api_client: httpx.AsyncClient, database:
         headers=auth_headers(user_id=admin_uid, tenant_id=internal, role=Role.PLATFORM_ADMIN),
     )
     assert r.status_code == 200, r.text
-    assert {t["id"] for t in r.json()} == {str(tid), str(internal)}
+    assert {t["id"] for t in r.json()["items"]} == {str(tid), str(internal)}
     async with database.owner_session() as session:
         audit = (
             await session.execute(select(AuditLog).where(AuditLog.action == ADMIN_ACCESS_ACTION))

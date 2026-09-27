@@ -35,6 +35,7 @@ from app.models.profile_proof import (
 )
 from app.models.sources import Source, SourceRun
 from app.models.spend import AgencySpendStat
+from app.models.support import SupportAccessGrant
 from app.models.tenancy import Membership, Tenant, User
 
 __all__ = [
@@ -70,6 +71,7 @@ __all__ = [
     "ServiceLine",
     "Source",
     "SourceRun",
+    "SupportAccessGrant",
     "TeamingPartner",
     "Tenant",
     "TenantMixin",

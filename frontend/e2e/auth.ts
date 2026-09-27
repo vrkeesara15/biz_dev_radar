@@ -20,9 +20,14 @@ export const E2E_USER = {
   role: "tenant_owner",
 };
 
-export async function signInAs(context: BrowserContext, baseURL: string) {
+/** `overrides` swap claims the app reads from the session, e.g. role for /app/admin. */
+export async function signInAs(
+  context: BrowserContext,
+  baseURL: string,
+  overrides: Partial<typeof E2E_USER> = {},
+) {
   const token = await encode({
-    token: E2E_USER,
+    token: { ...E2E_USER, ...overrides },
     secret: E2E_AUTH_SECRET,
     salt: SESSION_COOKIE,
     maxAge: 60 * 60,

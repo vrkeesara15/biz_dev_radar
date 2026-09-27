@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/admin/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** System Health */
+        get: operations["system_health_api_v1_admin_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/sources": {
         parameters: {
             query?: never;
@@ -42,6 +59,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/sources/{source_id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Source Runs
+         * @description Run history of one adapter, newest first (SPEC 10.4 screen 9 'run history').
+         */
+        get: operations["list_source_runs_api_v1_admin_sources__source_id__runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/tenants": {
         parameters: {
             query?: never;
@@ -51,6 +88,46 @@ export interface paths {
         };
         /** List Tenants */
         get: operations["list_tenants_api_v1_admin_tenants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tenants/{tenant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Tenant */
+        get: operations["get_tenant_api_v1_admin_tenants__tenant_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Tenant
+         * @description Change a tenant's plan or internal flag. SPEC 3: managing tenants and plans is
+         *     the platform admin's job; the change is audited by the middleware and, when it
+         *     actually changes something, inside the tenant's own trail too.
+         */
+        patch: operations["update_tenant_api_v1_admin_tenants__tenant_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/tenants/{tenant_id}/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tenant Audit Log */
+        get: operations["tenant_audit_log_api_v1_admin_tenants__tenant_id__audit_log_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -70,9 +147,66 @@ export interface paths {
         put?: never;
         /**
          * Support Access
-         * @description Open an audited support-access session into a tenant (SPEC sections 3, 11).
+         * @description Open an audited, time-boxed support-access session into a tenant (SPEC 3, 11).
          */
         post: operations["support_access_api_v1_admin_tenants__tenant_id__support_access_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Usage */
+        get: operations["usage_api_v1_admin_usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Billing
+         * @description Plan, subscription status, usage against plan_limits and the last / next invoice.
+         */
+        get: operations["read_billing_api_v1_billing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Checkout
+         * @description Start a hosted checkout for a paid plan with the region's provider.
+         */
+        post: operations["create_checkout_api_v1_billing_checkout_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -160,6 +294,54 @@ export interface paths {
         patch: operations["update_me_api_v1_me_patch"];
         trace?: never;
     };
+    "/api/v1/me/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Consents
+         * @description The caller's own acceptances, newest first.
+         */
+        get: operations["list_consents_api_v1_me_consents_get"];
+        put?: never;
+        /**
+         * Accept Consent
+         * @description Record that this user accepted a notice version (signup wizard and settings).
+         */
+        post: operations["accept_consent_api_v1_me_consents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/data-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Data Requests
+         * @description The caller's own requests with their SLA state (owners also see tenant jobs).
+         */
+        get: operations["list_data_requests_api_v1_me_data_requests_get"];
+        put?: never;
+        /**
+         * Open Data Request
+         * @description Raise an access, correction or erasure request about the caller's own data.
+         */
+        post: operations["open_data_request_api_v1_me_data_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/notification-prefs": {
         parameters: {
             query?: never;
@@ -215,6 +397,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/privacy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Privacy
+         * @description Public privacy metadata: notice versions, grievance officer and sub-processors.
+         */
+        get: operations["read_privacy_api_v1_privacy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/profiles": {
         parameters: {
             query?: never;
@@ -248,6 +450,23 @@ export interface paths {
         /** Update Profile */
         put: operations["update_profile_api_v1_profiles__profile_id__put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profiles/{profile_id}/autofill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Autofill Profile */
+        post: operations["autofill_profile_api_v1_profiles__profile_id__autofill_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -755,6 +974,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenant/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete Tenant Data
+         * @description Erase every row and file of the tenant. The audit trail and the tenants row stay.
+         */
+        post: operations["delete_tenant_data_api_v1_tenant_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export Tenant Data
+         * @description Start a full export of the tenant: a zip of every table plus the uploaded files.
+         */
+        post: operations["export_tenant_data_api_v1_tenant_export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/razorpay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Razorpay Webhook
+         * @description Razorpay events (subscription.*, invoice.paid, payment.failed).
+         */
+        post: operations["razorpay_webhook_api_v1_webhooks_razorpay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/stripe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stripe Webhook
+         * @description Stripe events (checkout.session.completed, customer.subscription.*, invoice.*).
+         */
+        post: operations["stripe_webhook_api_v1_webhooks_stripe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -776,6 +1075,24 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdapterHealthOut */
+        AdapterHealthOut: {
+            /** Consecutive Failures */
+            consecutive_failures: number;
+            /** Enabled */
+            enabled: boolean;
+            /** Health Message */
+            health_message: string | null;
+            /** Health Status */
+            health_status: string;
+            /** Last Run At */
+            last_run_at: string | null;
+            /** Last Status */
+            last_status: string | null;
+            region: components["schemas"]["Region"];
+            /** Source Id */
+            source_id: string;
+        };
         /** Address */
         Address: {
             /** City */
@@ -811,6 +1128,61 @@ export interface components {
             /** Source Url */
             source_url: string | null;
         };
+        /** AuditLogPage */
+        AuditLogPage: {
+            grant: components["schemas"]["SupportGrantOut"];
+            /** Items */
+            items: components["schemas"]["AuditRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Pages */
+            pages: number;
+            /** Total */
+            total: number;
+        };
+        /** AuditRowOut */
+        AuditRowOut: {
+            /** Action */
+            action: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Ip */
+            ip: string | null;
+            /** Object Id */
+            object_id: string | null;
+            /** Object Type */
+            object_type: string | null;
+            /** Request Id */
+            request_id: string | null;
+            /** User Id */
+            user_id: string | null;
+        };
+        /** AutofillRequest */
+        AutofillRequest: {
+            /** Capability File Id */
+            capability_file_id?: string | null;
+            /** Uei */
+            uei?: string | null;
+            /** Website Url */
+            website_url?: string | null;
+        };
+        /** AutofillResponse */
+        AutofillResponse: {
+            /** Suggestions */
+            suggestions: components["schemas"]["Suggestion"][];
+            /** Warnings */
+            warnings: string[];
+        };
         /** AverageTurnoverOut */
         AverageTurnoverOut: {
             /** Amount */
@@ -819,6 +1191,45 @@ export interface components {
             currency: string;
             /** Fiscal Years */
             fiscal_years: number[];
+        };
+        /** BillingOut */
+        BillingOut: {
+            /** Currency */
+            currency: string;
+            /** Current Period End */
+            current_period_end: string | null;
+            /** Gst Details */
+            gst_details: {
+                [key: string]: unknown;
+            };
+            last_invoice: components["schemas"]["InvoiceOut"] | null;
+            /** Limits */
+            limits: components["schemas"]["LimitUsage"][];
+            /** Next Invoice At */
+            next_invoice_at: string | null;
+            plan: components["schemas"]["Plan"];
+            provider: components["schemas"]["BillingProviderName"];
+            /** Status */
+            status: string;
+            /** Subscription Id */
+            subscription_id: string | null;
+        };
+        /**
+         * BillingProviderName
+         * @enum {string}
+         */
+        BillingProviderName: "stripe" | "razorpay";
+        /** BillingStatusOut */
+        BillingStatusOut: {
+            /** Current Period End */
+            current_period_end: string | null;
+            /** Has Subscription */
+            has_subscription: boolean;
+            plan: components["schemas"]["Plan"] | null;
+            /** Provider */
+            provider: string;
+            /** Status */
+            status: string;
         };
         /** Body_upload_file_api_v1_files_post */
         Body_upload_file_api_v1_files_post: {
@@ -955,6 +1366,26 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** CheckoutIn */
+        CheckoutIn: {
+            /** Cancel Url */
+            cancel_url: string;
+            gst?: components["schemas"]["GstDetails"] | null;
+            plan: components["schemas"]["Plan"];
+            /** Success Url */
+            success_url: string;
+        };
+        /** CheckoutOut */
+        CheckoutOut: {
+            /** Currency */
+            currency: string;
+            plan: components["schemas"]["Plan"];
+            provider: components["schemas"]["BillingProviderName"];
+            /** Session Id */
+            session_id: string;
+            /** Url */
+            url: string;
+        };
         /** CodeIn */
         CodeIn: {
             /** Code */
@@ -1016,6 +1447,38 @@ export interface components {
                 [key: string]: components["schemas"]["SectionCompletenessOut"];
             };
         };
+        /** ConsentIn */
+        ConsentIn: {
+            kind: components["schemas"]["ConsentKind"];
+            /** Version */
+            version: string;
+        };
+        /**
+         * ConsentKind
+         * @enum {string}
+         */
+        ConsentKind: "dpdp" | "privacy_policy" | "terms";
+        /** ConsentOut */
+        ConsentOut: {
+            /**
+             * Accepted At
+             * Format: date-time
+             */
+            accepted_at: string;
+            /**
+             * Created
+             * @default true
+             */
+            created: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["ConsentKind"];
+            /** Version */
+            version: string;
+        };
         /**
          * ContractType
          * @enum {string}
@@ -1026,6 +1489,56 @@ export interface components {
          * @enum {string}
          */
         CparsRating: "exceptional" | "very_good" | "satisfactory" | "marginal" | "unsatisfactory" | "not_rated";
+        /** DataRequestIn */
+        DataRequestIn: {
+            kind: components["schemas"]["DataRequestKind"];
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * DataRequestKind
+         * @enum {string}
+         */
+        DataRequestKind: "access" | "correction" | "erasure" | "tenant_export" | "tenant_delete";
+        /** DataRequestOut */
+        DataRequestOut: {
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Details */
+            details: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["DataRequestKind"];
+            /** Overdue */
+            overdue: boolean;
+            /** Result File Id */
+            result_file_id: string | null;
+            /**
+             * Sla Due At
+             * Format: date-time
+             */
+            sla_due_at: string;
+            status: components["schemas"]["DataRequestStatus"];
+        };
+        /**
+         * DataRequestStatus
+         * @enum {string}
+         */
+        DataRequestStatus: "received" | "in_progress" | "done" | "rejected";
         /**
          * DeliveryModel
          * @enum {string}
@@ -1083,12 +1596,50 @@ export interface components {
             /** Size Bytes */
             size_bytes: number;
         };
+        /** GrievanceOfficer */
+        GrievanceOfficer: {
+            /** Email */
+            email: string | null;
+            /** Name */
+            name: string | null;
+        };
+        /** GstDetails */
+        GstDetails: {
+            /** Gstin */
+            gstin?: string | null;
+            /** Legal Name */
+            legal_name?: string | null;
+            /** Place Of Supply */
+            place_of_supply?: string | null;
+        };
         /** Health */
         Health: {
             /** Status */
             status: string;
             /** Version */
             version: string;
+        };
+        /** HealthCheckOut */
+        HealthCheckOut: {
+            /** Detail */
+            detail?: string | null;
+            /** Meta */
+            meta?: {
+                [key: string]: unknown;
+            };
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+        };
+        /** HealthOut */
+        HealthOut: {
+            /** Adapters */
+            adapters: components["schemas"]["AdapterHealthOut"][];
+            /** Checks */
+            checks: components["schemas"]["HealthCheckOut"][];
+            /** Status */
+            status: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1163,6 +1714,26 @@ export interface components {
             /** Policy Number */
             policy_number?: string | null;
         };
+        /** InvoiceOut */
+        InvoiceOut: {
+            /** Amount */
+            amount: number | null;
+            /** Currency */
+            currency: string | null;
+            /** Gst */
+            gst: {
+                [key: string]: unknown;
+            };
+            /** Number */
+            number: string | null;
+            /**
+             * Paid At
+             * Format: date-time
+             */
+            paid_at: string;
+            /** Url */
+            url: string | null;
+        };
         /** KeywordIn */
         KeywordIn: {
             kind: components["schemas"]["KeywordKind"];
@@ -1212,6 +1783,17 @@ export interface components {
          * @enum {string}
          */
         LegalStructure: "llc" | "corporation" | "pvt_ltd" | "llp" | "partnership" | "proprietorship" | "other";
+        /** LimitUsage */
+        LimitUsage: {
+            /** Limit */
+            limit: number | null;
+            /** Remaining */
+            remaining: number | null;
+            /** Resource */
+            resource: string;
+            /** Used */
+            used: number;
+        };
         /**
          * LocalSupplierClass
          * @enum {string}
@@ -1751,6 +2333,22 @@ export interface components {
          * @enum {string}
          */
         Plan: "free" | "pro" | "enterprise";
+        /** PrivacyOut */
+        PrivacyOut: {
+            /** Data Request Sla Days */
+            data_request_sla_days: number;
+            /** Dpdp Notice Version */
+            dpdp_notice_version: string;
+            grievance_officer: components["schemas"]["GrievanceOfficer"];
+            /** Privacy Policy Version */
+            privacy_policy_version: string;
+            /** Sub Processors */
+            sub_processors: {
+                [key: string]: string;
+            }[];
+            /** Terms Version */
+            terms_version: string;
+        };
         /** ProfileCreate */
         ProfileCreate: {
             /** Addresses */
@@ -2522,6 +3120,8 @@ export interface components {
             id: string;
             /** Last Error */
             last_error: string | null;
+            /** Source Id */
+            source_id: string;
             /**
              * Started At
              * Format: date-time
@@ -2532,18 +3132,85 @@ export interface components {
             /** Upserted */
             upserted: number;
         };
+        /** SourceRunPage */
+        SourceRunPage: {
+            /** Items */
+            items: components["schemas"]["SourceRunOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Pages */
+            pages: number;
+            /** Source Id */
+            source_id: string;
+            /** Total */
+            total: number;
+        };
+        /** Suggestion */
+        Suggestion: {
+            /** Confidence */
+            confidence: number;
+            /** Field */
+            field: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "website" | "capability_pdf" | "uei";
+            /** Source Ref */
+            source_ref: string;
+            /** Value */
+            value: unknown;
+        };
         /** SupportAccessIn */
         SupportAccessIn: {
+            /**
+             * Minutes
+             * @default 60
+             */
+            minutes: number | null;
             /** Reason */
             reason: string;
         };
         /** SupportAccessOut */
         SupportAccessOut: {
+            grant: components["schemas"]["SupportGrantOut"];
             /** Member Count */
             member_count: number;
             /** Reason */
             reason: string;
             tenant: components["schemas"]["TenantOut"];
+        };
+        /** SupportGrantOut */
+        SupportGrantOut: {
+            /**
+             * Admin User Id
+             * Format: uuid
+             */
+            admin_user_id: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Granted At
+             * Format: date-time
+             */
+            granted_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Tenant Id
+             * Format: uuid
+             */
+            tenant_id: string;
         };
         /** SystemInfo */
         SystemInfo: {
@@ -2630,6 +3297,42 @@ export interface components {
          * @enum {string}
          */
         TeamingRole: "prime" | "sub" | "jv";
+        /** TenantDetailOut */
+        TenantDetailOut: {
+            billing: components["schemas"]["BillingStatusOut"] | null;
+            /** Period */
+            period: string;
+            /** Plan Limits */
+            plan_limits: {
+                [key: string]: number | null;
+            };
+            support_access: components["schemas"]["SupportGrantOut"] | null;
+            tenant: components["schemas"]["TenantRowOut"];
+            usage: components["schemas"]["UsageRowOut"];
+        };
+        /** TenantJobOut */
+        TenantJobOut: {
+            /** Details */
+            details: {
+                [key: string]: unknown;
+            };
+            kind: components["schemas"]["DataRequestKind"];
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /** Result File Id */
+            result_file_id: string | null;
+            /** Scheduling */
+            scheduling: string;
+            /**
+             * Sla Due At
+             * Format: date-time
+             */
+            sla_due_at: string;
+            status: components["schemas"]["DataRequestStatus"];
+        };
         /** TenantOut */
         TenantOut: {
             /**
@@ -2646,11 +3349,101 @@ export interface components {
             /** Slug */
             slug: string;
         };
+        /** TenantPage */
+        TenantPage: {
+            /** Items */
+            items: components["schemas"]["TenantRowOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Pages */
+            pages: number;
+            /** Total */
+            total: number;
+        };
+        /** TenantPatchIn */
+        TenantPatchIn: {
+            /** Is Internal */
+            is_internal?: boolean | null;
+            plan?: components["schemas"]["Plan"] | null;
+        };
+        /** TenantRowOut */
+        TenantRowOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            data_residency: components["schemas"]["Region"];
+            /** Deleted At */
+            deleted_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Internal */
+            is_internal: boolean;
+            /** Member Count */
+            member_count: number;
+            /** Name */
+            name: string;
+            plan: components["schemas"]["Plan"];
+            /** Profile Count */
+            profile_count: number;
+            region: components["schemas"]["Region"];
+            /** Slug */
+            slug: string;
+        };
         /**
          * UdyamCategory
          * @enum {string}
          */
         UdyamCategory: "micro" | "small" | "medium";
+        /** UsagePage */
+        UsagePage: {
+            /** Items */
+            items: components["schemas"]["UsageRowOut"][];
+            /** Period */
+            period: string;
+            /** Total Agent Runs */
+            total_agent_runs: number;
+            /** Total Cost Microusd */
+            total_cost_microusd: number;
+            /** Total Cost Usd */
+            total_cost_usd: number;
+            /** Total Tokens In */
+            total_tokens_in: number;
+            /** Total Tokens Out */
+            total_tokens_out: number;
+        };
+        /** UsageRowOut */
+        UsageRowOut: {
+            /** Agent Runs */
+            agent_runs: number;
+            /** Cost Microusd */
+            cost_microusd: number;
+            /** Cost Usd */
+            cost_usd: number;
+            /** Name */
+            name: string;
+            /** Notifications */
+            notifications?: number | null;
+            plan: components["schemas"]["Plan"];
+            region: components["schemas"]["Region"];
+            /** Slug */
+            slug: string;
+            /**
+             * Tenant Id
+             * Format: uuid
+             */
+            tenant_id: string;
+            /** Tokens In */
+            tokens_in: number;
+            /** Tokens Out */
+            tokens_out: number;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -2728,6 +3521,19 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** WebhookOut */
+        WebhookOut: {
+            /** Event Id */
+            event_id?: string | null;
+            /** Kind */
+            kind?: string | null;
+            /** Plan After */
+            plan_after?: string | null;
+            /** Plan Before */
+            plan_before?: string | null;
+            /** Status */
+            status: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -2737,6 +3543,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    system_health_api_v1_admin_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthOut"];
+                };
+            };
+        };
+    };
     list_sources_api_v1_admin_sources_get: {
         parameters: {
             query?: never;
@@ -2792,9 +3618,48 @@ export interface operations {
             };
         };
     };
+    list_source_runs_api_v1_admin_sources__source_id__runs_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRunPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tenants_api_v1_admin_tenants_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include_deleted?: boolean;
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2807,7 +3672,118 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TenantOut"][];
+                    "application/json": components["schemas"]["TenantPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_tenant_api_v1_admin_tenants__tenant_id__get: {
+        parameters: {
+            query?: {
+                period?: string | null;
+            };
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_tenant_api_v1_admin_tenants__tenant_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantRowOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tenant_audit_log_api_v1_admin_tenants__tenant_id__audit_log_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -2834,6 +3810,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SupportAccessOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    usage_api_v1_admin_usage_get: {
+        parameters: {
+            query?: {
+                period?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsagePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_billing_api_v1_billing_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingOut"];
+                };
+            };
+        };
+    };
+    create_checkout_api_v1_billing_checkout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutOut"];
                 };
             };
             /** @description Validation Error */
@@ -2995,6 +4055,112 @@ export interface operations {
             };
         };
     };
+    list_consents_api_v1_me_consents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentOut"][];
+                };
+            };
+        };
+    };
+    accept_consent_api_v1_me_consents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_data_requests_api_v1_me_data_requests_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataRequestOut"][];
+                };
+            };
+        };
+    };
+    open_data_request_api_v1_me_data_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataRequestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataRequestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_prefs_api_v1_me_notification_prefs_get: {
         parameters: {
             query?: never;
@@ -3124,6 +4290,26 @@ export interface operations {
             };
         };
     };
+    read_privacy_api_v1_privacy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivacyOut"];
+                };
+            };
+        };
+    };
     list_profiles_api_v1_profiles_get: {
         parameters: {
             query?: never;
@@ -3230,6 +4416,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    autofill_profile_api_v1_profiles__profile_id__autofill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutofillRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutofillResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5391,6 +6612,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemInfo"];
+                };
+            };
+        };
+    };
+    delete_tenant_data_api_v1_tenant_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantJobOut"];
+                };
+            };
+        };
+    };
+    export_tenant_data_api_v1_tenant_export_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantJobOut"];
+                };
+            };
+        };
+    };
+    razorpay_webhook_api_v1_webhooks_razorpay_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookOut"];
+                };
+            };
+        };
+    };
+    stripe_webhook_api_v1_webhooks_stripe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookOut"];
                 };
             };
         };

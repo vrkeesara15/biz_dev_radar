@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { Role } from "@/types/next-auth";
 import { cn } from "@/lib/utils";
 
 export const NAV_ITEMS = [
@@ -14,11 +15,18 @@ export const NAV_ITEMS = [
   { href: "/app/admin", label: "Admin" },
 ] as const;
 
-export function AppNav() {
+/** SPEC 3: the admin console is the platform admin's, so nobody else is shown the door. */
+export function visibleNavItems(role: Role | undefined) {
+  return NAV_ITEMS.filter(
+    (item) => item.href !== "/app/admin" || role === "platform_admin",
+  );
+}
+
+export function AppNav({ role }: { role?: Role }) {
   const pathname = usePathname();
   return (
     <nav aria-label="Primary" className="grid gap-0.5 p-2">
-      {NAV_ITEMS.map((item) => {
+      {visibleNavItems(role).map((item) => {
         const active =
           item.href === "/app"
             ? pathname === "/app"

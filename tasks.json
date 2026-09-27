@@ -2106,7 +2106,7 @@
       "Admin UI pages for the above with run history table and cost charts",
       "Support access to a tenant requires an explicit grant and writes support_access audit rows"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-09",
