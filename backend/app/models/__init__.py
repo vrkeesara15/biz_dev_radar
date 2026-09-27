@@ -39,6 +39,7 @@ from app.models.profile_proof import (
     Registration,
     Vehicle,
 )
+from app.models.push import PushSubscription
 from app.models.sources import Source, SourceRun
 from app.models.spend import AgencySpendStat
 from app.models.tenancy import Membership, Tenant, User
@@ -74,6 +75,7 @@ __all__ = [
     "ProfileCode",
     "ProfileFile",
     "ProfileKeyword",
+    "PushSubscription",
     "RateCardEntry",
     "Registration",
     "ServiceLine",

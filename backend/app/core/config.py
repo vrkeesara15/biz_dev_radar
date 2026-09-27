@@ -152,6 +152,12 @@ class Settings(BaseSettings):
     smtp_starttls: bool = False
     smtp_timeout_seconds: float = 10.0
 
+    # web push (SPEC 7): VAPID key pair (RFC 8292). Generate with
+    # `uv run python -c "from py_vapid import Vapid01; v=Vapid01(); v.generate_keys()"`.
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_subject: str = "mailto:ops@example.com"
+
     # third-party keys (never committed)
     sam_api_key: str = ""
     # SAM.gov key quota per UTC day (non-federal personal keys are low; see OQ-3)

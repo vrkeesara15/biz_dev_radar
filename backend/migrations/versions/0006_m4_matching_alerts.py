@@ -18,7 +18,13 @@ down_revision: str | None = "0004_m5_agent_runtime"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-TENANT_TABLES = ("matches", "notifications", "notification_deliveries", "integrations")
+TENANT_TABLES = (
+    "matches",
+    "notifications",
+    "notification_deliveries",
+    "integrations",
+    "push_subscriptions",
+)
 
 
 def _uuid_pk() -> sa.Column[object]:
@@ -169,6 +175,23 @@ def upgrade() -> None:
         sa.UniqueConstraint("tenant_id", "kind", name="uq_integrations_tenant_kind"),
     )
     op.create_index("ix_integrations_tenant_id", "integrations", ["tenant_id"])
+
+    # --- web push subscriptions (M4-12) ---------------------------------------------------------
+    op.create_table(
+        "push_subscriptions",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("user_id", "users.id"),
+        sa.Column("endpoint", sa.Text(), nullable=False),
+        sa.Column("p256dh", sa.String(255), nullable=False),
+        sa.Column("auth", sa.String(255), nullable=False),
+        sa.Column("user_agent", sa.String(512)),
+        _ts("last_seen_at"),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("tenant_id", "endpoint", name="uq_push_subscriptions_tenant_endpoint"),
+    )
+    for col in ("tenant_id", "user_id"):
+        op.create_index(f"ix_push_subscriptions_{col}", "push_subscriptions", [col])
 
     # --- per-category unsubscribe (M4-10, CAN-SPAM): event types the user opted out of ----------
     op.add_column(

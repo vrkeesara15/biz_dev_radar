@@ -1331,7 +1331,7 @@
       "Web push via VAPID keys from settings; subscription endpoint stored per user",
       "Channel tests with mocks"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-13",

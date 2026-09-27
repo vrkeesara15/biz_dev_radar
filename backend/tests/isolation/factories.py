@@ -44,12 +44,14 @@ from app.models import (
     File,
     Insurance,
     Integration,
+    Notification,
     Opportunity,
     PastPerformance,
     Personnel,
     ProfileCode,
     ProfileFile,
     ProfileKeyword,
+    PushSubscription,
     RateCardEntry,
     Registration,
     ServiceLine,
@@ -172,6 +174,25 @@ def child_routes(
 FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/me"): lambda ctx: RouteCall(),
     ("PATCH", "/api/v1/me"): lambda ctx: RouteCall(json={"name": "Isolation probe"}),
+    # --- in-app bell and web push (M4-12): everything is scoped to the caller's own user
+    ("GET", "/api/v1/me/notifications"): lambda ctx: RouteCall(),
+    ("POST", "/api/v1/me/notifications/{notification_id}/read"): lambda ctx: RouteCall(
+        path_params={"notification_id": ctx.a.ids["notification"]},
+        owner_expect=frozenset({200}),
+    ),
+    ("POST", "/api/v1/me/notifications/read-all"): lambda ctx: RouteCall(),
+    ("POST", "/api/v1/me/push-subscriptions"): lambda ctx: RouteCall(
+        json={
+            "endpoint": f"https://fcm.googleapis.com/fcm/send/{uuid.uuid4().hex}",
+            "keys": {"p256dh": "probe-key", "auth": "probe-auth"},
+        },
+        owner_expect=frozenset({201}),
+    ),
+    ("DELETE", "/api/v1/me/push-subscriptions"): lambda ctx: RouteCall(
+        json={"endpoint": ctx.a.ids["push_subscription_endpoint"]},
+        # A's owner owns the seeded endpoint (204); B cannot see it at all (404)
+        owner_expect=frozenset({204}),
+    ),
     ("GET", "/api/v1/me/notification-prefs"): lambda ctx: RouteCall(),
     ("PUT", "/api/v1/me/notification-prefs"): lambda ctx: RouteCall(json={"min_score_instant": 80}),
     ("GET", "/api/v1/admin/tenants"): lambda ctx: RouteCall(owner_expect=frozenset({403})),
@@ -406,6 +427,21 @@ async def build_context(database: Database) -> IsolationContext:
                 rate_currency="USD",
             ),
         }
+        notification = Notification(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            event_type="high_fit_match",
+            version=1,
+            idempotency_key=f"{ua.id}:high_fit_match:{uuid.uuid4()}:1",
+            payload={"title": "Alpha secret notice"},
+        )
+        push = PushSubscription(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            endpoint=f"https://fcm.googleapis.com/fcm/send/alpha-{uuid.uuid4().hex[:8]}",
+            p256dh="alpha-p256dh",
+            auth="alpha-auth",
+        )
         integration = Integration(
             tenant_id=ta.id,
             kind="slack",
@@ -428,6 +464,8 @@ async def build_context(database: Database) -> IsolationContext:
                 partner,
                 prefs,
                 integration,
+                notification,
+                push,
                 *proof.values(),
             ]
         )
@@ -456,6 +494,9 @@ async def build_context(database: Database) -> IsolationContext:
                 "keyword": str(keyword.id),
                 "keyword_term": "alpha secret term",
                 "integration": str(integration.id),
+                "notification": str(notification.id),
+                "push_subscription": str(push.id),
+                "push_subscription_endpoint": push.endpoint,
                 "service_line": str(service_line.id),
                 "service_line_name": "Alpha Cloud Line",
                 "teaming_partner": str(partner.id),

@@ -9,6 +9,7 @@ from app.api.v1 import (
     files,
     integrations,
     me,
+    me_notifications,
     notification_prefs,
     notifications,
     opportunities,
@@ -21,6 +22,7 @@ API_PREFIX = "/api/v1"
 api_router = APIRouter(prefix=API_PREFIX)
 api_router.include_router(system.router)
 api_router.include_router(me.router)
+api_router.include_router(me_notifications.router)
 api_router.include_router(notification_prefs.router)
 api_router.include_router(notifications.router)
 api_router.include_router(admin.router)
