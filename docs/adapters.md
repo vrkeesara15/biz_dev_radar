@@ -125,29 +125,57 @@ Then:
 
 ## 6. Adding a GePNIC state portal (M3)
 
-GePNIC portals share one HTML application. The generic adapter (`app/adapters/gepnic.py`,
-M3) takes a portal config; a new state is configuration, not code:
+GePNIC portals all run the same NIC application, so one class
+(`app/adapters/gepnic.py`, `GePNICAdapter`) serves every state; a portal is a row in
+`backend/app/adapters/gepnic_configs.yaml` and a set of fixtures — no Python:
 
-```python
-GEPNIC_PORTALS = {
-    "gepnic_tn": GepnicPortal(
-        base_url="https://tntenders.gov.in/nicgep/app",
-        display_name="Tamil Nadu e-Tenders",
-        org_list_page="?page=FrontEndTendersByOrganisation&service=page",
-        date_formats=("%d-%b-%Y %I:%M %p", "%d-%b-%Y"),
-        tz="Asia/Kolkata",
-        rate_per_sec=1.0,
-    ),
-}
+```yaml
+portals:
+  - source_id: gepnic_tn
+    display_name: Tamil Nadu Tenders (tntenders.gov.in)
+    state: Tamil Nadu
+    portal_home: https://tntenders.gov.in/
+    base_url: https://tntenders.gov.in/nicgep/app
+    home_page: ""                                              # the front page marquee
+    org_list_page: "?page=FrontEndTendersByOrganisation&service=page"
+    latest_page: "?page=FrontEndLatestActiveTenders&service=page"   # CAPTCHA: never fetched
+    search_page: "?page=FrontEndAdvancedSearch&service=page"        # human fallback
+    date_formats: ["%d-%b-%Y %I:%M %p", "%d-%b-%Y"]
+    tz: Asia/Kolkata
+    schedule: "0 */3 * * *"
+    enabled: true
+    robots_checked: "2026-09-26"
 ```
 
+Every entry is registered at import time (`PORTAL_ADAPTERS`), so the registry, the
+`sources` rows, Celery beat, the admin health listing and the contract suite see it.
+A portal that must not be crawled stays in the file with `enabled: false` plus
+`health_status: robots_disallowed | not_implemented` and a `reason`; it keeps its source
+id and attribution, is never requested, and reports that status from `health()`.
+
+Per run an enabled portal reads two captcha-free pages through `PoliteClient`
+(1 req/s for `*.gov.in`, robots.txt, raw archive):
+
+1. the front page, whose "Latest Tenders" marquee gives title / reference / closing /
+   opening (no tender id, no organisation);
+2. "Tenders by Organisation": the organisation index, then the first
+   `GEPNIC_MAX_ORGS_PER_RUN` organisation listings — the 6-column table with the GePNIC
+   tender id (`2026_TNCMC_871234_1`) and the `||`-separated organisation chain.
+
+Organisation listings are read first and the marquee is deduplicated against them on
+reference + title, so the richer row (tender id, buyer hierarchy) wins. "Latest Active
+Tenders" is CAPTCHA-gated on GePNIC and is never fetched (PROGRESS OQ-62). Per-tender
+links are Tapestry `DirectLink`s bound to the visitor session and expire, so every record
+is `detail_status = "manual"` with `extra.portal_search_url` pointing at the portal's own
+search page; `fetch_detail` and `fetch_documents` make no request.
+
 Checklist for a new portal: (1) robots.txt permits the listing pages (OQ-14 lists the
-verified ones: tntenders.gov.in, etender.up.nic.in, etenders.gov.in); (2) record the
-organisation list, a tender list page and a tender detail page as fixtures (plus
-malformed/layout_change variants); (3) register `gepnic_<state>` with the config, region
-`in`, schedule `0 */3 * * *`; (4) add the ContractSpec; (5) run the smoke from a cloud
-region (some portals refuse non-Indian IPs). Detail pages behind a CAPTCHA -> keep the
-tender id + search URL, `detail_status = "manual"`.
+verified ones: tntenders.gov.in, etender.up.nic.in, etenders.gov.in; mahatenders.gov.in
+is `Disallow: /`); (2) add the YAML row; (3) record `home.html`, `org_index.html`,
+`org_listing.html` plus `malformed.html` and `layout_change.html` under
+`backend/tests/adapters/fixtures/<source_id>/` (the contract suite builds a spec for every
+enabled row automatically); (4) run the smoke from a cloud region (some portals refuse
+non-Indian IPs).
 
 ## 7. Stubs and paid feeds
 

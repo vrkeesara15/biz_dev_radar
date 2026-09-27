@@ -38,6 +38,7 @@ from app.adapters import registry
 from app.adapters.base import AdapterStatus, OpportunityIn, RawRecord, SourceAdapter
 from app.adapters.cppp import CpppAdapter
 from app.adapters.gem import GemAdapter
+from app.adapters.gepnic import PORTAL_ADAPTERS
 from app.adapters.grants_gov import SEARCH_URL as GRANTS_SEARCH_URL
 from app.adapters.grants_gov import GrantsGovAdapter
 from app.adapters.http import MemoryArchiver, PoliteClient
@@ -164,6 +165,30 @@ SPECS: dict[str, ContractSpec] = {
 }
 
 
+def _gepnic_spec(source_id: str) -> ContractSpec:
+    cls = PORTAL_ADAPTERS[source_id]
+    portal = cls.portal
+    host = httpx.URL(portal.base_url).host.replace(".", r"\.")
+    return ContractSpec(
+        build=lambda: cls(client=polite_client(), settings=SETTINGS, now=lambda: NOW, max_orgs=2),
+        method="GET",
+        url=portal.home_url,
+        normal_file="home.html",
+        layout_key="activeTenders",
+        extra=(
+            ExtraRoute(portal.org_list_url, "org_index.html"),
+            ExtraRoute(
+                rf"https://{host}/.*component=%24DirectLink.*", "org_listing.html", regex=True
+            ),
+        ),
+    )
+
+
+# one spec per enabled portal row of gepnic_configs.yaml: adding a state stays config +
+# fixtures (the disabled rows are skipped by the contract test like any other stub)
+SPECS.update({sid: _gepnic_spec(sid) for sid, cls in PORTAL_ADAPTERS.items() if cls.enabled})
+
+
 def fixture_path(source_id: str, kind: str) -> Path:
     spec = SPECS[source_id]
     suffix = Path(spec.normal_file).suffix
@@ -198,13 +223,15 @@ def _serve(router: respx.MockRouter, source_id: str, spec: ContractSpec, kind: s
             hosts.add(httpx.URL(extra.url).host)
     for host in hosts:
         router.get(f"https://{host}/robots.txt").mock(return_value=httpx.Response(404))
-    router.route(method=spec.method, url=spec.url).mock(return_value=_response(main))
+    # secondary pages first: respx resolves in insertion order and a primary URL without a
+    # query string (a portal front page) would otherwise also match its ?page=... pages
     for extra in spec.extra:
         served = main if kind == "layout_change" else FIXTURES / source_id / extra.file
         if extra.regex:
             router.get(url__regex=extra.url).mock(return_value=_response(served))
         else:
-            router.get(extra.url).mock(return_value=_response(served))
+            router.get(url__eq=extra.url).mock(return_value=_response(served))
+    router.route(method=spec.method, url=spec.url).mock(return_value=_response(main))
 
 
 def _fetch_all(adapter: SourceAdapter) -> list[RawRecord]:

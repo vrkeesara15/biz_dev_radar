@@ -993,7 +993,7 @@
       "Fixtures per portal parse to OpportunityIn; malformed page degrades health",
       "Per-tender links stored with portal search URL fallback"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-06",
