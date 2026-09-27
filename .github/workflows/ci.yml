@@ -27,6 +27,12 @@ jobs:
       - run: uv sync --all-groups --frozen
         working-directory: backend
       - run: make lint
+      # M7-12: the docs link checker. No database, so it belongs with the lint job and
+      # fails fast: broken links, an unlisted runbook, or a README env table that no
+      # longer matches app/core/config.py.
+      - name: docs-links
+        working-directory: backend
+        run: uv run pytest tests/unit/test_docs_links.py -q
 
   backend-test:
     runs-on: ubuntu-latest

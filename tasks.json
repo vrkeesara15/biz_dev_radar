@@ -2183,7 +2183,7 @@
       "docs/adapters.md is the adapter guide; docs/runbooks/broken-source.md explains triage when a portal layout changes",
       "Docs link checker passes in CI"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-13",

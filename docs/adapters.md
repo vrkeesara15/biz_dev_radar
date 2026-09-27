@@ -3,6 +3,11 @@
 This is the working guide for `backend/app/adapters/`. The contract is SPEC section 5.1;
 the compliance rules are SPEC sections 5.1 and 11. Read this before touching a portal.
 
+When an adapter that used to work stops working, go to
+[runbooks/broken-source.md](runbooks/broken-source.md) instead — that page is the triage
+for a portal redesign, an IP block or a new CAPTCHA. This page is for building one.
+The rest of the documentation is indexed in [index.md](index.md).
+
 ## 1. The contract
 
 ```python
@@ -71,6 +76,29 @@ message; the admin console and the nightly smoke show it.
 
 Keep the window per request bounded (SAM: 365 days, awards: 1 year); paginate with the
 source's own mechanism; stop when the source says so, never on a guessed count.
+
+### The knobs, and what they raise
+
+| Rule | Setting | Failure |
+| --- | --- | --- |
+| Token bucket per host | `HTTP_DEFAULT_RATE_PER_SEC` (2/s), `HTTP_GOV_IN_RATE_PER_SEC` (1/s for `*.gov.in`), `HTTP_RATE_LIMITS` (JSON map host → req/s) | none — the call simply waits |
+| Retries with full jitter, honouring `Retry-After` | `HTTP_MAX_ATTEMPTS` (5), `HTTP_TIMEOUT_SECONDS` (30) | `RetryExhaustedError` after the last attempt |
+| Daily quota (SAM.gov keys) | `SAM_DAILY_QUOTA` (10/day; `remaining_quota(host)` reads it back) | `QuotaExhaustedError` |
+| robots.txt, fetched and cached per host, checked *before* the request | — | `RobotsDisallowedError` |
+| Identifying User-Agent | `APP_VERSION`, `CONTACT_EMAIL` → `BidRadar/<version> (+mailto:<contact>)` | — |
+| Raw payload archive | `STORAGE_BACKEND` and the region bucket; `MemoryArchiver` in tests, `NullArchiver` when archiving is off | — |
+
+**Archive keys.** Every response body is stored verbatim, once, at
+`raw/{source_id}/{yyyy}/{mm}/{dd}/{external_id}/{fetched_at}` in the bucket of the
+deployment's residency region (SPEC 5.1). That path is the contract: it is what a replay
+reads, what an audit cites, and what you pull when a portal changes shape and you need
+the exact bytes the parser choked on. `RawRecord.raw_ref` carries the key, so a stored
+opportunity can always be traced back to the page it came from.
+
+All four errors above are `PoliteClientError` subclasses, and all of them escape
+`fetch()` on purpose: the runner then marks the run `failing` and keeps the watermark,
+so nothing is lost and the failure is visible. Do **not** catch them to return an empty
+page.
 
 ## 3. Compliance rules (non-negotiable)
 
@@ -224,5 +252,114 @@ non-Indian IPs).
 `app/adapters/paid_feeds.py` (HigherGov, GovSpend, BidNet, TenderTiger, Tender247,
 BidAssist) are registered with `enabled = False` and `health() == not_implemented`; each
 class docstring records what is known about the source and what implementing it needs.
-To promote one: implement `fetch`/`normalize`, record fixtures, add the ContractSpec,
-set `enabled = True` (and for a paid feed give the tenant a licence reference).
+A stub is not a placeholder file: it is a registered source with an id, attribution and
+a health entry, so the admin console and the smoke report can say "we know about this
+source and it is off", which is very different from silence.
+
+### How a paid feed plugs in
+
+Paid aggregators are **licensed APIs, never scraped** (SPEC 1 "out of scope", SPEC 11).
+`PaidFeedAdapter` in `app/adapters/paid_feeds.py` is the base, and its one structural
+idea is that a licence key is a *reference*, never a value:
+
+```python
+@register
+class HigherGovAdapter(PaidFeedAdapter):
+    source_id = "highergov"
+    region = "us"
+    schedule = "0 */6 * * *"
+    enabled = False
+    vendor_url = "https://www.highergov.com/"
+    licence_note = "tenant or platform API key; redistribution limited to the licensee's users"
+    default_secret_ref = "HIGHERGOV_API_KEY"      # env var name locally
+```
+
+* `licence_secret_ref` is a Secret Manager resource name in the cloud
+  (`projects/bidradar/secrets/highergov-key/versions/latest`, resolved by
+  `GcpSecretResolver`) or an environment-variable name locally (`EnvSecretResolver`).
+  `resolver_for(ref)` picks between them by prefix.
+* `licence_key()` resolves it once and holds it on the instance. It is never logged,
+  never put in a health message (`health()` says only "licence reference set" or "no
+  licence reference") and never written to config or a manifest.
+* A **tenant-supplied** licence means one adapter instance per tenant, constructed with
+  that tenant's reference and `tenant_id`. The records it returns are then
+  **tenant-scoped, not global** — so before any tenant-licensed feed is enabled, the
+  ingest pipeline has to be given a tenant sink. Today it has a global one; this is the
+  blocking piece, not the HTTP client.
+* Respect the vendor's terms in `licence_note`: most forbid resale of raw records and
+  limit redistribution to the licensee's own users. That constrains what may be shown
+  to other tenants, exported, or cached — read it before you wire the sink.
+
+To promote a stub or a paid feed: implement `fetch`/`normalize`, record the three
+fixture kinds, add the `ContractSpec`, set `enabled = True`, and (for a paid feed) give
+it a licence reference and confirm the sink is tenant-scoped.
+
+## 9. Checklist for a new adapter PR
+
+Work top to bottom; each line is something a reviewer will look for.
+
+**Before any code**
+
+- [ ] The source is a public page or a documented API, and the terms permit our use.
+      Paid aggregator? Then it is a licensed API (section 8), not a crawl.
+- [ ] `robots.txt` permits the exact paths you intend to fetch. Record the date checked
+      (and for a GePNIC portal, put it in `robots_checked`).
+- [ ] No page in the plan needs a CAPTCHA, a login or a session cookie we would have to
+      obtain on a user's behalf. If the detail page does, the plan is listing-only plus
+      `detail_status = "manual"`.
+- [ ] The incremental strategy is written down: what the watermark is, what the cursor
+      is, and how the 2-day overlap applies.
+
+**The adapter**
+
+- [ ] `app/adapters/<source_id>.py`, decorated with `@register`; `source_id`, `region`,
+      `schedule` (5-field cron) and `enabled` set.
+- [ ] Every constructor keyword argument is optional — the scheduler, the CLI and the
+      smoke build it with no arguments.
+- [ ] All I/O through `PoliteClient`; no `httpx.Client` of your own, no `requests`.
+- [ ] `fetch()` yields `RawRecord`s with a non-empty `external_id` and the next cursor
+      in `meta["cursor"]` on **every** record.
+- [ ] A 200 page with a changed shape returns records-it-can-parse plus a note and
+      `degraded` — it does not raise. Transport and API errors do raise.
+- [ ] `health()` returns one of `ok` / `degraded` / `failing` / `not_implemented` /
+      `robots_disallowed` with a human message.
+
+**The parser**
+
+- [ ] The mapping lives in `app/core/normalize/<source>.py` and is pure — no I/O, no
+      clock, no settings lookup beyond what is passed in. It counts toward the ≥ 85%
+      `app/core` coverage gate.
+- [ ] Datetimes are tz-aware and `source_tz` records the buyer's zone. Indian date
+      formats (`17-Jul-2026 08:23 PM`, `DD-MM-YYYY`) are covered by tests.
+- [ ] Money carries its currency; INR values are not silently treated as USD.
+- [ ] Source-specific extras go in `extra` (JSON-safe), not in new columns.
+
+**Tests**
+
+- [ ] Fixtures under `backend/tests/adapters/fixtures/<source_id>/`: the real capture,
+      `malformed`, and `layout_change`. Tokens redacted, people anonymised, long arrays
+      trimmed.
+- [ ] A synthesized fixture (no live access) is declared in PROGRESS.md with an OQ
+      number saying what it was derived from.
+- [ ] Unit tests for the parser: every date format, money format, type code and edge
+      case you saw in the capture.
+- [ ] Adapter tests with `respx`: pagination, cursor resume, 429 backoff, API error →
+      `failing`, quota, robots.
+- [ ] A `ContractSpec` in `backend/tests/adapters/contract.py` — a registered adapter
+      without one fails the suite on purpose.
+- [ ] `make lint && make test` green.
+
+**Wiring and operations**
+
+- [ ] `.env.example` and `app/core/config.py` carry any new setting (URLs, per-run
+      caps); nothing is hard-coded.
+- [ ] The Cloud Run manifests are regenerated
+      (`cd backend && uv run python -m app.jobs.generate_cloudrun`) and committed —
+      `tests/unit/test_cloudrun_manifests.py` fails otherwise.
+- [ ] Attribution and the verify-on-portal disclaimer resolve for the new `source_id`.
+- [ ] The smoke covers it: it appears under `results` when enabled, or under `skipped`
+      with a reason when not. For an India source, note in the PR that the live smoke
+      is the manual `asia-south1` run.
+- [ ] This guide is updated if the source introduces a new pattern, and
+      [runbooks/broken-source.md](runbooks/broken-source.md) still describes how to
+      triage it when it breaks.
