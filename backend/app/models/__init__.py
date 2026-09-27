@@ -42,8 +42,8 @@ from app.models.profile_proof import (
     Registration,
     Vehicle,
 )
-from app.models.push import PushSubscription
 from app.models.pursuit import Pursuit
+from app.models.push import PushSubscription
 from app.models.requirements import Requirement
 from app.models.sources import Source, SourceRun
 from app.models.spend import AgencySpendStat
@@ -87,9 +87,9 @@ __all__ = [
     "ProfileCode",
     "ProfileFile",
     "ProfileKeyword",
-    "PushSubscription",
     "Pursuit",
     "PursuitArtifact",
+    "PushSubscription",
     "RateCardEntry",
     "Registration",
     "Requirement",
