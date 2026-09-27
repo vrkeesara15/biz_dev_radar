@@ -1,0 +1,59 @@
+{
+  "suggestions": [
+    {
+      "field": "cage_code",
+      "value": "7XYZ1",
+      "source": "uei",
+      "source_ref": "https://api.sam.gov/entity-information/v3/entities?ueiSAM=ABC123DEF456",
+      "confidence": 0.97
+    },
+    {
+      "field": "dba_names[]",
+      "value": ["Acme Federal"],
+      "source": "website",
+      "source_ref": "https://www.acme-federal.example/about",
+      "confidence": 0.85
+    },
+    {
+      "field": "codes.naics[]",
+      "value": { "code": "541512", "is_primary": false },
+      "source": "uei",
+      "source_ref": "https://api.sam.gov/entity-information/v3/entities?ueiSAM=ABC123DEF456",
+      "confidence": 0.92
+    },
+    {
+      "field": "service_lines[]",
+      "value": {
+        "name": "Cloud migration",
+        "description": "Migration of legacy workloads to FedRAMP-authorized cloud platforms.",
+        "differentiators": ["FedRAMP High experience"],
+        "tools": ["AWS", "Terraform"],
+        "delivery_model": "hybrid"
+      },
+      "source": "capability_pdf",
+      "source_ref": "capability-statement.pdf#page=1",
+      "confidence": 0.74
+    },
+    {
+      "field": "past_performance[]",
+      "value": {
+        "title": "Help desk modernization",
+        "customer": "Department of Example",
+        "role": "prime",
+        "scope": "Tier 1-2 service desk for 4,000 users.",
+        "technologies": ["ServiceNow"]
+      },
+      "source": "capability_pdf",
+      "source_ref": "capability-statement.pdf#page=2",
+      "confidence": 0.61
+    },
+    {
+      "field": "pan",
+      "value": "ABCDE1234F",
+      "source": "website",
+      "source_ref": "https://www.acme-federal.example/legal",
+      "confidence": 0.9
+    }
+  ],
+  "warnings": ["Website returned 3 pages; only the About and Services pages were read."]
+}

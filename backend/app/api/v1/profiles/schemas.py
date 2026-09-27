@@ -27,6 +27,8 @@ from app.core.preferences import (
     validate_output_languages,
     validate_scoring_weights,
 )
+from app.core.profile_completeness import ProfileCompleteness, ProfileSnapshot
+from app.core.profile_completeness import completeness as core_completeness
 from app.core.profile_fields import (
     ENCRYPTED_FIELDS,
     NORMALIZERS,
@@ -76,6 +78,20 @@ class AverageTurnoverOut(BaseModel):
     amount: Decimal
     currency: str
     fiscal_years: list[int]
+
+
+class SectionCompletenessOut(BaseModel):
+    score: int
+    weight: int
+    missing: list[str]
+
+
+class CompletenessOut(BaseModel):
+    score: int
+    matching_enabled: bool
+    drafting_enabled: bool
+    missing: list[str]
+    sections: dict[str, SectionCompletenessOut]
 
 
 class SizeStatusOut(BaseModel):
@@ -384,10 +400,20 @@ class ProfileOut(BaseModel):
     output_languages: list[str]
     # computed (M1-07): SBA status per NAICS code from USD average receipts / head count
     size_status_by_naics: dict[str, SizeStatusOut]
+    # computed (M1-08): completeness 0-100 with per-section breakdown
+    completeness: CompletenessOut
 
     @classmethod
-    def from_row(cls, row: CompanyProfile, *, naics_codes: list[str] | None = None) -> ProfileOut:
+    def from_row(
+        cls,
+        row: CompanyProfile,
+        *,
+        naics_codes: list[str] | None = None,
+        completeness: ProfileCompleteness | None = None,
+    ) -> ProfileOut:
         values = {name: getattr(row, name, None) for name in cls.model_fields}
+        result = completeness or core_completeness(ProfileSnapshot(region=row.region))
+        values["completeness"] = CompletenessOut.model_validate(result.as_dict())
         for name in ENCRYPTED_FIELDS:
             values[name] = mask_last4(values[name])
         avg = compute_average_turnover(row.annual_revenue)

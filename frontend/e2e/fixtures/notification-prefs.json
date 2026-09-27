@@ -1,0 +1,20 @@
+{
+  "user_id": "00000000-0000-0000-0000-0000000000e2",
+  "tenant_id": "00000000-0000-0000-0000-000000000001",
+  "channels_by_event": {
+    "high_fit_match": ["email"],
+    "digest": ["email"],
+    "amendment": ["email"],
+    "deadline_reminder": ["email"],
+    "pursuit_update": ["email"],
+    "agent_question": ["email"],
+    "approval_request": ["email"],
+    "registration_expiry": ["email"]
+  },
+  "quiet_hours_start": null,
+  "quiet_hours_end": null,
+  "tz": "UTC",
+  "digest_time": "08:00",
+  "min_score_instant": 70,
+  "min_score_digest": 50
+}

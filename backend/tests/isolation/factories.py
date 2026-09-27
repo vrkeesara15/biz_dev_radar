@@ -173,6 +173,7 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         owner_expect=frozenset({403}),
     ),
     # --- profiles (M1-01)
+    ("GET", "/api/v1/profiles"): lambda ctx: RouteCall(),
     ("POST", "/api/v1/profiles"): lambda ctx: RouteCall(
         json={"region": "us", "legal_name": "Probe LLC"}
     ),

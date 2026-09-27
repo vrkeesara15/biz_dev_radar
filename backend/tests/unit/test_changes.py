@@ -11,7 +11,7 @@ from app.core.changes import (
     diff_payloads,
     document_hash,
 )
-from app.core.money import to_usd
+from app.core.money import to_usd_or_none
 from app.core.opportunity import (
     DetailStatus,
     DocumentKind,
@@ -133,10 +133,10 @@ def test_diff_and_classification() -> None:
     assert classify_changes(questions) == ["deadline_moved"]
 
 
-def test_to_usd() -> None:
+def test_to_usd_or_none() -> None:
     rates = {"USD": 1.0, "INR": 0.012}
-    assert to_usd(Decimal("100"), "USD", rates) == Decimal("100.00")
-    assert to_usd(Decimal("1250000"), "inr", rates) == Decimal("15000.00")
-    assert to_usd(Decimal("1"), "EUR", rates) is None
-    assert to_usd(None, "USD", rates) is None
-    assert to_usd(Decimal("1"), None, rates) is None
+    assert to_usd_or_none(Decimal("100"), "USD", rates) == Decimal("100.00")
+    assert to_usd_or_none(Decimal("1250000"), "inr", rates) == Decimal("15000.00")
+    assert to_usd_or_none(Decimal("1"), "EUR", rates) is None
+    assert to_usd_or_none(None, "USD", rates) is None
+    assert to_usd_or_none(Decimal("1"), None, rates) is None

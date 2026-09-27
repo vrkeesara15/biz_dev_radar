@@ -24,7 +24,7 @@ from sqlalchemy.orm import selectinload
 from app.adapters.base import OpportunityIn, RawRecord
 from app.core.changes import canonical_payload, classify_changes, content_hash, diff_payloads
 from app.core.config import Settings, get_settings
-from app.core.money import to_usd
+from app.core.money import to_usd_or_none
 from app.core.normalize.buyer import normalized_buyer
 from app.core.normalize.reference import normalized_reference
 from app.core.normalize.sam import normalized_solicitation
@@ -124,8 +124,12 @@ def _apply(
     row.reference_norm = normalized_reference(opp.solicitation_number)
     row.buyer_norm = normalized_buyer(opp.buyer_org)
     row.detail_status = opp.detail_status.value
-    row.estimated_value_min_usd = to_usd(opp.estimated_value_min, opp.currency, settings.fx_rates)
-    row.estimated_value_max_usd = to_usd(opp.estimated_value_max, opp.currency, settings.fx_rates)
+    row.estimated_value_min_usd = to_usd_or_none(
+        opp.estimated_value_min, opp.currency, settings.fx_rates
+    )
+    row.estimated_value_max_usd = to_usd_or_none(
+        opp.estimated_value_max, opp.currency, settings.fx_rates
+    )
     if opp.status is not None:
         row.status = opp.status
     elif new or OpportunityStatus(row.status) in DERIVED_STATUSES:
