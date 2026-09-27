@@ -89,3 +89,19 @@ def test_effective_limit_internal_is_unlimited() -> None:
     assert effective_limit(Plan.FREE, Resource.PROFILES, is_internal=False) == 1
     assert effective_limit(Plan.FREE, Resource.PROFILES, is_internal=False, configured=7) == 7
     assert effective_limit(Plan.FREE, Resource.PROFILES, is_internal=False, configured=None) is None
+
+
+def test_plan_limit_exceeded_payload() -> None:
+    from app.core.plan import PlanLimitExceeded
+
+    exc = PlanLimitExceeded("free", check_limit("profiles", 1, used=1, requested=1))
+    assert exc.resource == "profiles" and exc.limit == 1 and exc.used == 1
+    assert "limit 'profiles' is 1" in str(exc)
+    assert exc.as_dict() == {
+        "error": "plan_limit_exceeded",
+        "limit": "profiles",
+        "limit_value": 1,
+        "used": 1,
+        "requested": 1,
+        "plan": "free",
+    }

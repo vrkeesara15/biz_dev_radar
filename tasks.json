@@ -241,7 +241,7 @@
       "is_internal tenants always pass",
       "Unit tests cover profiles, source regions, agent drafts/month with period rollover"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-13",

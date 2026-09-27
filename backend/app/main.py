@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.api import health
@@ -14,6 +15,7 @@ from app.api.audit_middleware import AuditMiddleware
 from app.api.middleware import RequestIdMiddleware
 from app.api.v1 import api_router
 from app.core.config import Settings, get_settings
+from app.core.plan import PlanLimitExceeded
 from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
 
@@ -23,6 +25,13 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
     configure_logging(settings.log_level, json_output=settings.is_production)
     yield
+
+
+async def _plan_limit_handler(_: Request, exc: PlanLimitExceeded) -> JSONResponse:
+    """SPEC section 3: limits are enforced server-side; exceeding one is 402 Payment Required."""
+    return JSONResponse(
+        status_code=status.HTTP_402_PAYMENT_REQUIRED, content={"detail": exc.as_dict()}
+    )
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -51,6 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         expose_headers=["X-Request-ID"],
     )
     app.add_middleware(RequestIdMiddleware)
+    app.add_exception_handler(PlanLimitExceeded, _plan_limit_handler)  # type: ignore[arg-type]
     app.include_router(health.router)
     app.include_router(api_router)
     return app

@@ -136,3 +136,31 @@ def effective_limit(
     if configured is ...:
         return default_limit(plan, resource)
     return configured  # type: ignore[return-value]
+
+
+class PlanLimitExceeded(Exception):  # noqa: N818 - domain name mirrors the spec
+    """Raised by services.plan.PlanService when a tenant would exceed a plan limit.
+
+    Mapped to HTTP 402 by the API with the limit name in the body.
+    """
+
+    def __init__(self, plan: str, check: LimitCheck) -> None:
+        self.plan = plan
+        self.resource = check.resource
+        self.limit = check.limit
+        self.used = check.used
+        self.requested = check.requested
+        super().__init__(
+            f"plan {plan}: limit '{check.resource}' is {check.limit} "
+            f"(used {check.used}, requested {check.requested})"
+        )
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "error": "plan_limit_exceeded",
+            "limit": self.resource,
+            "limit_value": self.limit,
+            "used": self.used,
+            "requested": self.requested,
+            "plan": self.plan,
+        }
