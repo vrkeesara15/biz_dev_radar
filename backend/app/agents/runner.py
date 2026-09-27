@@ -118,6 +118,9 @@ class StepContext:
     tenant_id: uuid.UUID
     # storage, scanner, OCR, HTTP client factory (None for LLM-only steps such as summary)
     services: AgentServices | None = None
+    # the runner's Database: a step that fans work out concurrently opens its OWN session
+    # per branch (an AsyncSession is not safe to share between coroutines)
+    database: Database | None = None
 
     def cache_block(self, text: str, ttl: str | None = None) -> CacheBlock:
         return CacheBlock(text=text, ttl=ttl)
@@ -393,6 +396,7 @@ class AgentRunner:
                 params=params,
                 tenant_id=self.tenant_id,
                 services=self.services,
+                database=self.database,
             )
             try:
                 output = _jsonable(await spec.fn(ctx))

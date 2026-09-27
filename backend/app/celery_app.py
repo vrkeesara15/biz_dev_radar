@@ -29,6 +29,7 @@ ROLL_STATUS_TASK = "bidradar.roll_status"
 SEND_DIGESTS_TASK = "bidradar.send_digests"
 FLUSH_SCHEDULED_TASK = "bidradar.flush_scheduled"
 RUN_AGENTS_TASK = "bidradar.run_agents"
+DRAFT_VOLUME_TASK = "bidradar.draft_volume"
 INDEX_PROFILE_TASK = "bidradar.index_profile"
 TENANT_EXPORT_TASK = "bidradar.tenant_export"
 TENANT_DELETE_TASK = "bidradar.tenant_delete"
@@ -143,6 +144,14 @@ def run_agents_task(self: Any, run_id: str, tenant_id: str) -> dict[str, Any]:
     from app.jobs.run_agents import run_agents_sync
 
     return run_agents_sync(run_id, tenant_id)
+
+
+@celery_app.task(name=DRAFT_VOLUME_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def draft_volume_task(self: Any, tenant_id: str, pursuit_id: str, volume: str) -> dict[str, Any]:
+    """Draft one proposal volume (SPEC 8 agent 6); one task per volume in a group."""
+    from app.jobs.draft_volume import draft_volume_sync
+
+    return draft_volume_sync(tenant_id, pursuit_id, volume)
 
 
 @celery_app.task(name=INDEX_PROFILE_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]

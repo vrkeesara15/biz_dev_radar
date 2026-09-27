@@ -1563,7 +1563,7 @@
       "Every factual claim about the company carries a citation token to a profile record, past-performance id or file; unsupported claims produce [NEEDS INPUT: ...] and a task for the owner",
       "drafts(pursuit_id, section, current_version_id) and draft_versions(body, citations jsonb, author agent|user, created_at)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-09",

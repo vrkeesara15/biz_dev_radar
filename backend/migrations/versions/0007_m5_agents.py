@@ -23,7 +23,15 @@ down_revision: str | None = "0010_m7_admin"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-TENANT_TABLES = ("pursuits", "requirements", "compliance_items", "pursuit_artifacts")
+TENANT_TABLES = (
+    "pursuits",
+    "requirements",
+    "compliance_items",
+    "pursuit_artifacts",
+    "drafts",
+    "draft_versions",
+    "tasks",
+)
 # plan_limits rows added by this milestone (0001 seeds PLAN_DEFAULTS on a fresh database,
 # so the insert is idempotent for databases migrated before this revision existed).
 NEW_RESOURCES = (Resource.AGENT_BUDGET_USD_MONTH,)
@@ -176,6 +184,81 @@ def upgrade() -> None:
     for col in ("tenant_id", "pursuit_id"):
         op.create_index(f"ix_pursuit_artifacts_{col}", "pursuit_artifacts", [col])
 
+    # --- drafts, versions and tasks (M5-08) ------------------------------------------
+    op.create_table(
+        "drafts",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        sa.Column("section_id", sa.String(64), nullable=False),
+        sa.Column("title", sa.String(200), nullable=False),
+        sa.Column("volume", sa.String(120)),
+        # FK added after draft_versions exists (the two tables reference each other)
+        sa.Column("current_version_id", postgresql.UUID(as_uuid=True)),
+        sa.Column("status", sa.String(16), nullable=False, server_default=sa.text("'draft'")),
+        _fk("approved_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("approved_at"),
+        _ts("created_at", nullable=False, default_now=True),
+        _ts("updated_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("pursuit_id", "section_id", name="uq_drafts_section"),
+    )
+    for col in ("tenant_id", "pursuit_id"):
+        op.create_index(f"ix_drafts_{col}", "drafts", [col])
+
+    op.create_table(
+        "draft_versions",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("draft_id", "drafts.id", ondelete="CASCADE", nullable=False),
+        sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1")),
+        sa.Column("body_html", sa.Text(), nullable=False, server_default=sa.text("''")),
+        sa.Column("body_text", sa.Text(), nullable=False, server_default=sa.text("''")),
+        sa.Column(
+            "citations", postgresql.JSONB(), nullable=False, server_default=sa.text("'[]'::jsonb")
+        ),
+        sa.Column(
+            "needs_input",
+            postgresql.JSONB(),
+            nullable=False,
+            server_default=sa.text("'[]'::jsonb"),
+        ),
+        sa.Column(
+            "flags", postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")
+        ),
+        sa.Column("author", sa.String(8), nullable=False, server_default=sa.text("'agent'")),
+        _fk("author_user_id", "users.id", ondelete="SET NULL", nullable=True),
+        sa.Column("model", sa.String(128)),
+        sa.Column("tokens", sa.Integer(), nullable=False, server_default=sa.text("0")),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("draft_id", "version", name="uq_draft_versions_version"),
+    )
+    for col in ("tenant_id", "draft_id"):
+        op.create_index(f"ix_draft_versions_{col}", "draft_versions", [col])
+    op.create_foreign_key(
+        "fk_drafts_current_version_id_draft_versions",
+        "drafts",
+        "draft_versions",
+        ["current_version_id"],
+        ["id"],
+        ondelete="SET NULL",
+    )
+
+    op.create_table(
+        "tasks",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        sa.Column("title", sa.Text(), nullable=False),
+        _fk("assignee_user_id", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("due_at"),
+        sa.Column("status", sa.String(16), nullable=False, server_default=sa.text("'open'")),
+        sa.Column("source", sa.String(8), nullable=False, server_default=sa.text("'agent'")),
+        sa.Column("ref", postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")),
+        _ts("created_at", nullable=False, default_now=True),
+    )
+    for col in ("tenant_id", "pursuit_id"):
+        op.create_index(f"ix_tasks_{col}", "tasks", [col])
+
     for table in TENANT_TABLES:
         grant_app(op, table)
         enable_rls(op, table)
@@ -184,6 +267,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_constraint("fk_agent_runs_pursuit_id_pursuits", "agent_runs", type_="foreignkey")
     op.drop_column("agent_runs", "pause_reason")
+    op.drop_constraint("fk_drafts_current_version_id_draft_versions", "drafts", type_="foreignkey")
     for table in reversed(TENANT_TABLES):
         op.drop_table(table)
     for resource in NEW_RESOURCES:
