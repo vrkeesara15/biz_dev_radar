@@ -1676,7 +1676,7 @@
       "India packet includes EMD/BG and DSC steps; US includes SAM login note",
       "Nothing in the packet triggers submission; test asserts no outbound call"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-15",

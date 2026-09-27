@@ -4,6 +4,7 @@ and the budget approval that resumes a run the cost guard paused.
     POST /api/v1/pursuits                                  {profile_id, opportunity_id}
     GET  /api/v1/pursuits/{pursuit_id}                     cost_so_far, cap, budget, latest run
     GET  /api/v1/pursuits/{pursuit_id}/matrix              matrix + format rules + checklist
+    GET  /api/v1/pursuits/{pursuit_id}/packet              uploads, portal, signatures, deadline
     POST /api/v1/pursuits/{pursuit_id}/agents/approve-budget {additional_usd, reason?}
 
 M6-01 adds POST /opportunities/{id}/pursue|watch|pass, PATCH (stages) and the decision
@@ -17,7 +18,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -34,9 +35,10 @@ from app.core.compliance import (
     FormatRules,
 )
 from app.core.config import Settings
+from app.core.packet import Packet, PacketContext, build_packet
 from app.core.roles import Role
 from app.jobs import run_agents as run_agents_job_module
-from app.models import AgentRun, ComplianceItem, Pursuit, Requirement
+from app.models import AgentRun, ComplianceItem, Opportunity, Pursuit, Requirement, User
 from app.models.agents import RUN_NEEDS_APPROVAL, RUN_QUEUED
 from app.services import pursuits as pursuit_svc
 from app.services.audit import AuditHint
@@ -119,6 +121,15 @@ class PursuitMatrixOut(BaseModel):
     checklist: list[ChecklistItem]
     checklist_version: int | None
     generated_at: datetime | None  # when the matrix agent last ran
+
+
+class PursuitPacketOut(BaseModel):
+    pursuit_id: uuid.UUID
+    opportunity_id: uuid.UUID
+    packet: Packet
+    checklist: list[ChecklistItem]
+    checklist_version: int | None
+    generated_at: datetime | None
 
 
 class ApproveBudgetIn(BaseModel):
@@ -245,6 +256,31 @@ async def get_pursuit(
     return await load_pursuit_out(session, pursuit, user.tenant_id)
 
 
+async def _matrix_artifacts(
+    session: AsyncSession, pursuit: Pursuit
+) -> tuple[FormatRules, list[ChecklistItem], int | None, int | None, datetime | None]:
+    rules_row = await pursuit_svc.latest_artifact(session, pursuit.id, ARTIFACT_FORMAT_RULES)
+    checklist_row = await pursuit_svc.latest_artifact(session, pursuit.id, ARTIFACT_CHECKLIST)
+    rules = FormatRules() if rules_row is None else FormatRules.model_validate(rules_row.data)
+    checklist = (
+        []
+        if checklist_row is None
+        else [
+            ChecklistItem.model_validate(row) for row in (checklist_row.data or {}).get("items", [])
+        ]
+    )
+    generated = max(
+        (a.created_at for a in (rules_row, checklist_row) if a is not None), default=None
+    )
+    return (
+        rules,
+        checklist,
+        None if rules_row is None else rules_row.version,
+        None if checklist_row is None else checklist_row.version,
+        generated,
+    )
+
+
 @router.get("/{pursuit_id}/matrix", response_model=PursuitMatrixOut)
 async def get_matrix(
     pursuit_id: uuid.UUID, session: TenantSessionDep, user: ReaderDep
@@ -260,11 +296,8 @@ async def get_matrix(
             .order_by(Requirement.req_id)
         )
     ).all()
-    rules_artifact = await pursuit_svc.latest_artifact(session, pursuit.id, ARTIFACT_FORMAT_RULES)
-    checklist_artifact = await pursuit_svc.latest_artifact(session, pursuit.id, ARTIFACT_CHECKLIST)
-    generated = max(
-        (a.created_at for a in (rules_artifact, checklist_artifact) if a is not None),
-        default=None,
+    rules, checklist, rules_version, checklist_version, generated = await _matrix_artifacts(
+        session, pursuit
     )
     return PursuitMatrixOut(
         pursuit_id=pursuit.id,
@@ -287,17 +320,52 @@ async def get_matrix(
             )
             for item, req in rows
         ],
-        format_rules=None
-        if rules_artifact is None
-        else FormatRules.model_validate(rules_artifact.data),
-        format_rules_version=None if rules_artifact is None else rules_artifact.version,
-        checklist=[]
-        if checklist_artifact is None
-        else [
-            ChecklistItem.model_validate(row)
-            for row in (checklist_artifact.data or {}).get("items", [])
-        ],
-        checklist_version=None if checklist_artifact is None else checklist_artifact.version,
+        format_rules=None if rules_version is None else rules,
+        format_rules_version=rules_version,
+        checklist=checklist,
+        checklist_version=checklist_version,
+        generated_at=generated,
+    )
+
+
+@router.get("/{pursuit_id}/packet", response_model=PursuitPacketOut)
+async def get_packet(
+    pursuit_id: uuid.UUID, session: TenantSessionDep, user: ReaderDep
+) -> PursuitPacketOut:
+    """What to upload where, the portal link, the signatures / DSC steps and the final
+    deadline in the buyer's and the reader's time zone.
+
+    Read-only by construction: the route makes no outbound call and nothing it returns
+    submits anything (SPEC 1 -- a human always submits on the portal).
+    """
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    opportunity = await session.get(Opportunity, pursuit.opportunity_id)
+    if opportunity is None:  # pragma: no cover - the FK guarantees it
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="opportunity not found")
+    rules, checklist, _rules_version, checklist_version, generated = await _matrix_artifacts(
+        session, pursuit
+    )
+    reader = await session.get(User, user.id)
+    packet = build_packet(
+        PacketContext(
+            region=str(opportunity.region),
+            notice_type=str(opportunity.notice_type),
+            title=opportunity.title,
+            solicitation_number=opportunity.solicitation_number,
+            portal_url=opportunity.source_url,
+            buyer_tz=opportunity.source_tz,
+            user_tz=None if reader is None else reader.tz,
+            response_due_at=opportunity.response_due_at,
+        ),
+        rules,
+        checklist,
+    )
+    return PursuitPacketOut(
+        pursuit_id=pursuit.id,
+        opportunity_id=opportunity.id,
+        packet=packet,
+        checklist=checklist,
+        checklist_version=checklist_version,
         generated_at=generated,
     )
 

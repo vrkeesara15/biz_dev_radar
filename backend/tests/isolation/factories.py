@@ -264,6 +264,9 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/pursuits/{pursuit_id}/matrix"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
     ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/packet"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
     ("POST", "/api/v1/pursuits/{pursuit_id}/agents/approve-budget"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]},
         json={"additional_usd": "5", "reason": "isolation probe"},
