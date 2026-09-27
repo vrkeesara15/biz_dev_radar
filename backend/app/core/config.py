@@ -39,7 +39,16 @@ class ScannerBackend(StrEnum):
 # The only place a Claude model id literal may appear (tests enforce this).
 DEFAULT_OPUS_CLASS = "claude-opus-5"
 DEFAULT_SONNET_CLASS = "claude-sonnet-5"
-DEFAULT_HAIKU_CLASS = "claude-haiku-4-5-20251001"
+DEFAULT_HAIKU_CLASS = "claude-haiku-4-5"
+
+# USD per million tokens (input, output, cache_read, cache_write) per model id: the LLM
+# client computes cost_usd from these, never from a guess (SPEC 8 cost guard). Override
+# with LLM_PRICES (JSON) when prices or model ids change.
+DEFAULT_LLM_PRICES: dict[str, dict[str, float]] = {
+    DEFAULT_OPUS_CLASS: {"input": 5.0, "output": 25.0, "cache_read": 0.5, "cache_write": 6.25},
+    DEFAULT_SONNET_CLASS: {"input": 2.0, "output": 10.0, "cache_read": 0.2, "cache_write": 2.5},
+    DEFAULT_HAIKU_CLASS: {"input": 1.0, "output": 5.0, "cache_read": 0.1, "cache_write": 1.25},
+}
 
 
 class Settings(BaseSettings):
@@ -121,6 +130,12 @@ class Settings(BaseSettings):
     llm_model_sonnet_class: str = DEFAULT_SONNET_CLASS
     llm_model_haiku_class: str = DEFAULT_HAIKU_CLASS
     llm_model_rationale: str = DEFAULT_SONNET_CLASS
+    llm_prices: Annotated[dict[str, dict[str, float]], NoDecode] = Field(
+        default_factory=lambda: {k: dict(v) for k, v in DEFAULT_LLM_PRICES.items()}
+    )
+    # default output cap per call and extra attempts when the JSON output fails validation
+    llm_max_tokens: int = 4096
+    llm_output_retries: int = 2
 
     # embeddings
     embedding_provider: EmbeddingProviderName = EmbeddingProviderName.VOYAGE
@@ -151,7 +166,7 @@ class Settings(BaseSettings):
             return [part.strip() for part in stripped.split(",") if part.strip()]
         return value
 
-    @field_validator("fx_rates", "http_rate_limits", mode="before")
+    @field_validator("fx_rates", "http_rate_limits", "llm_prices", mode="before")
     @classmethod
     def _parse_json_map(cls, value: Any) -> Any:
         if isinstance(value, str):

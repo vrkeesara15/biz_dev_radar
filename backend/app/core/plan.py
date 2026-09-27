@@ -52,6 +52,11 @@ PLAN_DEFAULTS: dict[Plan, dict[Resource, int | None]] = {
 
 MONTHLY_SUFFIX = "_per_month"
 LIFETIME_PERIOD = "lifetime"
+# LLM usage metrics written by the agent runner (M5-01); budgeted per month (SPEC 8).
+LLM_TOKENS_IN = "llm_tokens_in"
+LLM_TOKENS_OUT = "llm_tokens_out"
+LLM_COST_MICROUSD = "llm_cost_microusd"
+MONTHLY_METRICS = frozenset({LLM_TOKENS_IN, LLM_TOKENS_OUT, LLM_COST_MICROUSD})
 
 
 def plan_limit_rows() -> list[dict[str, object]]:
@@ -68,7 +73,7 @@ def is_unlimited(limit: int | None) -> bool:
 
 
 def is_monthly(resource: str) -> bool:
-    return resource.endswith(MONTHLY_SUFFIX)
+    return resource.endswith(MONTHLY_SUFFIX) or resource in MONTHLY_METRICS
 
 
 def period_key(resource: str, at: datetime | None = None) -> str:

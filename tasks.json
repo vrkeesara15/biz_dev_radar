@@ -1431,7 +1431,7 @@
       "Runner resumes a run from the last completed step after a crash (test kills mid-run)",
       "Langfuse hooks and usage_ledger entries per step; FakeLLM in tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-02",
