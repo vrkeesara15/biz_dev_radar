@@ -653,7 +653,7 @@
       "When two records exist for one opportunity only the latest version is kept",
       "notice_type grant or forecast; fixture tests for both"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-07",
