@@ -39,6 +39,7 @@ __all__ = [
     "OpportunityStatus",
     "PlaceOfPerformance",
     "RawRecord",
+    "RegionCode",
     "SourceAdapter",
 ]
 

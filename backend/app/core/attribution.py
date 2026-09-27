@@ -14,6 +14,12 @@ SOURCE_NAMES: dict[str, str] = {
     "gem": "Government e-Marketplace (GeM)",
     "ireps": "IREPS (Indian Railways)",
     "defproc": "Defence Procurement Portal (defproc.gov.in)",
+    "highergov": "HigherGov",
+    "govspend": "GovSpend",
+    "bidnet": "BidNet Direct",
+    "tendertiger": "TenderTiger",
+    "tender247": "Tender247",
+    "bidassist": "BidAssist",
 }
 PORTAL_HOME: dict[str, str] = {
     "sam_opps": "https://sam.gov/",

@@ -871,7 +871,7 @@
       "docs/adapters.md explains how to implement a new adapter and the compliance rules",
       "Contract tests skip disabled adapters explicitly"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-18",
