@@ -77,6 +77,9 @@ SECRET_SETTINGS: tuple[str, ...] = (
     "sendgrid_api_key",
     "smtp_password",
     "vapid_private_key",
+    "gupshup_api_key",
+    "twilio_auth_token",
+    "whatsapp_webhook_secret",
     "stripe_secret_key",
     "stripe_webhook_secret",
     "razorpay_key_id",
@@ -183,6 +186,24 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_starttls: bool = False
     smtp_timeout_seconds: float = 10.0
+
+    # WhatsApp Business through a BSP (SPEC 7, M6-05). Business-initiated messages must
+    # use a PRE-APPROVED template, so the template names are configuration, never code;
+    # an event with no template name here is simply not sent on WhatsApp.
+    whatsapp_provider: str = ""  # gupshup | twilio | "" (off)
+    whatsapp_template_deadline: str = ""
+    whatsapp_template_high_match: str = ""
+    whatsapp_template_language: str = "en"
+    # HMAC secret for the BSP delivery-receipt webhook; empty accepts unsigned receipts
+    whatsapp_webhook_secret: str = ""
+    gupshup_api_key: str = ""
+    gupshup_api_url: str = "https://api.gupshup.io/wa/api/v1"
+    gupshup_source_number: str = ""
+    gupshup_app_name: str = "BidRadar"
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_api_url: str = "https://api.twilio.com"
+    twilio_whatsapp_from: str = ""
 
     # web push (SPEC 7): VAPID key pair (RFC 8292). Generate with
     # `uv run python -c "from py_vapid import Vapid01; v=Vapid01(); v.generate_keys()"`.

@@ -63,6 +63,10 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     name: Mapped[str | None] = mapped_column(String(200))
     tz: Mapped[str] = mapped_column(String(64), nullable=False, server_default=text("'UTC'"))
     locale: Mapped[str] = mapped_column(String(16), nullable=False, server_default=text("'en-US'"))
+    # WhatsApp (SPEC 7, M6-05): E.164 with the country code, and the moment the number was
+    # verified. Both must be set before WhatsApp will send to this person.
+    phone_e164: Mapped[str | None] = mapped_column(String(20))
+    phone_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     memberships: Mapped[list[Membership]] = relationship(back_populates="user")
 

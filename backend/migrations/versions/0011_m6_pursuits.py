@@ -10,7 +10,8 @@ worktrees land.
 M6-01 extends `pursuits` (stage CHECK, watch, pass_reason, submitted_at, decided_by /
 decided_at). M6-02 adds `pursuit_dates`; M6-07 adds `pursuit_tasks` and
 `pursuit_comments`; M6-04 adds `calendar_connections`, `calendar_events` and
-`user_notification_prefs.calendar_token`.
+`user_notification_prefs.calendar_token`; M6-05 adds `users.phone_e164` /
+`users.phone_verified_at`.
 """
 
 from collections.abc import Sequence
@@ -69,12 +70,15 @@ def upgrade() -> None:
     _upgrade_pursuit_dates()
     _upgrade_collab()
     _upgrade_calendar()
+    _upgrade_whatsapp()
     for table in TENANT_TABLES:
         grant_app(op, table)
         enable_rls(op, table)
 
 
 def downgrade() -> None:
+    op.drop_column("users", "phone_verified_at")
+    op.drop_column("users", "phone_e164")
     op.drop_column("user_notification_prefs", "calendar_token")
     for table in reversed(TENANT_TABLES):
         op.drop_table(table)
@@ -333,3 +337,11 @@ def _upgrade_calendar() -> None:
     op.create_index("ix_calendar_events_tenant_id", "calendar_events", ["tenant_id"])
     op.create_index("ix_calendar_events_connection_id", "calendar_events", ["connection_id"])
     op.create_index("ix_calendar_events_pursuit_date_id", "calendar_events", ["pursuit_date_id"])
+
+
+# --- M6-05 WhatsApp: a verified number on the user ------------------------------------------
+
+
+def _upgrade_whatsapp() -> None:
+    op.add_column("users", sa.Column("phone_e164", sa.String(20)))
+    op.add_column("users", _ts("phone_verified_at"))

@@ -114,6 +114,21 @@ spec:
                 secretKeyRef:
                   name: ${SECRET_PREFIX}-vapid-private-key
                   key: latest
+            - name: GUPSHUP_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ${SECRET_PREFIX}-gupshup-api-key
+                  key: latest
+            - name: TWILIO_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ${SECRET_PREFIX}-twilio-auth-token
+                  key: latest
+            - name: WHATSAPP_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ${SECRET_PREFIX}-whatsapp-webhook-secret
+                  key: latest
             - name: STRIPE_SECRET_KEY
               valueFrom:
                 secretKeyRef:

@@ -122,6 +122,9 @@ async def test_every_mutating_route_under_api_v1_is_audited(
         ("POST", "/api/v1/notifications/unsubscribe/{token}"),
         ("POST", "/api/v1/webhooks/razorpay"),
         ("POST", "/api/v1/webhooks/stripe"),
+        # M6-05: a BSP delivery receipt has no user; it only moves a delivery row we
+        # created ourselves, addressed by its provider_ref (test_whatsapp_api.py)
+        ("POST", "/api/v1/webhooks/whatsapp/{provider}"),
     ], f"unexpected route exempted from the audit middleware: {exempt}"
 
     # An exempt signed route must refuse a bogus credential and write nothing: there is no
