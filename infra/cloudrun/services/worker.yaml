@@ -106,6 +106,21 @@ spec:
             secretKeyRef:
               name: ${SECRET_PREFIX}-voyage-api-key
               key: latest
+        - name: SENDGRID_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ${SECRET_PREFIX}-sendgrid-api-key
+              key: latest
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ${SECRET_PREFIX}-smtp-password
+              key: latest
+        - name: VAPID_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ${SECRET_PREFIX}-vapid-private-key
+              key: latest
         - name: STRIPE_SECRET_KEY
           valueFrom:
             secretKeyRef:

@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block lead %}Your {{ digest_period|default('daily') }} digest: {{ items|length }} opportunit{{ 'y' if items|length == 1 else 'ies' }}{% endblock %}
+{% block extra %}
+<tr><td style="padding-bottom:16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.6;">{% for item in items %}<tr><td style="padding:8px 0;border-top:1px solid #e5e7eb;"><a href="{{ item.link }}" style="color:#1d4ed8;font-weight:600;text-decoration:none;">{{ item.title }}</a>{% if item.score is defined and item.score is not none %} &middot; fit {{ item.score }}{% endif %}<div style="color:#6b7280;">{% if item.buyer %}{{ item.buyer }}{% endif %}{% if item.due %} &middot; due {{ item.due }}{% endif %}{% if item.countdown %} ({{ item.countdown }}){% endif %}</div></td></tr>{% endfor %}</table></td></tr>
+{% endblock %}

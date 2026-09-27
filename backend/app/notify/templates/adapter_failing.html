@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block lead %}Source {{ source_id|default('unknown') }} is failing{% endblock %}
+{% block extra %}
+<tr><td style="padding-bottom:16px;font-size:14px;color:#b91c1c;">{{ error|default("see the run log") }}</td></tr>
+{% endblock %}

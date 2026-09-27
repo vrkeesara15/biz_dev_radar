@@ -1,0 +1,29 @@
+{%- block lead %}{{ title or subject }}{% endblock %}
+{% block facts -%}
+{% if title %}Opportunity: {{ title }}
+{% endif %}{% if buyer %}Buyer: {{ buyer }}
+{% endif %}{% if value %}Value: {{ value }}
+{% endif %}{% if due %}Response due: {{ due }}{% if countdown %} ({{ countdown }}){% endif %}
+{% endif %}{%- endblock %}
+{%- if score is not none %}
+Fit score {{ score }}{% if band %} - {{ band }}{% endif %}
+{% endif %}
+{%- if rationale %}
+{% for bullet in rationale %}- {{ bullet }}
+{% endfor %}{% endif %}
+{%- if top_gap %}
+Top gap: {{ top_gap }}
+{% endif %}
+{%- block extra %}{% endblock %}
+{%- if deep_link %}
+Open in {{ app_name }}: {{ deep_link }}
+{% endif %}
+{%- if actions %}
+{% for label, href in actions %}{{ label }}: {{ href }}
+{% endfor %}{% endif %}
+--
+You are receiving this because you asked {{ app_name }} to alert you about {{ category_label }}.
+Unsubscribe from {{ category_label }}: {{ unsubscribe_url }}
+Unsubscribe from all {{ app_name }} email: {{ unsubscribe_all_url }}
+Notification settings: {{ preferences_url }}
+{{ postal_address }}

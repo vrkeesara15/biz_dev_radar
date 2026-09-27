@@ -1,0 +1,15 @@
+{
+ "bid_number": "GEM/2026/R/1270031",
+ "item_or_service": "CCTV Surveillance System",
+ "quantity": 64,
+ "estimated_value_inr": "32000000",
+ "emd_amount_inr": "640000",
+ "min_avg_turnover_inr": "12000000",
+ "min_experience_years": 3,
+ "mse_exemption_allowed": false,
+ "startup_exemption_allowed": false,
+ "bid_end_at": "2026-10-31T05:30:00+00:00",
+ "consignee_locations": [
+  "Chennai, Tamil Nadu"
+ ]
+}

@@ -1,0 +1,16 @@
+{
+ "bid_number": "GEM/2026/B/1250910",
+ "item_or_service": "Solar Street Light System",
+ "quantity": 350,
+ "estimated_value_inr": "8750000",
+ "emd_amount_inr": null,
+ "min_avg_turnover_inr": "2600000",
+ "min_experience_years": 2,
+ "mse_exemption_allowed": true,
+ "startup_exemption_allowed": true,
+ "bid_end_at": "2026-10-26T11:00:00+00:00",
+ "consignee_locations": [
+  "Chennai, Tamil Nadu",
+  "Madurai, Tamil Nadu"
+ ]
+}

@@ -1,0 +1,2 @@
+{% extends "base.txt" %}
+{% block lead %}{{ registration|default('A registration') }} expires {{ countdown|default('soon') }}{% endblock %}

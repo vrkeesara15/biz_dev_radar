@@ -1,0 +1,1 @@
+{{ app_name }} {{ digest_period|default('daily') }} digest: {{ items|length }} opportunit{{ 'y' if items|length == 1 else 'ies' }}

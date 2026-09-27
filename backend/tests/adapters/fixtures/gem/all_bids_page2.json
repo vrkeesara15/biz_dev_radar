@@ -1,0 +1,101 @@
+{
+ "response": {
+  "responseHeader": {
+   "status": 0,
+   "QTime": 7
+  },
+  "response": {
+   "numFound": 5,
+   "start": 3,
+   "docs": [
+    {
+     "id": "7896789",
+     "b_id": [
+      7896789
+     ],
+     "b_bid_number": [
+      "GEM/2026/B/1261144"
+     ],
+     "b_category_name": [
+      "Manpower Outsourcing Services - Minimum wage - Semi-skilled; Data Entry Operator"
+     ],
+     "b_total_quantity": [
+      25
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Finance"
+     ],
+     "ba_official_details_deptName": [
+      "Department of Revenue"
+     ],
+     "ba_official_details_orgName": [
+      "Income Tax Department"
+     ],
+     "ba_official_details_officeName": [
+      "Pr. CCIT Hyderabad"
+     ],
+     "ba_official_details_stateName": [
+      "Telangana"
+     ],
+     "final_start_date_sort": "2026-09-24T04:00:00Z",
+     "final_end_date_sort": "2026-10-29T12:30:00Z",
+     "bid_end_date_display": "29-Oct-2026 06:00 PM",
+     "b_bid_type": [
+      "Bid"
+     ],
+     "b_is_ra": [
+      false
+     ],
+     "b_status": [
+      "Active"
+     ]
+    },
+    {
+     "id": "7898800",
+     "b_id": [
+      7898800
+     ],
+     "b_bid_number": [
+      "GEM/2026/R/1270031"
+     ],
+     "b_category_name": [
+      "CCTV Surveillance System"
+     ],
+     "b_total_quantity": [
+      64
+     ],
+     "ba_official_details_minName": [
+      "Ministry of Home Affairs"
+     ],
+     "ba_official_details_deptName": [
+      "Central Industrial Security Force"
+     ],
+     "ba_official_details_orgName": [
+      "CISF Unit Airport Chennai"
+     ],
+     "ba_official_details_officeName": [
+      "CISF ASG Chennai"
+     ],
+     "ba_official_details_stateName": [
+      "Tamil Nadu"
+     ],
+     "final_start_date_sort": "2026-09-25T06:00:00Z",
+     "final_end_date_sort": "2026-10-31T05:30:00Z",
+     "bid_end_date_display": "31-Oct-2026 11:00 AM",
+     "b_bid_type": [
+      "RA"
+     ],
+     "b_is_ra": [
+      true
+     ],
+     "b_status": [
+      "Active"
+     ]
+    }
+   ]
+  },
+  "filterCounts": {
+   "ongoing_bids": 5
+  }
+ }
+}

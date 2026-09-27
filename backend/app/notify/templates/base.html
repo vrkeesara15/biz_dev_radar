@@ -1,0 +1,58 @@
+{#- Shared email layout (SPEC 7). Children override `lead` and may add `extra`. -#}
+<!doctype html>
+<html lang="{{ locale }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ subject }}</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1f2933;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:10px;padding:24px;">
+            <tr><td style="font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;padding-bottom:8px;">{{ app_name }}</td></tr>
+            <tr><td style="font-size:20px;font-weight:700;line-height:1.3;padding-bottom:12px;">{% block lead %}{{ title or subject }}{% endblock %}</td></tr>
+            {% block facts %}
+            {% if title or buyer or value or due %}
+            <tr><td style="padding-bottom:16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.6;">
+                {% if title %}<tr><td style="color:#6b7280;width:110px;">Opportunity</td><td style="font-weight:600;">{{ title }}</td></tr>{% endif %}
+                {% if buyer %}<tr><td style="color:#6b7280;">Buyer</td><td>{{ buyer }}</td></tr>{% endif %}
+                {% if value %}<tr><td style="color:#6b7280;">Value</td><td>{{ value }}</td></tr>{% endif %}
+                {% if due %}<tr><td style="color:#6b7280;">Response due</td><td>{{ due }}{% if countdown %} <strong>({{ countdown }})</strong>{% endif %}</td></tr>{% endif %}
+              </table>
+            </td></tr>
+            {% endif %}
+            {% endblock %}
+            {% if score is not none %}
+            <tr><td style="padding-bottom:12px;font-size:15px;"><strong>Fit score {{ score }}</strong>{% if band %} &middot; {{ band|capitalize }}{% endif %}</td></tr>
+            {% endif %}
+            {% if rationale %}
+            <tr><td style="padding-bottom:12px;"><ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.6;">{% for bullet in rationale %}<li>{{ bullet }}</li>{% endfor %}</ul></td></tr>
+            {% endif %}
+            {% if top_gap %}
+            <tr><td style="padding-bottom:16px;font-size:14px;"><strong>Top gap:</strong> {{ top_gap }}</td></tr>
+            {% endif %}
+            {% block extra %}{% endblock %}
+            {% if deep_link %}
+            <tr><td style="padding-bottom:16px;"><a href="{{ deep_link }}" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 18px;border-radius:6px;">Open in {{ app_name }}</a></td></tr>
+            {% endif %}
+            {% if actions %}
+            <tr><td style="padding-bottom:16px;font-size:14px;">
+              {% for label, href in actions %}<a href="{{ href }}" style="color:#1d4ed8;margin-right:14px;">{{ label }}</a>{% endfor %}
+            </td></tr>
+            {% endif %}
+            <tr><td style="border-top:1px solid #e5e7eb;padding-top:14px;font-size:12px;line-height:1.6;color:#6b7280;">
+              You are receiving this because you asked {{ app_name }} to alert you about {{ category_label }}.<br />
+              <a href="{{ unsubscribe_url }}" style="color:#6b7280;">Unsubscribe from {{ category_label }}</a>
+              &middot; <a href="{{ unsubscribe_all_url }}" style="color:#6b7280;">Unsubscribe from all {{ app_name }} email</a>
+              &middot; <a href="{{ preferences_url }}" style="color:#6b7280;">Notification settings</a><br />
+              {{ postal_address }}
+            </td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -5,8 +5,10 @@ from typing import Any
 import pytest
 from app.adapters.registry import load_builtin_adapters, registered
 from app.celery_app import (
+    FLUSH_SCHEDULED_TASK,
     ROLL_STATUS_TASK,
     RUN_SOURCE_TASK,
+    SEND_DIGESTS_TASK,
     build_beat_schedule,
     celery_app,
     create_celery,
@@ -41,12 +43,22 @@ def test_cron_to_crontab() -> None:
 
 def test_beat_schedule_from_registry_skips_disabled_and_adds_status() -> None:
     schedule = build_beat_schedule({"weekly": Weekly, "disabled_stub": Disabled})
-    assert set(schedule) == {"source:weekly", "status:roll"}
+    assert set(schedule) == {
+        "source:weekly",
+        "status:roll",
+        # M4-13: the notification beat
+        "notify:digests",
+        "notify:flush",
+    }
     weekly = schedule["source:weekly"]
     assert weekly["task"] == RUN_SOURCE_TASK and weekly["args"] == ("weekly",)
     assert weekly["schedule"] == crontab(minute="0", hour="3", day_of_week="1")
     assert schedule["status:roll"]["task"] == ROLL_STATUS_TASK
     assert schedule["status:roll"]["schedule"] == crontab(minute="*/15")
+    assert schedule["notify:digests"]["task"] == SEND_DIGESTS_TASK
+    assert schedule["notify:digests"]["schedule"] == crontab(minute="*/15")
+    assert schedule["notify:flush"]["task"] == FLUSH_SCHEDULED_TASK
+    assert schedule["notify:flush"]["schedule"] == crontab(minute="*/5")
 
 
 def test_default_schedule_covers_every_enabled_builtin_adapter() -> None:

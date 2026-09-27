@@ -1,0 +1,108 @@
+# GePNIC state-portal configurations (SPEC 2 row 9, 5.2; M3-05).
+#
+# One `GePNICAdapter` class (app/adapters/gepnic.py) is instantiated per entry below and
+# registered under `source_id`; adding a state is a new entry here, not code. Every portal
+# runs the same NIC application, so the pages and table shapes are shared:
+#
+#   home_page      the portal front page: its "Latest Tenders" marquee (table id
+#                  activeTenders: title, reference no, closing, opening; captcha-free)
+#   org_list_page  "Tenders by Organisation": organisation index (name, tender count, link)
+#                  whose per-organisation listing is the 6-column tender table with tender
+#                  ids and the organisation chain (captcha-free)
+#   latest_page    "Latest Active Tenders": on GePNIC this listing sits behind a CAPTCHA
+#                  (PROGRESS.m3.md OQ-62) and is documented here only; it is NEVER fetched
+#   search_page    the portal's own search page a human uses when a per-tender link has
+#                  expired (stored on every record as extra.portal_search_url)
+#
+# Compliance (SPEC 11, docs/adapters.md): public pages only, 1 req/s per host (PoliteClient
+# *.gov.in default), robots.txt honoured, no CAPTCHA, no login. `enabled: false` entries
+# stay registered (sources row, admin health) with the health status given below.
+#
+# robots.txt verified on 2026-09-26 (PROGRESS.md OQ-14): tntenders.gov.in,
+# etender.up.nic.in and etenders.gov.in answer 404 (crawl allowed); mahatenders.gov.in is
+# `Disallow: /`.
+
+portals:
+  - source_id: gepnic_tn
+    display_name: Tamil Nadu Tenders (tntenders.gov.in)
+    state: Tamil Nadu
+    portal_home: https://tntenders.gov.in/
+    base_url: https://tntenders.gov.in/nicgep/app
+    home_page: ""
+    org_list_page: "?page=FrontEndTendersByOrganisation&service=page"
+    latest_page: "?page=FrontEndLatestActiveTenders&service=page"
+    search_page: "?page=FrontEndAdvancedSearch&service=page"
+    date_formats: ["%d-%b-%Y %I:%M %p", "%d-%b-%Y"]
+    tz: Asia/Kolkata
+    schedule: "0 */3 * * *"
+    enabled: true
+    robots_checked: "2026-09-26"
+
+  - source_id: gepnic_up
+    display_name: Uttar Pradesh e-Tender (etender.up.nic.in)
+    state: Uttar Pradesh
+    portal_home: https://etender.up.nic.in/
+    base_url: https://etender.up.nic.in/nicgep/app
+    home_page: ""
+    org_list_page: "?page=FrontEndTendersByOrganisation&service=page"
+    latest_page: "?page=FrontEndLatestActiveTenders&service=page"
+    search_page: "?page=FrontEndAdvancedSearch&service=page"
+    date_formats: ["%d-%b-%Y %I:%M %p", "%d-%b-%Y"]
+    tz: Asia/Kolkata
+    schedule: "0 */3 * * *"
+    enabled: true
+    robots_checked: "2026-09-26"
+
+  - source_id: gepnic_central
+    display_name: Central GePNIC e-Tenders (etenders.gov.in)
+    state: Central
+    portal_home: https://etenders.gov.in/
+    base_url: https://etenders.gov.in/eprocure/app
+    home_page: ""
+    org_list_page: "?page=FrontEndTendersByOrganisation&service=page"
+    latest_page: "?page=FrontEndLatestActiveTenders&service=page"
+    search_page: "?page=FrontEndAdvancedSearch&service=page"
+    date_formats: ["%d-%b-%Y %I:%M %p", "%d-%b-%Y"]
+    tz: Asia/Kolkata
+    schedule: "0 */3 * * *"
+    enabled: true
+    robots_checked: "2026-09-26"
+
+  # Maharashtra: robots.txt is `Disallow: /` (OQ-14). Link-only: the portal stays in the
+  # registry for attribution and the admin health listing but is never crawled.
+  - source_id: gepnic_mh
+    display_name: Maharashtra Tenders (mahatenders.gov.in)
+    state: Maharashtra
+    portal_home: https://mahatenders.gov.in/
+    base_url: https://mahatenders.gov.in/nicgep/app
+    home_page: ""
+    org_list_page: "?page=FrontEndTendersByOrganisation&service=page"
+    latest_page: "?page=FrontEndLatestActiveTenders&service=page"
+    search_page: "?page=FrontEndAdvancedSearch&service=page"
+    date_formats: ["%d-%b-%Y %I:%M %p", "%d-%b-%Y"]
+    tz: Asia/Kolkata
+    schedule: "0 */3 * * *"
+    enabled: false
+    health_status: robots_disallowed
+    reason: "mahatenders.gov.in robots.txt is 'Disallow: /' (verified 2026-09-26, OQ-14): link-only, never crawled"
+    robots_checked: "2026-09-26"
+
+  # Telangana: eprocurement.telangana.gov.in is a custom platform (not GePNIC): a JS-driven
+  # login-form front page with no captcha-free listing table (OQ-14, OQ-62). Needs its own
+  # adapter; kept here so the source id, attribution and health exist.
+  - source_id: gepnic_ts
+    display_name: Telangana eProcurement (eprocurement.telangana.gov.in)
+    state: Telangana
+    portal_home: https://eprocurement.telangana.gov.in/
+    base_url: https://eprocurement.telangana.gov.in/
+    home_page: ""
+    org_list_page: ""
+    latest_page: ""
+    search_page: ""
+    date_formats: ["%d-%b-%Y %I:%M %p", "%d-%b-%Y"]
+    tz: Asia/Kolkata
+    schedule: "0 */3 * * *"
+    enabled: false
+    health_status: not_implemented
+    reason: "custom platform, not GePNIC (OQ-14): needs a dedicated adapter; no captcha-free listing verified"
+    robots_checked: "2026-09-26"

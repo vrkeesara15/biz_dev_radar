@@ -21,6 +21,8 @@ NOT_SECRET: dict[str, str] = {
     "razorpay_api_url": "a public endpoint",
     "voyage_api_url": "a public endpoint",
     "langfuse_host": "a public endpoint",
+    "vapid_public_key": "M4-12: published to browsers so they can subscribe",
+    "sendgrid_base_url": "a public endpoint",
     "otel_exporter_otlp_endpoint": "a collector address, not a credential",
     "local_storage_root": "a filesystem path",
     "auth_rate_limit_per_minute": "a number",

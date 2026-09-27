@@ -1,0 +1,216 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 1,
+    "missed_labels": [
+      "L-09"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "The requirement is contemplated as a total small business set-aside under NAICS 541512 with a size standard of $34 million.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Cover Page",
+          "quote": "total small business set-aside under NAICS 541512 with a size standard of $34 million",
+          "confidence": 0.9
+        },
+        {
+          "text": "Respondents must have an active SAM.gov registration at the time of response.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Cover Page",
+          "quote": "Respondents must be registered and active in SAM.gov at the time of response.",
+          "confidence": 0.9
+        },
+        {
+          "text": "Respondents must hold an active FedRAMP Moderate authorization, or partner with a FedRAMP Moderate authorized cloud service provider.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Cover Page",
+          "quote": "Respondents must hold an active FedRAMP Moderate authorization or be a partner of a FedRAMP Moderate authorized cloud service provider.",
+          "confidence": 0.9
+        },
+        {
+          "text": "Migrate approximately 400 on-premises workloads from the Kansas City and Ogden data centers to a FedRAMP Moderate cloud environment within 24 months of award.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall migrate approximately 400 on-premises workloads from the Kansas City and Ogden data centers",
+          "confidence": 0.9
+        },
+        {
+          "text": "Provide 24x7 managed operations including monitoring, patching and incident response for all migrated workloads.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "shall provide 24x7 managed operations including monitoring, patching and incident response",
+          "confidence": 0.9
+        },
+        {
+          "text": "Develop a migration wave plan within 45 calendar days of award.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "shall develop a migration wave plan within 45 calendar days of award",
+          "confidence": 0.9
+        },
+        {
+          "text": "Maintain a Recovery Time Objective of four hours and a Recovery Point Objective of one hour for Tier 1 applications.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "Recovery Time Objective of four hours and a Recovery Point Objective of one hour for Tier 1 applications",
+          "confidence": 0.9
+        },
+        {
+          "text": "Ensure all personnel with access to Federal Tax Information complete IRS Publication 1075 background investigations before access is granted.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "all personnel with access to Federal Tax Information complete IRS Publication 1075 background investigations",
+          "confidence": 0.9
+        },
+        {
+          "text": "Provide a transition-out plan 90 days before the end of the contract.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "shall provide a transition-out plan 90 days before the end of the contract",
+          "confidence": 0.9
+        },
+        {
+          "text": "Responses may not exceed 10 pages, excluding the cover page.",
+          "page": 3,
+          "type": "format",
+          "volume": "Capability Statement",
+          "quote": "Responses shall not exceed 10 pages, excluding the cover page.",
+          "confidence": 0.9
+        },
+        {
+          "text": "Use 12-point Times New Roman font with one-inch margins on letter-size paper.",
+          "page": 3,
+          "type": "format",
+          "volume": "Capability Statement",
+          "quote": "12-point Times New Roman font with one-inch margins on letter-size paper",
+          "confidence": 0.9
+        },
+        {
+          "text": "Submit the capability statement as a single PDF file.",
+          "page": 3,
+          "type": "format",
+          "volume": "Capability Statement",
+          "quote": "Submit the capability statement as a single PDF file.",
+          "confidence": 0.9
+        },
+        {
+          "text": "File names must follow the pattern CompanyName_IRS_SS_0042.pdf.",
+          "page": 3,
+          "type": "format",
+          "volume": "Capability Statement",
+          "quote": "File names shall follow the pattern CompanyName_IRS_SS_0042.pdf.",
+          "confidence": 0.9
+        },
+        {
+          "text": "Include the company name, UEI, CAGE code, business size and socio-economic status on the cover page.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Cover Page",
+          "quote": "company name, UEI, CAGE code, business size and socio-economic status on the cover page",
+          "confidence": 0.9
+        },
+        {
+          "text": "Email responses to the Contracting Officer at market.research@irs.example.gov no later than 2:00 PM Eastern Time on October 30, 2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Cover Page",
+          "quote": "emailed to the Contracting Officer at market.research@irs.example.gov no later than 2:00 PM Eastern Time on October 30, 2026",
+          "confidence": 0.9
+        },
+        {
+          "text": "The email subject line must read 'Sources Sought 2032H5-26-SS-0042 - Company Name'.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Cover Page",
+          "quote": "The email subject line must read 'Sources Sought 2032H5-26-SS-0042 - Company Name'.",
+          "confidence": 0.9
+        },
+        {
+          "text": "Submit questions in writing by October 16, 2026; telephone inquiries will not be accepted.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Cover Page",
+          "quote": "Questions must be submitted in writing by October 16, 2026; telephone inquiries will not be accepted.",
+          "confidence": 0.9
+        },
+        {
+          "text": "Responses are reviewed for demonstrated experience migrating at least 200 workloads for a federal agency within the past three years.",
+          "page": 4,
+          "type": "evaluation",
+          "volume": "Capability Statement",
+          "quote": "demonstrated experience migrating at least 200 workloads for a federal agency within the past three years",
+          "confidence": 0.9
+        },
+        {
+          "text": "The Government will assess the relevance of past performance in FedRAMP Moderate environments handling Federal Tax Information.",
+          "page": 4,
+          "type": "evaluation",
+          "volume": "Capability Statement",
+          "quote": "assess the relevance of past performance in FedRAMP Moderate environments handling Federal Tax Information",
+          "confidence": 0.9
+        },
+        {
+          "text": "The Government will consider the respondent's ability to provide cleared staff in Kansas City, Missouri and Ogden, Utah.",
+          "page": 4,
+          "type": "evaluation",
+          "volume": "Capability Statement",
+          "quote": "ability to provide cleared staff in Kansas City, Missouri and Ogden, Utah",
+          "confidence": 0.9
+        },
+        {
+          "text": "Capability statements should identify teaming or subcontracting arrangements and the percentage of work performed by the small business prime.",
+          "page": 4,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "identify any teaming or subcontracting arrangements and the percentage of work to be performed by the small business prime",
+          "confidence": 0.9
+        },
+        {
+          "text": "All information is to be provided at no cost to the Government.",
+          "page": 4,
+          "type": "submission",
+          "volume": "Cover Page",
+          "quote": "All information is to be provided at no cost.",
+          "confidence": 0.9
+        },
+        {
+          "text": "Provide 24x7 managed operations, including monitoring, patching and incident response, for all migrated workloads.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "24x7 managed operations including monitoring, patching and incident response",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor shall staff a program management office in Washington, DC.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "program management office in Washington, DC",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor shall provide onsite staff at all IRS facilities nationwide.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "the contractor shall provide onsite staff at all IRS facilities nationwide",
+          "confidence": 0.9
+        }
+      ]
+    }
+  ]
+}

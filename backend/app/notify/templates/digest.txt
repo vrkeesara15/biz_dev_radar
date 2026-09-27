@@ -1,0 +1,7 @@
+{% extends "base.txt" %}
+{% block lead %}Your {{ digest_period|default('daily') }} digest: {{ items|length }} opportunit{{ 'y' if items|length == 1 else 'ies' }}{% endblock %}
+{% block extra %}
+{% for item in items %}* {{ item.title }}{% if item.score is defined and item.score is not none %} - fit {{ item.score }}{% endif %}{% if item.buyer %} - {{ item.buyer }}{% endif %}{% if item.due %} - due {{ item.due }}{% if item.countdown %} ({{ item.countdown }}){% endif %}{% endif %}
+  {{ item.link }}
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,27 @@
+{
+ "item_or_service": "Desktop Computers",
+ "quantity": 120,
+ "estimated_value_inr": "Rs. 1.20 Crore",
+ "emd_amount_inr": "2,40,000",
+ "min_avg_turnover_inr": "45 Lakh (s)",
+ "min_experience_years": 3,
+ "mse_exemption_allowed": true,
+ "startup_exemption_allowed": false,
+ "bid_end_at": "17-10-2026 20:23:00",
+ "consignee_locations": [
+  "Secunderabad, Telangana",
+  "Vijayawada, Andhra Pradesh"
+ ],
+ "citations": {
+  "item_or_service": 1,
+  "quantity": 1,
+  "min_avg_turnover_inr": 1,
+  "min_experience_years": 1,
+  "mse_exemption_allowed": 1,
+  "startup_exemption_allowed": 1,
+  "bid_end_at": 1,
+  "estimated_value_inr": 1,
+  "emd_amount_inr": 2,
+  "consignee_locations": 3
+ }
+}

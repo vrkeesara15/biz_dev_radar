@@ -1,0 +1,1 @@
+{{ band|capitalize }} fit {{ score }}: {{ title }}

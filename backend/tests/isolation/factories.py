@@ -48,12 +48,16 @@ from app.models import (
     DataRequest,
     File,
     Insurance,
+    Integration,
+    Notification,
     Opportunity,
     PastPerformance,
     Personnel,
     ProfileCode,
     ProfileFile,
     ProfileKeyword,
+    Pursuit,
+    PushSubscription,
     RateCardEntry,
     Registration,
     ServiceLine,
@@ -72,6 +76,20 @@ PUBLIC_ROUTES: list[tuple[str, str]] = [
     ("GET", "/api/v1/system/info"),
     ("*", "/api/v1/auth/*"),
     ("POST", "/api/v1/webhooks/*"),
+    # M4-09: one-click actions clicked from email/Slack/Teams carry a signed token (HS256,
+    # AUTH_SECRET) that names the tenant, user and notification; there is no bearer session.
+    # tests/integration/test_notify_core.py proves a foreign or tampered token is 401.
+    ("GET", "/api/v1/notifications/actions/*"),
+    # M4-10: the CAN-SPAM unsubscribe link in every email footer. Same signed-token scheme
+    # (tenant + user + category); GET is the footer link, POST the RFC 8058 one-click
+    # target named by List-Unsubscribe-Post. tests/integration/test_notify_email.py proves
+    # a tampered token is 401 and that the opt-out lands on the right tenant's prefs row.
+    ("GET", "/api/v1/notifications/unsubscribe/*"),
+    ("POST", "/api/v1/notifications/unsubscribe/*"),
+    # M4-11: Slack's interactive callback. Slack has no bearer token; the request proves
+    # itself twice (our signed action token names the tenant, X-Slack-Signature proves it
+    # came from Slack). tests/integration/test_integrations_api.py covers both halves.
+    ("POST", "/api/v1/integrations/slack/actions"),
     # M7-07: the published privacy notice (grievance officer, sub-processors, versions)
     ("GET", "/api/v1/privacy"),
 ]
@@ -164,6 +182,25 @@ def child_routes(
 FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/me"): lambda ctx: RouteCall(),
     ("PATCH", "/api/v1/me"): lambda ctx: RouteCall(json={"name": "Isolation probe"}),
+    # --- in-app bell and web push (M4-12): everything is scoped to the caller's own user
+    ("GET", "/api/v1/me/notifications"): lambda ctx: RouteCall(),
+    ("POST", "/api/v1/me/notifications/{notification_id}/read"): lambda ctx: RouteCall(
+        path_params={"notification_id": ctx.a.ids["notification"]},
+        owner_expect=frozenset({200}),
+    ),
+    ("POST", "/api/v1/me/notifications/read-all"): lambda ctx: RouteCall(),
+    ("POST", "/api/v1/me/push-subscriptions"): lambda ctx: RouteCall(
+        json={
+            "endpoint": f"https://fcm.googleapis.com/fcm/send/{uuid.uuid4().hex}",
+            "keys": {"p256dh": "probe-key", "auth": "probe-auth"},
+        },
+        owner_expect=frozenset({201}),
+    ),
+    ("DELETE", "/api/v1/me/push-subscriptions"): lambda ctx: RouteCall(
+        json={"endpoint": ctx.a.ids["push_subscription_endpoint"]},
+        # A's owner owns the seeded endpoint (204); B cannot see it at all (404)
+        owner_expect=frozenset({204}),
+    ),
     ("GET", "/api/v1/me/notification-prefs"): lambda ctx: RouteCall(),
     ("PUT", "/api/v1/me/notification-prefs"): lambda ctx: RouteCall(json={"min_score_instant": 80}),
     # --- admin console (M7-08): platform_admin only, so a tenant owner always gets 403
@@ -281,6 +318,39 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/opportunities"): lambda ctx: RouteCall(params={"q": "isolation", "page": 1}),
     ("GET", "/api/v1/opportunities/{opportunity_id}"): lambda ctx: RouteCall(
         path_params={"opportunity_id": ctx.shared["opportunity"]}
+    ),
+    # --- integrations (M4-11): tenant owners only; B probes with its own body because the
+    # row is addressed by (tenant, kind), so a 200 must still never show A's connection
+    ("GET", "/api/v1/integrations"): lambda ctx: RouteCall(),
+    ("GET", "/api/v1/integrations/{kind}"): lambda ctx: RouteCall(
+        path_params={"kind": "slack"}, owner_expect=frozenset({200, 404})
+    ),
+    ("PUT", "/api/v1/integrations/{kind}"): lambda ctx: RouteCall(
+        path_params={"kind": "slack"},
+        json={"enabled": True, "config": {"channel": "#probe"}},
+    ),
+    # --- pursuits (M5-02): tenant-scoped; B posting A's profile id gets 404 (RLS hides it)
+    ("POST", "/api/v1/pursuits"): lambda ctx: RouteCall(
+        json={"profile_id": ctx.a.ids["profile"], "opportunity_id": ctx.shared["opportunity"]}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/matrix"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/packet"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    # inline so no broker is needed; B's call must 404 before any run row is created
+    ("POST", "/api/v1/pursuits/{pursuit_id}/agents/run"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={"step": "pricing", "inline": True},
+        owner_expect=frozenset({202}),
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/agents/approve-budget"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={"additional_usd": "5", "reason": "isolation probe"},
     ),
     # --- billing (M7-04): GET /billing must never echo A's customer / subscription /
     # invoice identifiers. The harness installs network-free providers (conftest), so
@@ -433,6 +503,28 @@ async def build_context(database: Database) -> IsolationContext:
                 rate_currency="USD",
             ),
         }
+        notification = Notification(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            event_type="high_fit_match",
+            version=1,
+            idempotency_key=f"{ua.id}:high_fit_match:{uuid.uuid4()}:1",
+            payload={"title": "Alpha secret notice"},
+        )
+        push = PushSubscription(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            endpoint=f"https://fcm.googleapis.com/fcm/send/alpha-{uuid.uuid4().hex[:8]}",
+            p256dh="alpha-p256dh",
+            auth="alpha-auth",
+        )
+        integration = Integration(
+            tenant_id=ta.id,
+            kind="slack",
+            enabled=True,
+            config={"channel": "#alpha-bids"},
+            secret_ref="env:ALPHA_SLACK_HOOK",
+        )
         consent = Consent(
             tenant_id=ta.id, user_id=ua.id, kind="dpdp", version="alpha-consent-v1", ip="10.0.0.1"
         )
@@ -466,6 +558,15 @@ async def build_context(database: Database) -> IsolationContext:
             channels_by_event={"digest": ["slack"]},
             tz="Asia/Kolkata",
         )
+        opportunity = Opportunity(
+            source_id="sam_opps",
+            external_id=f"iso-{uuid.uuid4().hex[:8]}",
+            region=Region.US,
+            country="US",
+            currency="USD",
+            notice_type=NoticeType.RFP,
+            title="Isolation probe notice",
+        )
         session.add_all(
             [
                 certification,
@@ -474,6 +575,9 @@ async def build_context(database: Database) -> IsolationContext:
                 service_line,
                 partner,
                 prefs,
+                integration,
+                notification,
+                push,
                 billing_customer,
                 billing_event,
                 consent,
@@ -481,6 +585,16 @@ async def build_context(database: Database) -> IsolationContext:
                 *proof.values(),
             ]
         )
+        session.add(opportunity)
+        await session.flush()
+        pursuit = Pursuit(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            opportunity_id=opportunity.id,
+            created_by=ua.id,
+            owner_user_id=ua.id,
+        )
+        session.add(pursuit)
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -505,6 +619,10 @@ async def build_context(database: Database) -> IsolationContext:
                 "code": str(code.id),
                 "keyword": str(keyword.id),
                 "keyword_term": "alpha secret term",
+                "integration": str(integration.id),
+                "notification": str(notification.id),
+                "push_subscription": str(push.id),
+                "push_subscription_endpoint": push.endpoint,
                 "service_line": str(service_line.id),
                 "service_line_name": "Alpha Cloud Line",
                 "teaming_partner": str(partner.id),
@@ -518,6 +636,7 @@ async def build_context(database: Database) -> IsolationContext:
                 "boilerplate_title": "Alpha Overview",
                 "rate_card_category": "Alpha Architect",
                 "notification_prefs": str(prefs.id),
+                "pursuit": str(pursuit.id),
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",
@@ -535,16 +654,5 @@ async def build_context(database: Database) -> IsolationContext:
             owner_email=ub.email,
             ids={"tenant": str(tb.id), "owner_user": str(ub.id), "membership": str(mb.id)},
         )
-        opportunity = Opportunity(
-            source_id="sam_opps",
-            external_id=f"iso-{uuid.uuid4().hex[:8]}",
-            region=Region.US,
-            country="US",
-            currency="USD",
-            notice_type=NoticeType.RFP,
-            title="Isolation probe notice",
-        )
-        session.add(opportunity)
-        await session.flush()
         shared = {"opportunity": str(opportunity.id)}
     return IsolationContext(a=a, b=b, shared=shared)

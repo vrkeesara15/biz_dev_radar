@@ -110,9 +110,50 @@ Then:
    every registered adapter over the three fixture kinds and fails for a registered
    adapter without a spec. Disabled adapters are skipped explicitly.
 4. `make smoke` (`BIDRADAR_LIVE=1`) must fetch at least one live record; the nightly
-   workflow pages the ops channel otherwise.
+   workflow pages the ops channel otherwise. See "Live smoke" below for the India run.
 
-## 5. Wiring
+## 5. Live smoke
+
+`make smoke` runs `python -m app.jobs.smoke`, which walks the registry and asks every
+**enabled** adapter for one record from the real source. It exits 0 without doing
+anything unless `BIDRADAR_LIVE=1`, so it is safe on a laptop and in CI without keys.
+The JSON report lists every adapter's outcome plus a `skipped` array naming each
+registered-but-disabled source with its health status and reason (documented stubs, paid
+feeds, and `gepnic_mh`, whose robots.txt is `Disallow: /`), so a source is never silently
+absent.
+
+The nightly GitHub workflow (`.github/workflows/nightly-smoke.yml`, 03:00 UTC) runs it
+for the US sources and pages the ops channel on failure.
+
+### The India run is manual
+
+CPPP, GeM and several GePNIC state portals refuse connections from outside India
+(PROGRESS OQ-14: `bidplus.gem.gov.in` refused the build host outright), so the India
+smoke is **not** part of the nightly workflow. Run it by hand from an Indian IP or an
+Indian cloud region (for example a `asia-south1` Cloud Run job or a VM in Mumbai),
+before a release that touches an India adapter and after any portal redesign:
+
+```bash
+export BIDRADAR_LIVE=1
+cd backend
+uv run python -m app.jobs.smoke --days 7 \
+  --only cppp --only gem \
+  --only gepnic_tn --only gepnic_up --only gepnic_central
+```
+
+Expected: `"status": "ok"` and `records >= 1` for each of the five. What to do with the
+output:
+
+* an adapter that returns 0 records or `health: failing` means the portal changed -
+  re-record its fixtures from the live pages (`tests/adapters/fixtures/<source_id>/`,
+  all three kinds) and fix the parser; the contract suite is the regression test.
+* `health: degraded` names the page that no longer parses; the run still passes because
+  the primary page flowed.
+* `gepnic_mh` and `gepnic_ts` must appear under `skipped`, never under `results`.
+* the first successful India run also replaces the synthesized fixtures noted in
+  PROGRESS OQ-60 / OQ-61 / OQ-62 / OQ-63 with real captures.
+
+## 6. Wiring
 
 * `sources` rows are synced from the registry on API start and before every job
   (`services/sources.sync_sources`); operators flip `enabled` per environment.
@@ -123,33 +164,61 @@ Then:
   `awards_enrichment`; everything else goes through `services/ingest.ingest`
   (dedupe, versions, status, summary_ai).
 
-## 6. Adding a GePNIC state portal (M3)
+## 7. Adding a GePNIC state portal (M3)
 
-GePNIC portals share one HTML application. The generic adapter (`app/adapters/gepnic.py`,
-M3) takes a portal config; a new state is configuration, not code:
+GePNIC portals all run the same NIC application, so one class
+(`app/adapters/gepnic.py`, `GePNICAdapter`) serves every state; a portal is a row in
+`backend/app/adapters/gepnic_configs.yaml` and a set of fixtures — no Python:
 
-```python
-GEPNIC_PORTALS = {
-    "gepnic_tn": GepnicPortal(
-        base_url="https://tntenders.gov.in/nicgep/app",
-        display_name="Tamil Nadu e-Tenders",
-        org_list_page="?page=FrontEndTendersByOrganisation&service=page",
-        date_formats=("%d-%b-%Y %I:%M %p", "%d-%b-%Y"),
-        tz="Asia/Kolkata",
-        rate_per_sec=1.0,
-    ),
-}
+```yaml
+portals:
+  - source_id: gepnic_tn
+    display_name: Tamil Nadu Tenders (tntenders.gov.in)
+    state: Tamil Nadu
+    portal_home: https://tntenders.gov.in/
+    base_url: https://tntenders.gov.in/nicgep/app
+    home_page: ""                                              # the front page marquee
+    org_list_page: "?page=FrontEndTendersByOrganisation&service=page"
+    latest_page: "?page=FrontEndLatestActiveTenders&service=page"   # CAPTCHA: never fetched
+    search_page: "?page=FrontEndAdvancedSearch&service=page"        # human fallback
+    date_formats: ["%d-%b-%Y %I:%M %p", "%d-%b-%Y"]
+    tz: Asia/Kolkata
+    schedule: "0 */3 * * *"
+    enabled: true
+    robots_checked: "2026-09-26"
 ```
 
-Checklist for a new portal: (1) robots.txt permits the listing pages (OQ-14 lists the
-verified ones: tntenders.gov.in, etender.up.nic.in, etenders.gov.in); (2) record the
-organisation list, a tender list page and a tender detail page as fixtures (plus
-malformed/layout_change variants); (3) register `gepnic_<state>` with the config, region
-`in`, schedule `0 */3 * * *`; (4) add the ContractSpec; (5) run the smoke from a cloud
-region (some portals refuse non-Indian IPs). Detail pages behind a CAPTCHA -> keep the
-tender id + search URL, `detail_status = "manual"`.
+Every entry is registered at import time (`PORTAL_ADAPTERS`), so the registry, the
+`sources` rows, Celery beat, the admin health listing and the contract suite see it.
+A portal that must not be crawled stays in the file with `enabled: false` plus
+`health_status: robots_disallowed | not_implemented` and a `reason`; it keeps its source
+id and attribution, is never requested, and reports that status from `health()`.
 
-## 7. Stubs and paid feeds
+Per run an enabled portal reads two captcha-free pages through `PoliteClient`
+(1 req/s for `*.gov.in`, robots.txt, raw archive):
+
+1. the front page, whose "Latest Tenders" marquee gives title / reference / closing /
+   opening (no tender id, no organisation);
+2. "Tenders by Organisation": the organisation index, then the first
+   `GEPNIC_MAX_ORGS_PER_RUN` organisation listings — the 6-column table with the GePNIC
+   tender id (`2026_TNCMC_871234_1`) and the `||`-separated organisation chain.
+
+Organisation listings are read first and the marquee is deduplicated against them on
+reference + title, so the richer row (tender id, buyer hierarchy) wins. "Latest Active
+Tenders" is CAPTCHA-gated on GePNIC and is never fetched (PROGRESS OQ-62). Per-tender
+links are Tapestry `DirectLink`s bound to the visitor session and expire, so every record
+is `detail_status = "manual"` with `extra.portal_search_url` pointing at the portal's own
+search page; `fetch_detail` and `fetch_documents` make no request.
+
+Checklist for a new portal: (1) robots.txt permits the listing pages (OQ-14 lists the
+verified ones: tntenders.gov.in, etender.up.nic.in, etenders.gov.in; mahatenders.gov.in
+is `Disallow: /`); (2) add the YAML row; (3) record `home.html`, `org_index.html`,
+`org_listing.html` plus `malformed.html` and `layout_change.html` under
+`backend/tests/adapters/fixtures/<source_id>/` (the contract suite builds a spec for every
+enabled row automatically); (4) run the smoke from a cloud region (some portals refuse
+non-Indian IPs).
+
+## 8. Stubs and paid feeds
 
 `app/adapters/stubs.py` (defense.gov awards, SLED generic, IREPS, defproc) and
 `app/adapters/paid_feeds.py` (HigherGov, GovSpend, BidNet, TenderTiger, Tender247,

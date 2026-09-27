@@ -15,6 +15,14 @@ from tests.auth import auth_headers
 from tests.factories import create_tenant_with_owner
 from tests.isolation.factories import is_public
 
+# Mutating routes that authenticate by a signed request or link instead of a bearer
+# session, so the middleware has no tenant for them. Each is probed below with a bogus
+# credential: it must be refused and must write nothing.
+SIGNED_CALLBACK_ROUTES: list[tuple[str, str]] = [
+    ("POST", "/api/v1/integrations/slack/actions"),
+    ("POST", "/api/v1/notifications/unsubscribe/not-a-token"),
+]
+
 
 async def _tenant(database: Database, **overrides):  # type: ignore[no-untyped-def]
     async with database.owner_session() as session:
@@ -90,10 +98,12 @@ async def test_every_mutating_route_under_api_v1_is_audited(
     """Drive every POST/PUT/PATCH/DELETE route with an empty body as an authenticated
     user; each must leave exactly one audit row whatever its status code.
 
-    Provider webhooks (PUBLIC_ROUTES) are the one exception: they carry no user, so the
-    middleware has no tenant to write into. Their effect is audited inside the service
-    instead (action billing.webhook, see test_billing_api.py). The exempt set is asserted
-    below so a new route cannot slip out of the audit trail unnoticed."""
+    Provider webhooks and signed-link routes (PUBLIC_ROUTES) are the exceptions: they
+    carry no user, so the middleware has no tenant to write into. Their effect is audited
+    inside the handler instead (billing.webhook in test_billing_api.py,
+    notification.unsubscribe in test_notify_email.py, integration.slack.action in
+    test_integrations_api.py). The exempt set is asserted below so a new route cannot slip
+    out of the audit trail unnoticed."""
     tid, uid = await _tenant(database, is_internal=True)
     headers = auth_headers(user_id=uid, tenant_id=tid, role=Role.PLATFORM_ADMIN)
     spec = app.openapi()
@@ -106,9 +116,22 @@ async def test_every_mutating_route_under_api_v1_is_audited(
     mutating = [route for route in all_mutating if not is_public(*route)]
     exempt = sorted(route for route in all_mutating if is_public(*route))
     assert exempt == [
+        # M4-11: Slack proves itself with X-Slack-Signature, not a session
+        ("POST", "/api/v1/integrations/slack/actions"),
+        # M4-10: the CAN-SPAM one-click unsubscribe target (RFC 8058)
+        ("POST", "/api/v1/notifications/unsubscribe/{token}"),
         ("POST", "/api/v1/webhooks/razorpay"),
         ("POST", "/api/v1/webhooks/stripe"),
     ], f"unexpected route exempted from the audit middleware: {exempt}"
+
+    # An exempt signed route must refuse a bogus credential and write nothing: there is no
+    # tenant to write into until its own signature or token verifies.
+    for method, path in SIGNED_CALLBACK_ROUTES:
+        before = len(await _audit_rows(database))
+        r = await api_client.request(method, path, json={}, headers=headers)
+        assert r.status_code in {400, 401}, (method, path, r.status_code)
+        assert len(await _audit_rows(database)) == before
+
     assert mutating, "expected mutating routes"
     for method, path in mutating:
         concrete = path.replace("{tenant_id}", str(tid)).replace("{id}", str(uuid.uuid4()))

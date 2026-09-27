@@ -931,7 +931,7 @@
       "Rate limit 1 req/s; robots.txt respected; fixtures include a layout-change page",
       "Schedule every 3h"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-03",
@@ -952,7 +952,7 @@
       "fetch_documents downloads the bid PDF and hashes it",
       "Schedule every 3h; GeM seller registration link surfaced in source_url"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-04",
@@ -974,7 +974,7 @@
       "Golden GeM fixtures: exact match >= 90% on turnover, EMD and experience fields",
       "Values parsed with core.money.parse_inr"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-05",
@@ -993,7 +993,7 @@
       "Fixtures per portal parse to OpportunityIn; malformed page degrades health",
       "Per-tender links stored with portal search URL fallback"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-06",
@@ -1013,7 +1013,7 @@
       "CPPP record mirroring a state or GeM tender merges with duplicate_of pointing to the richer record and both links kept",
       "Unit tests with Hindi/English mixed titles"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-07",
@@ -1031,7 +1031,7 @@
       "OCR language set eng+hin for IN region documents",
       "Optional Hindi summary generated when profile languages include 'hi' (FakeLLM test)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-08",
@@ -1075,7 +1075,7 @@
       "Contract tests green for all India adapters",
       "make smoke includes the India adapters and passes when run against live portals (documented manual run)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-10",
@@ -1093,7 +1093,7 @@
       "Exports and emails carry the same attribution and the verify-on-portal disclaimer",
       "docs/legal.md records the requirement for a written legal opinion before commercial resale of Indian portal data"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-01",
@@ -1113,7 +1113,7 @@
       "Ineligible set-aside is kept, capped at 30 and labelled 'Ineligible: set-aside'",
       "Table-driven unit tests for each filter"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-02",
@@ -1132,7 +1132,7 @@
       "Band High >= 70, Medium 50-69, Low < 50; breakdown jsonb lists each signal's raw and weighted value",
       "Unit tests reach 100% of core/matching"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-03",
@@ -1174,7 +1174,7 @@
       "US path uses SBA size status; IN path uses evaluate_in",
       "Per-criterion results stored in breakdown.eligibility for the UI pass/fail/unknown list"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-05",
@@ -1276,7 +1276,7 @@
       "Every notification payload includes deep link and one-click actions Pursue, Watch, Pass (with reason), Assign as signed action URLs",
       "Delivery within 5 minutes of scoring asserted in the integration test with a fake clock"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-10",
@@ -1294,7 +1294,7 @@
       "Per-category unsubscribe link with signed token; unsubscribed categories are skipped",
       "Integration test sends through Mailpit and asserts the message via its API"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-11",
@@ -1313,7 +1313,7 @@
       "Tenant Slack settings stored in integrations table with webhook URL referenced from Secret Manager",
       "Tests with mocked webhook and signed action payloads"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-12",
@@ -1331,7 +1331,7 @@
       "Web push via VAPID keys from settings; subscription endpoint stored per user",
       "Channel tests with mocks"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-13",
@@ -1349,7 +1349,7 @@
       "Weekly roll-up every Monday",
       "Unit tests with frozen time across US and IST time zones and DST boundaries"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-14",
@@ -1449,7 +1449,7 @@
       "GET /api/v1/pursuits/{id} exposes cost_so_far and cap; POST /pursuits/{id}/agents/approve-budget resumes",
       "Unit tests for cap crossing mid-run"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-03",
@@ -1469,7 +1469,7 @@
       "Output stored versioned in agent_steps and opportunity_documents",
       "Fixture test with PDF + DOCX + scanned PDF"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-04",
@@ -1488,7 +1488,7 @@
       "Prompt treats solicitation text as untrusted data; injection fixture must not alter output",
       "Golden eval: recall >= 90% and precision >= 85% on the labelled set"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-05",
@@ -1506,7 +1506,7 @@
       "Submission checklist includes US forms (SF-33/SF-1449, reps & certs) or India items (EMD/BG, affidavits, turnover certificate, DSC-signed covers) by region",
       "GET /api/v1/pursuits/{id}/matrix returns matrix + rules + checklist"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-06",
@@ -1581,7 +1581,7 @@
       "Never fills a price not present in the rate card; test asserts placeholders",
       "India variant includes GST and EMD lines as placeholders"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-10",
@@ -1676,7 +1676,7 @@
       "India packet includes EMD/BG and DSC steps; US includes SAM login note",
       "Nothing in the packet triggers submission; test asserts no outbound call"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-15",

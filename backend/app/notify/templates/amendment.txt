@@ -1,0 +1,7 @@
+{% extends "base.txt" %}
+{% block lead %}An opportunity you track was amended{% endblock %}
+{% block extra %}
+What changed:
+{% for change in diff %}- {{ change.field }}: {{ change.before }} -> {{ change.after }}
+{% endfor %}
+{% endblock %}

@@ -36,8 +36,9 @@ class AgentRun(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     __tablename__ = "agent_runs"
     __table_args__ = (Index("ix_agent_runs_tenant_status", "tenant_id", "status"),)
 
-    # pursuits arrive in M6; until then a plain nullable uuid (FK added with the table)
-    pursuit_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), index=True)
+    pursuit_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("pursuits.id", ondelete="SET NULL"), index=True
+    )
     kind: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(
         String(16), nullable=False, server_default=text("'queued'"), index=True
@@ -50,6 +51,9 @@ class AgentRun(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     tokens_in: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     tokens_out: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     error: Mapped[str | None] = mapped_column(Text)
+    # why the run is paused / needs_approval (cost guard, gate, unimplemented step); the
+    # step that was about to run is in params["paused_at"]
+    pause_reason: Mapped[str | None] = mapped_column(Text)
     # free-form context for the workflow (opportunity id, options); never secrets
     params: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")

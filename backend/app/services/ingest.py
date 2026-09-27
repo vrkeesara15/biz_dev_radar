@@ -37,6 +37,11 @@ from app.services.status_job import propagate_terminal_status
 
 log = structlog.get_logger(__name__)
 
+# keys of `extra` that WE write and the adapter never sends: they must not be wiped when
+# a source re-sends the record (dedupe links M2-10, Hindi summaries M3-07, GeM
+# extraction M3-04)
+PRESERVED_EXTRA_KEYS: tuple[str, ...] = ("also_from", "summary_ai_i18n", "gem_extraction")
+
 # Columns copied 1:1 from OpportunityIn onto the row.
 DIRECT_FIELDS: tuple[str, ...] = (
     "source_url",
@@ -118,11 +123,13 @@ def _apply(
     row.contacts = [c.model_dump(mode="json") for c in opp.contacts]
     extra = {k: v for k, v in opp.extra.items() if k != "raw_ref"}
     previous = getattr(row, "extra", None) or {}
-    if "also_from" in previous:  # dedupe bookkeeping (M2-10) survives re-ingest
-        extra["also_from"] = previous["also_from"]
+    for key in PRESERVED_EXTRA_KEYS:  # our own bookkeeping survives re-ingest
+        if key in previous:
+            extra[key] = previous[key]
     row.extra = extra
     row.reference_norm = normalized_reference(opp.solicitation_number)
-    row.buyer_norm = normalized_buyer(opp.buyer_org)
+    # the region picks the India transliteration table (M3-06)
+    row.buyer_norm = normalized_buyer(opp.buyer_org, region=opp.region.value)
     row.detail_status = opp.detail_status.value
     row.estimated_value_min_usd = to_usd_or_none(
         opp.estimated_value_min, opp.currency, settings.fx_rates

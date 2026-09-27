@@ -27,11 +27,13 @@ def test_plan_defaults_match_spec() -> None:
         Resource.SOURCE_REGIONS: 1,
         Resource.INSTANT_ALERTS: 0,
         Resource.AGENT_DRAFTS_PER_MONTH: 0,
+        Resource.AGENT_BUDGET_USD_MONTH: 0,
     }
     assert pro[Resource.PROFILES] == 3
     assert is_unlimited(pro[Resource.SOURCE_REGIONS])
     assert pro[Resource.INSTANT_ALERTS] == 1
     assert pro[Resource.AGENT_DRAFTS_PER_MONTH] == 10
+    assert pro[Resource.AGENT_BUDGET_USD_MONTH] == 50  # SPEC 8 cost guard (M5-02)
     assert all(is_unlimited(v) for v in ent.values())
 
 

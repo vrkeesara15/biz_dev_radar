@@ -1,0 +1,26 @@
+{
+ "item_or_service": "Manpower Outsourcing Services - Minimum wage - Semi-skilled; Data Entry Operator",
+ "quantity": 25,
+ "estimated_value_inr": "Rs. 66,00,000",
+ "emd_amount_inr": "1,32,000",
+ "min_avg_turnover_inr": "20 Lakh (s)",
+ "min_experience_years": 3,
+ "mse_exemption_allowed": true,
+ "startup_exemption_allowed": false,
+ "bid_end_at": "29-10-2026 18:00:00",
+ "consignee_locations": [
+  "Hyderabad, Telangana"
+ ],
+ "citations": {
+  "item_or_service": 1,
+  "quantity": 1,
+  "min_avg_turnover_inr": 1,
+  "min_experience_years": 1,
+  "mse_exemption_allowed": 1,
+  "startup_exemption_allowed": 1,
+  "bid_end_at": 1,
+  "estimated_value_inr": 1,
+  "emd_amount_inr": 2,
+  "consignee_locations": 3
+ }
+}

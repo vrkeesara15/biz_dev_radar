@@ -29,6 +29,9 @@ dependencies = [
   "openpyxl>=3.1.5",
   "pytesseract>=0.3.13",
   "anthropic>=1.8.0",
+  "jinja2>=3.1,<4",
+  "pywebpush>=2,<3",
+  "pyyaml>=6,<7",
   "sentry-sdk[fastapi]>=2.20,<3",
   "opentelemetry-sdk>=1.29,<2",
   "opentelemetry-exporter-otlp-proto-http>=1.29,<2",
@@ -36,6 +39,7 @@ dependencies = [
   "opentelemetry-instrumentation-sqlalchemy>=0.50b0",
   "opentelemetry-instrumentation-httpx>=0.50b0",
   "opentelemetry-instrumentation-celery>=0.50b0",
+  "rapidfuzz>=3.14.6",
 ]
 
 [dependency-groups]
@@ -46,7 +50,6 @@ dev = [
   "ruff>=0.6,<1",
   "mypy>=1.11,<2",
   "freezegun>=1.5,<2",
-  "pyyaml>=6,<7",
   "types-pyyaml>=6",
   "respx>=0.21,<1",
   "types-openpyxl>=3.1.5.20260827",
@@ -94,6 +97,7 @@ module = [
   "pytesseract.*",
   "langfuse.*",
   "kombu.*",
+  "pywebpush.*",
 ]
 ignore_missing_imports = true
 
@@ -110,6 +114,10 @@ filterwarnings = [
   "ignore:builtin type (SwigPyPacked|SwigPyObject|swigvarlink) has no __module__ attribute:DeprecationWarning",
 ]
 addopts = "-ra -q"
+markers = [
+  # needs the compose Mailpit (infra/docker-compose.yml); skipped when it is unreachable
+  "mailpit: sends a real message through the local Mailpit SMTP server",
+]
 
 [tool.coverage.run]
 branch = false
