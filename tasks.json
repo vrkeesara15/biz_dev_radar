@@ -1908,7 +1908,7 @@
       "Values computed with SQL aggregates scoped by RLS",
       "Unit tests on the aggregation with seeded data"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-09",

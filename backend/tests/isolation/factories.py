@@ -358,6 +358,7 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ),
     ("GET", "/api/v1/pursuits"): lambda ctx: RouteCall(params={"page": 1}),
     # --- calendar (M6-04): every route is about the CALLER, so B never sees A's link
+    ("GET", "/api/v1/dashboard"): lambda ctx: RouteCall(),
     ("GET", "/api/v1/me/calendar"): lambda ctx: RouteCall(),
     ("POST", "/api/v1/me/calendar-token"): lambda ctx: RouteCall(),
     (

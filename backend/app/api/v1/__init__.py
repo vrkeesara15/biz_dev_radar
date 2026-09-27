@@ -9,6 +9,7 @@ from app.api.v1 import (
     billing,
     calendar,
     collab,
+    dashboard,
     files,
     integrations,
     me,
@@ -43,6 +44,7 @@ api_router.include_router(pursuit_dates.router)
 api_router.include_router(collab.router)
 api_router.include_router(calendar.router)
 api_router.include_router(calendar.me_router)
+api_router.include_router(dashboard.router)
 api_router.include_router(billing.router)
 api_router.include_router(webhooks.router)
 api_router.include_router(privacy.me_router)

@@ -294,6 +294,10 @@ class Settings(BaseSettings):
     grievance_officer_name: str = ""
     grievance_officer_email: str = ""
 
+    # dashboard (SPEC 9): an ESTIMATE of the hours a reviewed package saves, multiplied
+    # by the packages submitted. Nothing measures it; the API labels it as an estimate.
+    hours_saved_per_package: int = 20
+
     # seed
     seed_admin_email: str = "admin@example.com"
 
