@@ -93,7 +93,8 @@ async def run_source(
             if keep_records:
                 result.records.append(opp)
             watermark = advance_watermark(watermark, opp.posted_at)
-            cursor = raw.meta.get("cursor", cursor)
+            if "cursor" in raw.meta:
+                cursor = raw.meta["cursor"]
     except Exception as exc:
         fetch_failed = True
         log.error("source.fetch_failed", source=adapter.source_id, error=str(exc))
@@ -107,7 +108,9 @@ async def run_source(
         status = source_svc.RUN_OK
     result.status = status
     result.watermark = watermark if not fetch_failed else source.watermark_at
-    result.cursor = cursor if not fetch_failed else source.cursor
+    # A cursor only survives an aborted fetch: a completed run starts fresh next time
+    # from the (advanced) watermark; a failed one resumes where it stopped.
+    result.cursor = cursor if fetch_failed else None
     await source_svc.finish_run(
         session,
         run,

@@ -83,7 +83,8 @@ async def test_sources_tables_are_global_and_writable_by_app_role(
         run = await source_svc.start_run(session, "fixture", now=NOW)
     async with database.session(None) as session:
         assert (await session.get(SourceRun, run.id)) is not None
-        assert (await session.execute(select(Source))).scalars().one().source_id == "fixture"
+        ids = {row.source_id for row in (await session.execute(select(Source))).scalars()}
+        assert {"fixture", "sam_opps"} <= ids  # built-in adapters are synced too
 
 
 async def test_run_source_end_to_end_records_run_and_watermark(

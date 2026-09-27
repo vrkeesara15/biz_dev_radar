@@ -614,7 +614,7 @@
       "amendment with same solicitationNumber links parent_opportunity_id",
       "429 response triggers backoff and resumes from cursor"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-05",
