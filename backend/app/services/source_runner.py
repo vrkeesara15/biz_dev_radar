@@ -1,7 +1,8 @@
 """Run one adapter end-to-end: watermark -> fetch -> normalize -> sink, with a source_runs row.
 
-The sink is injected: M2-01 tests use a collector, the ingest pipeline (M2-09) plugs in
-`app.services.ingest.ingest`. Adapters are synchronous generators; each record is
+The sink is injected and defaults to the ingest pipeline (`app.services.ingest.ingest_sink`);
+special sources (spend statistics, awards enrichment) pass their own. Adapters are
+synchronous generators; each record is
 normalised and handed to the async sink in turn. Per-record failures are recorded in
 `source_runs.errors` and never abort the run; a failure of `fetch()` itself marks the
 run `failing` and leaves the watermark untouched.
@@ -53,15 +54,21 @@ def _error(stage: str, exc: BaseException, external_id: str | None = None) -> di
 
 
 async def collect_sink(session: AsyncSession, opp: OpportunityIn, raw: RawRecord) -> bool:
-    """Default sink until the ingest pipeline exists: accept every record."""
+    """Sink that accepts every record without writing (dry runs, tests)."""
     return True
+
+
+async def default_sink(session: AsyncSession, opp: OpportunityIn, raw: RawRecord) -> bool:
+    from app.services.ingest import ingest_sink  # local import: ingest depends on models only
+
+    return await ingest_sink(session, opp, raw)
 
 
 async def run_source(
     session: AsyncSession,
     adapter: SourceAdapter,
     *,
-    sink: Sink = collect_sink,
+    sink: Sink = default_sink,
     now: datetime | None = None,
     keep_records: bool = False,
 ) -> RunResult:
@@ -80,8 +87,6 @@ async def run_source(
             result.fetched += 1
             try:
                 opp = adapter.normalize(raw)
-                if raw.raw_ref is not None:
-                    opp = opp.model_copy(update={"extra": {**opp.extra, "raw_ref": raw.raw_ref}})
                 accepted = await sink(session, opp, raw)
             except Exception as exc:
                 log.warning("source.record_failed", source=adapter.source_id, error=str(exc))

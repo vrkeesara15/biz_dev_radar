@@ -714,7 +714,7 @@
       "Change publishes an 'opportunity.amended' event on the internal event bus consumed by matching and notifications",
       "Integration test: ingest fixture twice with a moved deadline -> 1 version diff and 1 event"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-10",
