@@ -188,6 +188,7 @@ variable "secret_settings" {
     "sentry_dsn",
     "langfuse_public_key",
     "langfuse_secret_key",
+    "ops_slack_webhook_url",
   ]
 }
 
