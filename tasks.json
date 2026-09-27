@@ -1075,7 +1075,7 @@
       "Contract tests green for all India adapters",
       "make smoke includes the India adapters and passes when run against live portals (documented manual run)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-10",

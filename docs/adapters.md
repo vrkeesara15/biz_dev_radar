@@ -110,9 +110,50 @@ Then:
    every registered adapter over the three fixture kinds and fails for a registered
    adapter without a spec. Disabled adapters are skipped explicitly.
 4. `make smoke` (`BIDRADAR_LIVE=1`) must fetch at least one live record; the nightly
-   workflow pages the ops channel otherwise.
+   workflow pages the ops channel otherwise. See "Live smoke" below for the India run.
 
-## 5. Wiring
+## 5. Live smoke
+
+`make smoke` runs `python -m app.jobs.smoke`, which walks the registry and asks every
+**enabled** adapter for one record from the real source. It exits 0 without doing
+anything unless `BIDRADAR_LIVE=1`, so it is safe on a laptop and in CI without keys.
+The JSON report lists every adapter's outcome plus a `skipped` array naming each
+registered-but-disabled source with its health status and reason (documented stubs, paid
+feeds, and `gepnic_mh`, whose robots.txt is `Disallow: /`), so a source is never silently
+absent.
+
+The nightly GitHub workflow (`.github/workflows/nightly-smoke.yml`, 03:00 UTC) runs it
+for the US sources and pages the ops channel on failure.
+
+### The India run is manual
+
+CPPP, GeM and several GePNIC state portals refuse connections from outside India
+(PROGRESS OQ-14: `bidplus.gem.gov.in` refused the build host outright), so the India
+smoke is **not** part of the nightly workflow. Run it by hand from an Indian IP or an
+Indian cloud region (for example a `asia-south1` Cloud Run job or a VM in Mumbai),
+before a release that touches an India adapter and after any portal redesign:
+
+```bash
+export BIDRADAR_LIVE=1
+cd backend
+uv run python -m app.jobs.smoke --days 7 \
+  --only cppp --only gem \
+  --only gepnic_tn --only gepnic_up --only gepnic_central
+```
+
+Expected: `"status": "ok"` and `records >= 1` for each of the five. What to do with the
+output:
+
+* an adapter that returns 0 records or `health: failing` means the portal changed -
+  re-record its fixtures from the live pages (`tests/adapters/fixtures/<source_id>/`,
+  all three kinds) and fix the parser; the contract suite is the regression test.
+* `health: degraded` names the page that no longer parses; the run still passes because
+  the primary page flowed.
+* `gepnic_mh` and `gepnic_ts` must appear under `skipped`, never under `results`.
+* the first successful India run also replaces the synthesized fixtures noted in
+  PROGRESS OQ-60 / OQ-61 / OQ-62 / OQ-63 with real captures.
+
+## 6. Wiring
 
 * `sources` rows are synced from the registry on API start and before every job
   (`services/sources.sync_sources`); operators flip `enabled` per environment.
@@ -123,7 +164,7 @@ Then:
   `awards_enrichment`; everything else goes through `services/ingest.ingest`
   (dedupe, versions, status, summary_ai).
 
-## 6. Adding a GePNIC state portal (M3)
+## 7. Adding a GePNIC state portal (M3)
 
 GePNIC portals all run the same NIC application, so one class
 (`app/adapters/gepnic.py`, `GePNICAdapter`) serves every state; a portal is a row in
@@ -177,7 +218,7 @@ is `Disallow: /`); (2) add the YAML row; (3) record `home.html`, `org_index.html
 enabled row automatically); (4) run the smoke from a cloud region (some portals refuse
 non-Indian IPs).
 
-## 7. Stubs and paid feeds
+## 8. Stubs and paid feeds
 
 `app/adapters/stubs.py` (defense.gov awards, SLED generic, IREPS, defproc) and
 `app/adapters/paid_feeds.py` (HigherGov, GovSpend, BidNet, TenderTiger, Tender247,
