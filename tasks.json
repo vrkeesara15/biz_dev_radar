@@ -1449,7 +1449,7 @@
       "GET /api/v1/pursuits/{id} exposes cost_so_far and cap; POST /pursuits/{id}/agents/approve-budget resumes",
       "Unit tests for cap crossing mid-run"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-03",

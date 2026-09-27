@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import uuid
+from decimal import Decimal
 
-from sqlalchemy import Boolean, Enum, ForeignKey, String, UniqueConstraint, false, text
+from sqlalchemy import Boolean, Enum, ForeignKey, Numeric, String, UniqueConstraint, false, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -33,6 +34,10 @@ class Tenant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_internal: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
     # Region whose infrastructure holds this tenant's rows and files (SPEC section 11).
     data_residency: Mapped[Region] = mapped_column(RegionEnum, nullable=False)
+    # Default LLM spend cap per pursuit in USD (SPEC 8: default 15, configurable per tenant).
+    pursuit_cost_cap_usd: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, server_default=text("15")
+    )
 
     memberships: Mapped[list[Membership]] = relationship(back_populates="tenant")
 

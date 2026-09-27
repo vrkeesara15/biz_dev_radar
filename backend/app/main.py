@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.adapters.registry import load_builtin_adapters
+from app.agents.llm import llm_from_settings
 from app.api import health
 from app.api.audit_middleware import AuditMiddleware
 from app.api.middleware import RequestIdMiddleware
@@ -63,6 +64,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Storage per residency region and the virus scanner; tests swap these on app.state.
     app.state.storage_router = StorageRouter(settings)
     app.state.scanner = scanner_from_settings(settings)
+    # LLM client for pipeline runs executed in-process (None without a key); tests inject
+    # a FakeLLM here. agent_services is built lazily from storage_router + scanner.
+    app.state.llm = llm_from_settings(settings)
     # add_middleware wraps outward: the LAST added is the outermost. Final order:
     # RequestId (outermost) -> CORS -> Audit -> routes.
     app.add_middleware(AuditMiddleware, trust_proxy=settings.trust_proxy_headers)

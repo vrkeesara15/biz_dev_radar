@@ -163,7 +163,7 @@ async def test_usage_is_tenant_scoped_by_rls(database: Database) -> None:
         assert (await svc.check(tenant, Resource.PROFILES)).allowed
     async with database.owner_session() as session:
         rows = (await session.execute(select(PlanLimit))).scalars().all()
-        assert len(rows) == 12
+        assert len(rows) == len(Plan) * len(Resource) == 15
 
 
 async def test_plan_limit_maps_to_http_402(app, api_client: httpx.AsyncClient) -> None:  # type: ignore[no-untyped-def]

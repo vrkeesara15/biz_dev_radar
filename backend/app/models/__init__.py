@@ -31,6 +31,7 @@ from app.models.profile_proof import (
     Registration,
     Vehicle,
 )
+from app.models.pursuit import Pursuit
 from app.models.sources import Source, SourceRun
 from app.models.spend import AgencySpendStat
 from app.models.tenancy import Membership, Tenant, User
@@ -58,6 +59,7 @@ __all__ = [
     "ProfileCode",
     "ProfileFile",
     "ProfileKeyword",
+    "Pursuit",
     "RateCardEntry",
     "Registration",
     "ServiceLine",
