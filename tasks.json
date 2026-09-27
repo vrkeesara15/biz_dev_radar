@@ -571,7 +571,7 @@
       "Every response archived to raw/{source}/... via the storage service; archive path returned to the caller",
       "Tests use respx/httpx mocks; no network"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-03",

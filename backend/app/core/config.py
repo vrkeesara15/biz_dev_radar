@@ -96,6 +96,15 @@ class Settings(BaseSettings):
 
     # third-party keys (never committed)
     sam_api_key: str = ""
+    # SAM.gov key quota per UTC day (non-federal personal keys are low; see OQ-3)
+    sam_daily_quota: int = 10
+
+    # polite HTTP client (SPEC 5.1): per-host req/s, backoff attempts, timeout
+    http_default_rate_per_sec: float = 2.0
+    http_gov_in_rate_per_sec: float = 1.0
+    http_rate_limits: Annotated[dict[str, float], NoDecode] = Field(default_factory=dict)
+    http_max_attempts: int = 5
+    http_timeout_seconds: float = 30.0
     anthropic_api_key: str = ""
 
     # LLM model classes (SPEC section 8); ids live here only
@@ -133,9 +142,9 @@ class Settings(BaseSettings):
             return [part.strip() for part in stripped.split(",") if part.strip()]
         return value
 
-    @field_validator("fx_rates", mode="before")
+    @field_validator("fx_rates", "http_rate_limits", mode="before")
     @classmethod
-    def _parse_fx(cls, value: Any) -> Any:
+    def _parse_json_map(cls, value: Any) -> Any:
         if isinstance(value, str):
             return json.loads(value)
         return value
