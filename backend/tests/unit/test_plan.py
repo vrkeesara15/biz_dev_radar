@@ -79,3 +79,13 @@ def test_default_limit() -> None:
     assert default_limit(Plan.PRO, "unknown_resource") == 0
     with pytest.raises(ValueError):
         default_limit("gold", "profiles")
+
+
+def test_effective_limit_internal_is_unlimited() -> None:
+    from app.core.plan import effective_limit
+
+    assert effective_limit(Plan.FREE, Resource.PROFILES, is_internal=True) is None
+    assert effective_limit(Plan.FREE, Resource.PROFILES, is_internal=True, configured=1) is None
+    assert effective_limit(Plan.FREE, Resource.PROFILES, is_internal=False) == 1
+    assert effective_limit(Plan.FREE, Resource.PROFILES, is_internal=False, configured=7) == 7
+    assert effective_limit(Plan.FREE, Resource.PROFILES, is_internal=False, configured=None) is None

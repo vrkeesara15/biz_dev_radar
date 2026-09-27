@@ -43,8 +43,8 @@ db-reset-dev:
 migrate:
 	cd $(BACKEND) && $(UV) run alembic upgrade head
 
-seed:
-	@echo "seed: seed script lands in M0-09"
+seed: migrate
+	cd $(BACKEND) && $(UV) run python -m app.seed
 
 isolation:
 	cd $(BACKEND) && $(UV) run pytest tests/isolation -p no:cacheprovider

@@ -180,7 +180,7 @@
       "Running make seed twice is idempotent (no duplicate rows)",
       "Internal tenant bypasses plan limits (test asserts unlimited profiles)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-10",

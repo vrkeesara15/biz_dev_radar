@@ -117,3 +117,22 @@ def default_limit(plan: Plan | str, resource: Resource | str) -> int | None:
     except ValueError:
         return 0
     return PLAN_DEFAULTS[plan_enum][resource_enum]
+
+
+def effective_limit(
+    plan: Plan | str,
+    resource: Resource | str,
+    *,
+    is_internal: bool,
+    configured: int | object | None = ...,
+) -> int | None:
+    """Limit that applies to a tenant: internal tenants are always unlimited (SPEC section 3).
+
+    `configured` is the plan_limits value read from the database when available; when
+    omitted the static PLAN_DEFAULTS apply.
+    """
+    if is_internal:
+        return UNLIMITED
+    if configured is ...:
+        return default_limit(plan, resource)
+    return configured  # type: ignore[return-value]
