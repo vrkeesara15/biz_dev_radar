@@ -770,7 +770,7 @@
       "Fixtures include a text PDF, a scanned PDF, a DOCX and an XLSX",
       "Chunker produces overlapping chunks tagged with page for embedding"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-13",

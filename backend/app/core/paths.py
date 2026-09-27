@@ -2,6 +2,7 @@
 
 raw/{source}/{yyyy}/{mm}/{dd}/{external_id}/{fetched_at}   raw source payloads (SPEC 5.3 raw_ref)
 tenants/{tenant_id}/files/{file_id}.{ext}                  tenant uploads (SPEC 4.5, 11)
+parsed/{opportunity_id}/{document_id}.txt                  parsed document text (M2-12)
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from urllib.parse import quote
 
 RAW_PREFIX = "raw"
 TENANT_PREFIX = "tenants"
+PARSED_PREFIX = "parsed"
 _SAFE = "-_.~"
 
 
@@ -56,3 +58,8 @@ def tenant_file_key(tenant_id: uuid.UUID, file_id: uuid.UUID, extension: str) ->
     if not ext.isalnum():
         raise ValueError(f"invalid extension {extension!r}")
     return f"{TENANT_PREFIX}/{tenant_id}/files/{file_id}.{ext}"
+
+
+def parsed_text_key(opportunity_id: uuid.UUID, document_id: uuid.UUID) -> str:
+    """parsed/{opportunity_id}/{document_id}.txt: pages joined with form feeds."""
+    return f"{PARSED_PREFIX}/{opportunity_id}/{document_id}.txt"

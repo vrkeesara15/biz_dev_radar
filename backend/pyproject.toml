@@ -23,6 +23,11 @@ dependencies = [
   "python-multipart>=0.0.9,<1",
   "aiobotocore>=2.15,<3",
   "google-cloud-storage>=2.18,<4",
+  "pymupdf>=1.28.2",
+  "pdfplumber>=0.11.10",
+  "python-docx>=1.2.0",
+  "openpyxl>=3.1.5",
+  "pytesseract>=0.3.13",
 ]
 
 [dependency-groups]
@@ -36,6 +41,7 @@ dev = [
   "pyyaml>=6,<7",
   "types-pyyaml>=6",
   "respx>=0.21,<1",
+  "types-openpyxl>=3.1.5.20260827",
 ]
 
 [build-system]
@@ -69,7 +75,15 @@ plugins = ["pydantic.mypy"]
 files = ["app"]
 
 [[tool.mypy.overrides]]
-module = ["pgvector.*", "celery.*", "asyncpg.*", "aiobotocore.*", "botocore.*", "google.*"]
+module = [
+  "pgvector.*",
+  "celery.*",
+  "asyncpg.*",
+  "aiobotocore.*",
+  "botocore.*",
+  "google.*",
+  "pytesseract.*",
+]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -77,7 +91,11 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
-filterwarnings = ["error::DeprecationWarning:app.*"]
+filterwarnings = [
+  "error::DeprecationWarning:app.*",
+  # PyMuPDF's SWIG bindings emit these at import on Python 3.12; not ours
+  "ignore:builtin type (SwigPyPacked|SwigPyObject|swigvarlink) has no __module__ attribute:DeprecationWarning",
+]
 addopts = "-ra -q"
 
 [tool.coverage.run]

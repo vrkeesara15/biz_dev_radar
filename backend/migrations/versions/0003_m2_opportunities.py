@@ -276,6 +276,8 @@ def upgrade() -> None:
         sa.Column("pages", sa.Integer()),
         sa.Column("status", sa.String(16), nullable=False, server_default=sa.text("'pending'")),
         sa.Column("parsed_text_ref", sa.Text()),
+        sa.Column("parse_error", sa.String(500)),
+        sa.Column("ocr_pages", sa.Integer(), nullable=False, server_default=sa.text("0")),
         _ts("created_at", nullable=False, default_now=True),
         _ts("updated_at", nullable=False, default_now=True),
         sa.UniqueConstraint("opportunity_id", "url", name="uq_opportunity_documents_url"),

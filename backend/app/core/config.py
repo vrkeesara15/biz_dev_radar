@@ -80,6 +80,10 @@ class Settings(BaseSettings):
     clamav_host: str = "localhost"
     clamav_port: int = 3310
     clamav_unix_socket: str = ""
+    # OCR for scanned PDF pages (SPEC 10.1: Tesseract eng+hin); none = skip pages without text
+    ocr_backend: str = "none"
+    ocr_languages: str = "eng+hin"
+    tesseract_cmd: str = ""
 
     # tenancy / residency
     region: Region = Region.US

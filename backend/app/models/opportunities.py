@@ -216,6 +216,8 @@ class OpportunityDocument(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # pending | downloaded | parsed | failed | skipped
     status: Mapped[str] = mapped_column(String(16), nullable=False, server_default="pending")
     parsed_text_ref: Mapped[str | None] = mapped_column(Text)
+    parse_error: Mapped[str | None] = mapped_column(String(500))
+    ocr_pages: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     updated_at: Mapped[datetime] = _updated_at()
 
     opportunity: Mapped[Opportunity] = relationship(back_populates="documents")
