@@ -100,7 +100,7 @@
       "usage_ledger(tenant_id, metric, quantity, period, ref) and audit_log(tenant_id, user_id, action, object_type, object_id, ip, at, meta jsonb)",
       "Unit tests cover model constraints (unique membership per user+tenant, role enum)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-06",

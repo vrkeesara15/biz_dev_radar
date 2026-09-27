@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.db import TEST_DATABASE_URL, TEST_DATABASE_URL_OWNER, alembic
+from tests.db import TEST_DATABASE_URL, TEST_DATABASE_URL_OWNER, fresh_schema
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = REPO_ROOT / "backend"
@@ -37,14 +37,17 @@ def settings():  # type: ignore[no-untyped-def]
     )
 
 
+# Global reference tables seeded by migrations; never truncated between tests.
+SEED_TABLES = {"plan_limits"}
+
+
 # --- database fixtures (real compose Postgres, database bidradar_test) -------------------
 
 
 @pytest.fixture(scope="session")
 def migrated_db() -> None:
-    """Fresh schema per test session: downgrade to base, then upgrade to head."""
-    alembic("downgrade", "base")
-    alembic("upgrade", "head")
+    """Fresh schema per test session: downgrade to base (or hard reset), then upgrade."""
+    fresh_schema()
 
 
 @pytest.fixture(scope="session")
@@ -65,7 +68,7 @@ async def clean_db(database):  # type: ignore[no-untyped-def]
     from app.models.base import Base
     from sqlalchemy import text
 
-    names = [t.name for t in Base.metadata.sorted_tables]
+    names = [t.name for t in Base.metadata.sorted_tables if t.name not in SEED_TABLES]
     if names:
         joined = ", ".join(f'"{n}"' for n in names)
         async with database.owner_engine.begin() as conn:

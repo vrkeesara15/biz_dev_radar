@@ -5,7 +5,7 @@ UV := uv
 BACKEND := backend
 
 
-.PHONY: help lint format test eval up down db-reset seed migrate smoke acceptance isolation
+.PHONY: help lint format test eval up down db-reset db-reset-dev seed migrate smoke acceptance isolation
 
 help:
 	@echo "targets: lint format test eval up down db-reset seed migrate smoke acceptance isolation"
@@ -34,6 +34,11 @@ down:
 db-reset:
 	$(COMPOSE) exec -T postgres psql -v ON_ERROR_STOP=1 -U bidradar -d postgres -c "DROP DATABASE IF EXISTS bidradar_test WITH (FORCE)" -c "CREATE DATABASE bidradar_test OWNER bidradar"
 	$(COMPOSE) exec -T postgres psql -v ON_ERROR_STOP=1 -U bidradar -d bidradar_test -f /docker-entrypoint-initdb.d/sql/extensions.sql
+
+# Dev database: needed after a milestone migration was edited in place (see CLAUDE.md).
+db-reset-dev:
+	$(COMPOSE) exec -T postgres psql -v ON_ERROR_STOP=1 -U bidradar -d postgres -c "DROP DATABASE IF EXISTS bidradar WITH (FORCE)" -c "CREATE DATABASE bidradar OWNER bidradar"
+	$(COMPOSE) exec -T postgres psql -v ON_ERROR_STOP=1 -U bidradar -d bidradar -f /docker-entrypoint-initdb.d/sql/extensions.sql
 
 migrate:
 	cd $(BACKEND) && $(UV) run alembic upgrade head

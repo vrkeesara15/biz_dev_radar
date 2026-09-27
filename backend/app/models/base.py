@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, MetaData, func
+from sqlalchemy import DateTime, ForeignKey, MetaData, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
@@ -38,7 +38,7 @@ class TimestampMixin:
 
 
 class TenantMixin:
-    """Every tenant-scoped table: tenant_id uuid NOT NULL, indexed, RLS-enforced.
+    """Every tenant-scoped table: tenant_id uuid NOT NULL, FK to tenants, indexed, RLS-enforced.
 
     The migration must call enable_rls() for every table using this mixin; the
     isolation suite enumerates information_schema and fails otherwise.
@@ -47,4 +47,9 @@ class TenantMixin:
     @declared_attr
     @classmethod
     def tenant_id(cls) -> Mapped[uuid.UUID]:
-        return mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+        return mapped_column(
+            UUID(as_uuid=True),
+            ForeignKey("tenants.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        )
