@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 import httpx
@@ -121,7 +122,7 @@ async def seeded(api_client: httpx.AsyncClient, database: Database) -> dict[str,
     async with database.owner_session() as session:
         tenant, user, _ = await create_tenant_with_owner(session)
     headers = auth_headers(user_id=user.id, tenant_id=tenant.id, role="viewer")
-    return {"ids": ids, "headers": headers, "client": api_client}
+    return {"ids": ids, "headers": headers, "client": api_client, "tenant_id": tenant.id}
 
 
 async def _search(ctx: dict[str, Any], **params: Any) -> dict[str, Any]:
@@ -200,10 +201,68 @@ async def test_filters(seeded: dict[str, Any]) -> None:
     ]
     assert _titles(await _search(seeded, status="cancelled")) == ["Cloud desk phones"]
     assert (await _search(seeded, status="open,closing_soon"))["total"] == 3
-    # min_score is accepted (applied once matches exist) and does not filter yet
-    assert (await _search(seeded, min_score=90))["total"] == 5
+    # M4-06: min_score keeps only notices THIS tenant scored that high; it scored none
+    assert (await _search(seeded, min_score=90))["total"] == 0
+    assert (await _search(seeded, min_score=0))["total"] == 0
     combined = await _search(seeded, q="cloud", status="open", region="us")
     assert _titles(combined) == ["Cloud Migration Services for Field Offices"]
+
+
+async def test_min_score_and_the_match_block_come_from_the_tenants_own_matches(
+    seeded: dict[str, Any], database: Database
+) -> None:
+    """M4-06 / SPEC 10.3: `match` is the caller tenant's best match, and min_score filters
+    on it. Another tenant scoring the same global notice must change nothing here."""
+    from app.core.config import Region as _Region
+    from app.models import CompanyProfile, Match
+
+    probe = await _search(seeded)
+    assert probe["total"] == 5
+    assert all(item["match"] is None for item in probe["items"])
+
+    tenant_id = seeded["tenant_id"]
+    opportunity_id = seeded["ids"]["cloud"]
+    async with database.session(tenant_id) as session:
+        profile = CompanyProfile(
+            tenant_id=tenant_id, region=_Region.US, legal_name="Searcher LLC", version=1
+        )
+        session.add(profile)
+        await session.flush()
+        session.add(
+            Match(
+                tenant_id=tenant_id,
+                profile_id=profile.id,
+                opportunity_id=opportunity_id,
+                opportunity_version=1,
+                profile_version=1,
+                score=Decimal("81.00"),
+                band="high",
+                breakdown={"signals": {"code_match": {"raw": 1.0, "weight": 25}}},
+                rationale={"recommended_action": "pursue"},
+            )
+        )
+        await session.flush()
+    high = await _search(seeded, min_score=80)
+    assert [item["id"] for item in high["items"]] == [str(opportunity_id)]
+    assert high["items"][0]["match"]["band"] == "high"
+    assert high["items"][0]["match"]["score"] == 81.0
+    assert high["items"][0]["match"]["rationale"]["recommended_action"] == "pursue"
+    assert (await _search(seeded, min_score=90))["total"] == 0
+    # the detail route carries the same block
+    detail = await seeded["client"].get(
+        f"/api/v1/opportunities/{opportunity_id}", headers=seeded["headers"]
+    )
+    assert detail.status_code == 200
+    assert detail.json()["match"]["score"] == 81.0
+    # a second tenant sees the same notice with no match of its own
+    async with database.owner_session() as session:
+        other, other_user, _ = await create_tenant_with_owner(session)
+        other_id, other_user_id = other.id, other_user.id
+    other_headers = auth_headers(user_id=other_user_id, tenant_id=other_id, role="viewer")
+    other_detail = await seeded["client"].get(
+        f"/api/v1/opportunities/{opportunity_id}", headers=other_headers
+    )
+    assert other_detail.status_code == 200 and other_detail.json()["match"] is None
 
 
 async def test_pagination_and_validation(seeded: dict[str, Any]) -> None:

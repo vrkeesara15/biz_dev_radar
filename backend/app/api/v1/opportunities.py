@@ -25,10 +25,11 @@ from app.core.attribution import portal_url, source_name
 from app.core.config import Region
 from app.core.disclaimers import VERIFY_ON_PORTAL, attribution_text, record_footer
 from app.core.opportunity import NoticeType, OpportunityStatus
-from app.models import Opportunity, OpportunityDocument, OpportunityVersion
+from app.models import Match, Opportunity, OpportunityDocument, OpportunityVersion
 from app.models.opportunities import FTS_EXPR
 from app.services.audit import AuditHint
 from app.services.matching.learning import latest_match, record_feedback
+from app.services.matching.read import best_matches, match_out, with_min_score
 
 router = APIRouter(prefix="/opportunities", tags=["opportunities"])
 ReaderDep = Annotated[CurrentUser, Depends(require_role(*TENANT_ROLES))]
@@ -82,7 +83,8 @@ class OpportunityItem(BaseModel):
     version: int
     parent_opportunity_id: uuid.UUID | None
     duplicate_of: uuid.UUID | None
-    # the active profile's match score arrives with M4 (matches table); null until then
+    # the caller tenant's best match for this notice (M4-06); null when it never scored
+    # it. Shape: app.services.matching.read.match_out.
     match: dict[str, Any] | None = None
     attribution: Attribution
     disclaimer: str = VERIFY_ON_PORTAL
@@ -155,16 +157,16 @@ ITEM_FIELDS = tuple(
 )
 
 
-def item_out(row: Opportunity) -> OpportunityItem:
+def item_out(row: Opportunity, match: Match | None = None) -> OpportunityItem:
     return OpportunityItem(
         **{name: getattr(row, name) for name in ITEM_FIELDS},
-        match=None,
+        match=None if match is None else match_out(match),
         attribution=_attribution(row),
     )
 
 
-def detail_out(row: Opportunity) -> OpportunityDetail:
-    base = item_out(row).model_dump()
+def detail_out(row: Opportunity, match: Match | None = None) -> OpportunityDetail:
+    base = item_out(row, match).model_dump()
     extra_fields = (
         "description_text",
         "buyer_hierarchy",
@@ -293,7 +295,8 @@ async def search_opportunities(
     naics: Annotated[str | None, Query(description="NAICS codes, comma-separated")] = None,
     due_before: datetime | None = None,
     min_score: Annotated[
-        int | None, Query(ge=0, le=100, description="accepted now, applied once matches exist (M4)")
+        int | None,
+        Query(ge=0, le=100, description="only notices this tenant scored at least this high"),
     ] = None,
     status: Annotated[str | None, Query(description="statuses, comma-separated")] = None,
     include_duplicates: bool = False,
@@ -314,20 +317,26 @@ async def search_opportunities(
     }
     total = (
         await session.execute(
-            apply_filters(select(func.count()).select_from(Opportunity), **filters)
+            with_min_score(
+                apply_filters(select(func.count()).select_from(Opportunity), **filters),
+                min_score,
+            )
         )
     ).scalar_one()
     rows = (
         (
             await session.execute(
-                search_statement(**filters).offset((page - 1) * page_size).limit(page_size)
+                with_min_score(search_statement(**filters), min_score)
+                .offset((page - 1) * page_size)
+                .limit(page_size)
             )
         )
         .scalars()
         .all()
     )
+    matches = await best_matches(session, [r.id for r in rows])
     return OpportunityPage(
-        items=[item_out(r) for r in rows],
+        items=[item_out(r, matches.get(r.id)) for r in rows],
         total=total,
         page=page,
         page_size=page_size,
@@ -348,7 +357,8 @@ async def get_opportunity(
     ).scalar_one_or_none()
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="opportunity not found")
-    return detail_out(row)
+    matches = await best_matches(session, [row.id])
+    return detail_out(row, matches.get(row.id))
 
 
 class FeedbackIn(BaseModel):

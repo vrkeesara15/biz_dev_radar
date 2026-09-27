@@ -136,3 +136,17 @@ def test_text_matches_is_whole_word_and_punctuation_tolerant() -> None:
     assert text_matches("migration services", "Cloud migration services,") is True
     assert text_matches("cloud -services", "Cloud migration services") is False
     assert text_matches("", "anything") is True
+
+
+def test_from_dict_coerces_awkward_values() -> None:
+    """The stored jsonb can hold whatever an older client sent."""
+    filters = SearchFilters.from_dict(
+        {
+            "naics": 541511,  # a bare number, not a list or a csv string
+            "due_before": datetime(2027, 1, 1, tzinfo=UTC),  # already a datetime
+            "type": ["  rfp  ", "", "  "],
+        }
+    )
+    assert filters.naics == ("541511",)
+    assert filters.due_before == datetime(2027, 1, 1, tzinfo=UTC)
+    assert filters.notice_types == ("rfp",)

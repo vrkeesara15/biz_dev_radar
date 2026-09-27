@@ -259,8 +259,8 @@ def candidate_terms(
 
 
 def _rate(positives: int, total: int) -> Decimal:
-    if total == 0:
-        return Decimal(0)
+    """`total` is never 0: keyword_lift returns early below min_support, and a term is
+    only counted on observations that contain it."""
     return (Decimal(positives) / Decimal(total)).quantize(_HUNDREDTH, rounding=ROUND_HALF_UP)
 
 

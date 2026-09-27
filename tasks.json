@@ -1389,7 +1389,7 @@
       "Asserts an email in Mailpit and a Slack webhook call (mock) within the fake 5-minute window",
       "Asserts no second delivery on re-ingest of the unchanged record (idempotency)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-16",
