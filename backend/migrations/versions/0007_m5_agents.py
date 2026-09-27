@@ -19,7 +19,7 @@ from migrations.rls import enable_rls, grant_app
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0007_m5_agents"
-down_revision = "0010_m7_admin"
+down_revision: str | None = "0010_m7_admin"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
