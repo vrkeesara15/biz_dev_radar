@@ -335,3 +335,8 @@ class PoliteClient:
 
     def post(self, url: str, **kwargs: Any) -> PoliteResponse:
         return self.request("POST", url, **kwargs)
+
+    def head(self, url: str, **kwargs: Any) -> PoliteResponse:
+        """Header probe (file names, sizes); never archived."""
+        kwargs.setdefault("archive", False)
+        return self.request("HEAD", url, **kwargs)

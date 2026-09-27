@@ -632,7 +632,7 @@
       "Buyer hierarchy mapped to buyer_org, buyer_sub_org, buyer_office and buyer_hierarchy[]",
       "Contacts, set_aside, naics/psc, place_of_performance and response deadline (with source tz) mapped; fixture-driven tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-06",

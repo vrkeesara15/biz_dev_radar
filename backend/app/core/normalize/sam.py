@@ -23,6 +23,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from app.core.config import Region
+from app.core.normalize.common import file_name_from_url
 from app.core.opportunity import (
     Contact,
     DetailStatus,
@@ -35,6 +36,7 @@ from app.core.opportunity import (
 )
 
 SOURCE_ID = "sam_opps"
+DESCRIPTION_NOT_FOUND = "description not found"
 # Federal notices publish deadlines in the office's zone; SAM renders them in Eastern time.
 SAM_SOURCE_TZ = "America/New_York"
 SAM_DATE_FORMAT = "%m/%d/%Y"
@@ -196,11 +198,6 @@ def map_contacts(nodes: Iterable[Mapping[str, Any]] | None) -> list[Contact]:
     return contacts
 
 
-def _file_name_from_url(url: str) -> str | None:
-    tail = url.rsplit("?", 1)[0].rstrip("/").rsplit("/", 1)[-1]
-    return tail if "." in tail else None
-
-
 def map_resource_links(record: Mapping[str, Any]) -> list[DocumentRef]:
     links = record.get("resourceLinks") or []
     refs: list[DocumentRef] = []
@@ -210,7 +207,7 @@ def map_resource_links(record: Mapping[str, Any]) -> list[DocumentRef]:
             continue
         seen.add(url)
         refs.append(
-            DocumentRef(url=url, file_name=_file_name_from_url(url), kind=DocumentKind.ATTACHMENT)
+            DocumentRef(url=url, file_name=file_name_from_url(url), kind=DocumentKind.ATTACHMENT)
         )
     return refs
 
@@ -342,3 +339,16 @@ def normalized_solicitation(value: str | None) -> str | None:
         return None
     key = re.sub(r"[^A-Z0-9]", "", value.upper())
     return key or None
+
+
+def description_from_payload(payload: Any) -> str | None:
+    """Text of a noticedesc response ({"description": "<html>"}); None when SAM reports
+    'Description not found' or the body is not the documented shape."""
+    from app.core.normalize.common import html_to_text
+
+    body = payload.get("description") if isinstance(payload, Mapping) else payload
+    if not isinstance(body, str):
+        return None
+    if body.strip().lower().rstrip(".") in {DESCRIPTION_NOT_FOUND, "null", ""}:
+        return None
+    return html_to_text(body)

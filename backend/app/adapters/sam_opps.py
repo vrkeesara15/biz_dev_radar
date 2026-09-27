@@ -15,6 +15,7 @@ from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import httpx
 import structlog
 
 from app.adapters.base import (
@@ -27,8 +28,10 @@ from app.adapters.base import (
 from app.adapters.http import PoliteClient
 from app.adapters.registry import register
 from app.core.config import Settings, get_settings
+from app.core.normalize.common import file_name_from_content_disposition
 from app.core.normalize.sam import (
     SOURCE_ID,
+    description_from_payload,
     map_resource_links,
     normalize_sam_notice,
     parse_sam_datetime,
@@ -175,21 +178,82 @@ class SamOpportunitiesAdapter:
 
     # -- detail / documents / normalize ---------------------------------------------------
     def fetch_detail(self, external_id: str) -> RawRecord:
+        """The notice plus its description text (the `description` field is a link that
+        needs the API key; SPEC 5.2). One search call + one description call."""
         data = self._search({"noticeid": external_id, "limit": 1}, archive_id=external_id)
         items = data.get("opportunitiesData") or []
         if not items:
             raise LookupError(f"SAM.gov notice {external_id} not found")
-        return RawRecord(
+        raw = RawRecord(
             source_id=self.source_id,
             external_id=external_id,
             fetched_at=data["_fetched_at"],
             payload=items[0],
             raw_ref=data["_raw_ref"],
         )
+        return self.enrich_description(raw)
+
+    def enrich_description(self, raw: RawRecord) -> RawRecord:
+        """Follow the record's description link and store the text in raw.meta."""
+        payload = raw.payload if isinstance(raw.payload, dict) else {}
+        url = payload.get("description")
+        if not isinstance(url, str) or not url.startswith("http"):
+            return raw
+        # httpx `params=` would replace the link's own query (noticeid=...): merge instead.
+        with_key = str(httpx.URL(url).copy_merge_params({"api_key": self.settings.sam_api_key}))
+        response = self.client.get(
+            with_key, source_id=self.source_id, external_id=f"{raw.external_id}/description"
+        )
+        if response.status_code != 200:
+            log.warning(
+                "sam_opps.description_unavailable",
+                notice=raw.external_id,
+                status=response.status_code,
+            )
+            return raw
+        try:
+            body: Any = response.json()
+        except ValueError:
+            body = response.text
+        raw.meta["description_text"] = description_from_payload(body)
+        raw.meta["description_raw_ref"] = response.raw_ref
+        return raw
+
+    probe_document_headers = True
 
     def fetch_documents(self, raw: RawRecord) -> list[DocumentRef]:
+        """One DocumentRef per resourceLinks entry. File name from Content-Disposition when
+        a HEAD probe answers, else from the URL; size/mime from headers when present."""
         payload = raw.payload if isinstance(raw.payload, dict) else {}
-        return map_resource_links(payload)
+        refs = map_resource_links(payload)
+        if not self.probe_document_headers:
+            return refs
+        probed: list[DocumentRef] = []
+        for ref in refs:
+            probed.append(self._probe(ref))
+        return probed
+
+    def _probe(self, ref: DocumentRef) -> DocumentRef:
+        try:
+            response = self.client.head(
+                ref.url, source_id=self.source_id, external_id=ref.url, respect_robots=True
+            )
+        except Exception as exc:
+            log.warning("sam_opps.head_failed", url=ref.url, error=str(exc))
+            return ref
+        if response.status_code >= 400:
+            return ref
+        headers = response.response.headers
+        updates: dict[str, Any] = {}
+        name = file_name_from_content_disposition(headers.get("content-disposition"))
+        if name:
+            updates["file_name"] = name
+        if headers.get("content-type"):
+            updates["mime_type"] = headers["content-type"].split(";")[0].strip()
+        length = headers.get("content-length")
+        if length and length.isdigit():
+            updates["size"] = int(length)
+        return ref.model_copy(update=updates) if updates else ref
 
     def normalize(self, raw: RawRecord) -> OpportunityIn:
         if not isinstance(raw.payload, dict):

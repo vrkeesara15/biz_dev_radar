@@ -179,7 +179,8 @@ def test_fixture_records_normalize_to_opportunity_in() -> None:
     assert first.place_of_performance is not None
     assert first.place_of_performance.state == "NC"
     assert [d.url for d in first.documents] == records[0]["resourceLinks"]
-    assert first.documents[0].file_name is None  # SAM download URLs carry no file name
+    # SAM download URLs carry no real name: the file id is the fallback until a HEAD probe
+    assert first.documents[0].file_name == "0a1b2c3d4e5f60718293a4b5c6d7e8f9"
     assert first.status is None and first.detail_status is DetailStatus.PENDING
     assert first.extra["type_code"] == "p" and first.extra["description_url"].startswith("https://")
     # amendment: merged naicsCodes, base type kept

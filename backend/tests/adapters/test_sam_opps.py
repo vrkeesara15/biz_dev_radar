@@ -151,6 +151,8 @@ def test_fixture_normalizes_with_type_codes_and_amendment_link(
     assert opps[1].parent_external_id == opps[0].external_id
     assert opps[1].solicitation_number == opps[0].solicitation_number == "W911NF-26-R-0007"
     assert opps[0].parent_external_id is None
+    respx.get("https://sam.gov/robots.txt").mock(return_value=httpx.Response(404))
+    respx.head(url__startswith="https://sam.gov/api/").mock(return_value=httpx.Response(405))
     docs = adapter.fetch_documents(next(iter(adapter.fetch(NOW - timedelta(days=30), None))))
     assert len(docs) == 2 and all(d.url.startswith("https://sam.gov/api/") for d in docs)
 
@@ -207,8 +209,55 @@ def test_non_200_raises_sam_api_error(adapter: SamOpportunitiesAdapter) -> None:
     assert exc.value.status == 403
 
 
+DESCRIPTION = json.loads((FIXTURES / "description_3f9c1a2b.json").read_text())
+NOT_FOUND = json.loads((FIXTURES / "description_not_found.json").read_text())
+DESC_URL = "https://api.sam.gov/prod/opportunities/v1/noticedesc"
+
+
 @respx.mock
-def test_fetch_detail_by_notice_id(adapter: SamOpportunitiesAdapter) -> None:
+def test_fetch_detail_pulls_description_text(adapter: SamOpportunitiesAdapter) -> None:
+    _robots()
+    item = PAGE1["opportunitiesData"][0]
+    respx.get(SEARCH_URL, params={"noticeid": item["noticeId"]}).mock(
+        return_value=httpx.Response(
+            200, json={"totalRecords": 1, "limit": 1, "offset": 0, "opportunitiesData": [item]}
+        )
+    )
+    desc = respx.get(DESC_URL, params={"noticeid": item["noticeId"]}).mock(
+        return_value=httpx.Response(200, json=DESCRIPTION)
+    )
+    raw = adapter.fetch_detail(item["noticeId"])
+    assert desc.call_count == 1
+    assert dict(desc.calls.last.request.url.params)["api_key"] == "test-key"
+    text = raw.meta["description_text"]
+    assert text.startswith("Enterprise Cloud Migration and Managed Services")
+    assert "- Anticipated NAICS: 541512" in text
+    assert "alert(" not in text and "&ndash;" not in text and "\xa0" not in text
+    assert raw.meta["description_raw_ref"] is not None
+    assert raw.meta["description_raw_ref"] != raw.raw_ref
+    opp = adapter.normalize(raw)
+    assert opp.description_text == text
+    assert opp.detail_status.value == "full"
+    # the rest of the detail mapping (SPEC 5.2/5.3)
+    assert (opp.buyer_org, opp.buyer_sub_org, opp.buyer_office) == (
+        "DEPT OF DEFENSE",
+        "DEPT OF THE ARMY",
+        "ACC-APG RTP DIV",
+    )
+    assert len(opp.buyer_hierarchy) == 6
+    assert [c.email for c in opp.contacts] == [
+        "contracting.officer@army.mil",
+        "specialist@army.mil",
+    ]
+    assert opp.set_aside == "SBA" and opp.naics == ["541512"] and opp.psc == ["DA01"]
+    assert opp.place_of_performance is not None
+    assert (opp.place_of_performance.city, opp.place_of_performance.state) == ("Durham", "NC")
+    assert opp.response_due_at == datetime(2026, 10, 20, 18, 0, tzinfo=UTC)
+    assert opp.source_tz == "America/New_York"
+
+
+@respx.mock
+def test_fetch_detail_without_description(adapter: SamOpportunitiesAdapter) -> None:
     _robots()
     item = PAGE1["opportunitiesData"][2]
     route = respx.get(SEARCH_URL, params={"noticeid": item["noticeId"]}).mock(
@@ -216,9 +265,86 @@ def test_fetch_detail_by_notice_id(adapter: SamOpportunitiesAdapter) -> None:
             200, json={"totalRecords": 1, "limit": 1, "offset": 0, "opportunitiesData": [item]}
         )
     )
+    respx.get(DESC_URL, params={"noticeid": item["noticeId"]}).mock(
+        return_value=httpx.Response(200, json=NOT_FOUND)
+    )
     raw = adapter.fetch_detail(item["noticeId"])
     assert raw.external_id == item["noticeId"] and raw.payload == item
     assert route.call_count == 1
+    assert raw.meta["description_text"] is None
+    assert adapter.normalize(raw).detail_status.value == "pending"
+    # description endpoint erroring is not fatal either
+    item2 = PAGE1["opportunitiesData"][3]
+    respx.get(SEARCH_URL, params={"noticeid": item2["noticeId"]}).mock(
+        return_value=httpx.Response(200, json={"totalRecords": 1, "opportunitiesData": [item2]})
+    )
+    respx.get(DESC_URL, params={"noticeid": item2["noticeId"]}).mock(
+        return_value=httpx.Response(404, json={"error": "no"})
+    )
+    raw2 = adapter.fetch_detail(item2["noticeId"])
+    assert "description_text" not in raw2.meta
+    # page-2 record has description "null": no request is made at all
+    item3 = PAGE2["opportunitiesData"][0]
+    respx.get(SEARCH_URL, params={"noticeid": item3["noticeId"]}).mock(
+        return_value=httpx.Response(200, json={"totalRecords": 1, "opportunitiesData": [item3]})
+    )
+    assert "description_text" not in adapter.fetch_detail(item3["noticeId"]).meta
+
+
+@respx.mock
+def test_fetch_documents_infers_names_from_headers_or_url(
+    adapter: SamOpportunitiesAdapter,
+) -> None:
+    _robots()
+    respx.get("https://sam.gov/robots.txt").mock(return_value=httpx.Response(404))
+    item = PAGE1["opportunitiesData"][1]
+    urls = item["resourceLinks"]
+    respx.head(urls[0]).mock(
+        return_value=httpx.Response(
+            200,
+            headers={
+                "Content-Disposition": 'attachment; filename="PWS_Cloud_Migration.pdf"',
+                "Content-Type": "application/pdf",
+                "Content-Length": "482113",
+            },
+        )
+    )
+    respx.head(urls[1]).mock(
+        return_value=httpx.Response(
+            200,
+            headers={
+                "Content-Disposition": "attachment; filename*=UTF-8''Q%26A%20Log.xlsx",
+                "Content-Type": (
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    "; charset=utf-8"
+                ),
+            },
+        )
+    )
+    respx.head(urls[2]).mock(return_value=httpx.Response(405))
+    raw = next(iter([r for r in _records_from(adapter) if r.external_id == item["noticeId"]]))
+    docs = adapter.fetch_documents(raw)
+    assert [d.url for d in docs] == urls
+    assert docs[0].file_name == "PWS_Cloud_Migration.pdf"
+    assert docs[0].mime_type == "application/pdf" and docs[0].size == 482113
+    assert docs[1].file_name == "Q&A Log.xlsx"
+    assert docs[1].mime_type.startswith("application/vnd.openxmlformats")  # type: ignore[union-attr]
+    assert docs[2].file_name == "2c3d4e5f60718293a4b5c6d7e8f9a0b1"  # URL fallback
+    assert docs[2].size is None
+    assert all(d.kind.value == "attachment" for d in docs)
+    # probing can be switched off (cheap listing-only mode)
+    adapter.probe_document_headers = False
+    assert [d.file_name for d in adapter.fetch_documents(raw)] == [
+        "0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+        "1b2c3d4e5f60718293a4b5c6d7e8f9a0",
+        "2c3d4e5f60718293a4b5c6d7e8f9a0b1",
+    ]
+
+
+def _records_from(adapter: SamOpportunitiesAdapter) -> list:  # type: ignore[type-arg]
+    _page(0, PAGE1)
+    _page(5, PAGE2)
+    return list(adapter.fetch(NOW - timedelta(days=30), None))
     respx.get(SEARCH_URL, params={"noticeid": "missing"}).mock(
         return_value=httpx.Response(200, json={"totalRecords": 0, "opportunitiesData": []})
     )
