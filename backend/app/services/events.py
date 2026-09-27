@@ -31,6 +31,13 @@ PROFILE_CHANGED = "profile.changed"
 # M4-06: a newly scored match; the notification router (M4-14) subscribes to both.
 MATCH_HIGH = "match.high"
 MATCH_MEDIUM = "match.medium"
+# M4-14 routes these two SPEC 7 rows; the agent pipeline (M5/M6) publishes them with
+# {tenant_id, pursuit_id, assignee_user_id, title, ...}.
+AGENT_DRAFT_READY = "agent.draft_ready"
+AGENT_NEEDS_INPUT = "agent.needs_input"
+# M4-14 / SPEC 7: SAM, DSC, certification or insurance expiring at 60/30/7 days; the
+# reminder ladder (M6) publishes it with {tenant_id, kind, expires_on, ...}.
+REGISTRATION_EXPIRING = "registration.expiring"
 
 
 @dataclass(frozen=True, slots=True)

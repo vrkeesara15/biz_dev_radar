@@ -21,6 +21,7 @@ from app.core.db import get_database
 from app.core.plan import PlanLimitExceeded
 from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
+from app.notify.router import install_notification_router
 from app.observability import configure_observability
 from app.services.billing import providers_from_settings
 from app.services.embeddings import embeddings_from_settings
@@ -57,6 +58,11 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         embeddings=app.state.embeddings,
         storage=app.state.storage_router,
         llm=app.state.llm,
+    )
+    # SPEC 7 routing table: match.high/medium, amendments on tracked notices, agent
+    # hand-offs, expiring registrations and failing adapters -> channels (M4-14)
+    app.state.notification_router = install_notification_router(
+        settings, get_database(), get_event_bus()
     )
     yield
 

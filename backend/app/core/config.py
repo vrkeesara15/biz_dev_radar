@@ -163,6 +163,11 @@ class Settings(BaseSettings):
     )
     # signed action links (Pursue / Watch / Pass / Assign, unsubscribe) stay valid this long
     notify_action_ttl_seconds: int = 60 * 60 * 24 * 14
+    # SPEC 7 last row: "Adapter failure > 2 runs (admins only) -> Slack ops channel +
+    # PagerDuty-style email". These belong to the PLATFORM, not to a tenant, so they are
+    # settings rather than an `integrations` row; empty means that half is not sent.
+    ops_slack_webhook_url: str = ""
+    ops_email: str = ""
 
     # email channel (SPEC 7): SES for production (Indian tenants via ap-south-1 so mail
     # never leaves the residency region), SendGrid as the alternative, SMTP -> Mailpit
