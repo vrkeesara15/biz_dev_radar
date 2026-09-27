@@ -2,20 +2,24 @@
 
 pursuit = await get_or_create(session, profile_id, opportunity_id, user)
 run = await latest_run(session, pursuit.id)
+artifact = await store_artifact(session, tenant_id, pursuit.id, "checklist", data)
+latest = await latest_artifact(session, pursuit.id, "checklist")
 """
 
 from __future__ import annotations
 
 import uuid
 from decimal import Decimal
+from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
+from app.core.compliance import ARTIFACT_KINDS, CREATED_BY_AGENT
 from app.core.cost_guard import raise_cap
-from app.models import AgentRun, CompanyProfile, Opportunity, Pursuit, Tenant
+from app.models import AgentRun, CompanyProfile, Opportunity, Pursuit, PursuitArtifact, Tenant
 from app.services.users import ensure_user_membership
 
 PIPELINE_RUN_KIND = "pipeline"
@@ -90,3 +94,49 @@ def approve_budget(pursuit: Pursuit, tenant: Tenant, additional_usd: Decimal) ->
     )
     pursuit.cost_cap_usd = raise_cap(Decimal(current), additional_usd)
     return Decimal(pursuit.cost_cap_usd)
+
+
+async def store_artifact(
+    session: AsyncSession,
+    tenant_id: uuid.UUID,
+    pursuit_id: uuid.UUID,
+    kind: str,
+    data: dict[str, Any],
+    *,
+    created_by: str = CREATED_BY_AGENT,
+) -> PursuitArtifact:
+    """Append the next version of a pursuit artifact. Versions are never overwritten, so
+    a re-run keeps the history an export or an audit can point at."""
+    if kind not in ARTIFACT_KINDS:
+        raise ValueError(f"unknown artifact kind {kind!r}; one of {ARTIFACT_KINDS}")
+    current: int | None = (
+        await session.execute(
+            select(func.max(PursuitArtifact.version)).where(
+                PursuitArtifact.pursuit_id == pursuit_id, PursuitArtifact.kind == kind
+            )
+        )
+    ).scalar_one()
+    artifact = PursuitArtifact(
+        tenant_id=tenant_id,
+        pursuit_id=pursuit_id,
+        kind=kind,
+        version=(current or 0) + 1,
+        data=data,
+        created_by=created_by,
+    )
+    session.add(artifact)
+    await session.flush()
+    return artifact
+
+
+async def latest_artifact(
+    session: AsyncSession, pursuit_id: uuid.UUID, kind: str
+) -> PursuitArtifact | None:
+    return (
+        await session.execute(
+            select(PursuitArtifact)
+            .where(PursuitArtifact.pursuit_id == pursuit_id, PursuitArtifact.kind == kind)
+            .order_by(PursuitArtifact.version.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()

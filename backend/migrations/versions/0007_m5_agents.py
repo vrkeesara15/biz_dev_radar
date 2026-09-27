@@ -21,7 +21,7 @@ down_revision: str | None = "0004_m5_agent_runtime"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-TENANT_TABLES = ("pursuits", "requirements")
+TENANT_TABLES = ("pursuits", "requirements", "compliance_items", "pursuit_artifacts")
 # plan_limits rows added by this milestone (0001 seeds PLAN_DEFAULTS on a fresh database,
 # so the insert is idempotent for databases migrated before this revision existed).
 NEW_RESOURCES = (Resource.AGENT_BUDGET_USD_MONTH,)
@@ -134,6 +134,41 @@ def upgrade() -> None:
     )
     for col in ("tenant_id", "pursuit_id", "document_id"):
         op.create_index(f"ix_requirements_{col}", "requirements", [col])
+
+    # --- compliance matrix (M5-05) ---------------------------------------------------
+    op.create_table(
+        "compliance_items",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        _fk("requirement_id", "requirements.id", ondelete="CASCADE", nullable=False),
+        sa.Column("section", sa.String(64), nullable=False),
+        sa.Column("reason", sa.String(16), nullable=False, server_default=sa.text("'type'")),
+        _fk("owner_user_id", "users.id", ondelete="SET NULL", nullable=True),
+        sa.Column("status", sa.String(16), nullable=False, server_default=sa.text("'open'")),
+        sa.Column("notes", sa.Text()),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("pursuit_id", "requirement_id", name="uq_compliance_items_requirement"),
+    )
+    for col in ("tenant_id", "pursuit_id", "requirement_id"):
+        op.create_index(f"ix_compliance_items_{col}", "compliance_items", [col])
+
+    op.create_table(
+        "pursuit_artifacts",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        sa.Column("kind", sa.String(32), nullable=False),
+        sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1")),
+        sa.Column(
+            "data", postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")
+        ),
+        sa.Column("created_by", sa.String(16), nullable=False, server_default=sa.text("'agent'")),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("pursuit_id", "kind", "version", name="uq_pursuit_artifacts_version"),
+    )
+    for col in ("tenant_id", "pursuit_id"):
+        op.create_index(f"ix_pursuit_artifacts_{col}", "pursuit_artifacts", [col])
 
     for table in TENANT_TABLES:
         grant_app(op, table)

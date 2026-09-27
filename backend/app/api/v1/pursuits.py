@@ -3,6 +3,7 @@ and the budget approval that resumes a run the cost guard paused.
 
     POST /api/v1/pursuits                                  {profile_id, opportunity_id}
     GET  /api/v1/pursuits/{pursuit_id}                     cost_so_far, cap, budget, latest run
+    GET  /api/v1/pursuits/{pursuit_id}/matrix              matrix + format rules + checklist
     POST /api/v1/pursuits/{pursuit_id}/agents/approve-budget {additional_usd, reason?}
 
 M6-01 adds POST /opportunities/{id}/pursue|watch|pass, PATCH (stages) and the decision
@@ -19,16 +20,23 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.cost_guard import CostSnapshot, cost_snapshot
 from app.agents.llm import LLMClient
 from app.agents.services import AgentServices, services_from_settings
 from app.api.deps import TENANT_ROLES, CurrentUser, SettingsDep, TenantSessionDep, require_role
+from app.core.compliance import (
+    ARTIFACT_CHECKLIST,
+    ARTIFACT_FORMAT_RULES,
+    ChecklistItem,
+    FormatRules,
+)
 from app.core.config import Settings
 from app.core.roles import Role
 from app.jobs import run_agents as run_agents_job_module
-from app.models import AgentRun, Pursuit
+from app.models import AgentRun, ComplianceItem, Pursuit, Requirement
 from app.models.agents import RUN_NEEDS_APPROVAL, RUN_QUEUED
 from app.services import pursuits as pursuit_svc
 from app.services.audit import AuditHint
@@ -81,6 +89,36 @@ class PursuitOut(BaseModel):
     budget_month_spent_usd: Decimal
     budget_month_remaining_usd: Decimal | None
     run: RunOut | None
+
+
+class MatrixRowOut(BaseModel):
+    """One compliance item joined with the requirement it answers (SPEC 8: the citation
+    travels with the row so the UI can link to the document page)."""
+
+    id: uuid.UUID
+    requirement_id: uuid.UUID
+    req_id: str
+    text: str
+    type: str
+    volume: str | None
+    document_id: uuid.UUID
+    page: int
+    quote: str
+    section: str
+    reason: str
+    owner_user_id: uuid.UUID | None
+    status: str
+    notes: str | None
+
+
+class PursuitMatrixOut(BaseModel):
+    pursuit_id: uuid.UUID
+    items: list[MatrixRowOut]
+    format_rules: FormatRules | None
+    format_rules_version: int | None
+    checklist: list[ChecklistItem]
+    checklist_version: int | None
+    generated_at: datetime | None  # when the matrix agent last ran
 
 
 class ApproveBudgetIn(BaseModel):
@@ -205,6 +243,63 @@ async def get_pursuit(
 ) -> PursuitOut:
     pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
     return await load_pursuit_out(session, pursuit, user.tenant_id)
+
+
+@router.get("/{pursuit_id}/matrix", response_model=PursuitMatrixOut)
+async def get_matrix(
+    pursuit_id: uuid.UUID, session: TenantSessionDep, user: ReaderDep
+) -> PursuitMatrixOut:
+    """The compliance matrix with the solicitation's format rules and the region's
+    submission checklist. Empty until the matrix agent has run."""
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    rows = (
+        await session.execute(
+            select(ComplianceItem, Requirement)
+            .join(Requirement, Requirement.id == ComplianceItem.requirement_id)
+            .where(ComplianceItem.pursuit_id == pursuit.id)
+            .order_by(Requirement.req_id)
+        )
+    ).all()
+    rules_artifact = await pursuit_svc.latest_artifact(session, pursuit.id, ARTIFACT_FORMAT_RULES)
+    checklist_artifact = await pursuit_svc.latest_artifact(session, pursuit.id, ARTIFACT_CHECKLIST)
+    generated = max(
+        (a.created_at for a in (rules_artifact, checklist_artifact) if a is not None),
+        default=None,
+    )
+    return PursuitMatrixOut(
+        pursuit_id=pursuit.id,
+        items=[
+            MatrixRowOut(
+                id=item.id,
+                requirement_id=req.id,
+                req_id=req.req_id,
+                text=req.text,
+                type=req.type,
+                volume=req.volume,
+                document_id=req.document_id,
+                page=req.page,
+                quote=req.quote,
+                section=item.section,
+                reason=item.reason,
+                owner_user_id=item.owner_user_id,
+                status=item.status,
+                notes=item.notes,
+            )
+            for item, req in rows
+        ],
+        format_rules=None
+        if rules_artifact is None
+        else FormatRules.model_validate(rules_artifact.data),
+        format_rules_version=None if rules_artifact is None else rules_artifact.version,
+        checklist=[]
+        if checklist_artifact is None
+        else [
+            ChecklistItem.model_validate(row)
+            for row in (checklist_artifact.data or {}).get("items", [])
+        ],
+        checklist_version=None if checklist_artifact is None else checklist_artifact.version,
+        generated_at=generated,
+    )
 
 
 @router.post("/{pursuit_id}/agents/approve-budget", response_model=ApproveBudgetOut)

@@ -4,6 +4,7 @@ from app.models.agents import AgentRun, AgentStep
 from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import PlanLimit, UsageLedger
+from app.models.compliance import ComplianceItem, PursuitArtifact
 from app.models.files import File
 from app.models.notify import UserNotificationPrefs
 from app.models.opportunities import (
@@ -47,6 +48,7 @@ __all__ = [
     "BoilerplateBlock",
     "Certification",
     "CompanyProfile",
+    "ComplianceItem",
     "DocumentChunk",
     "File",
     "Insurance",
@@ -61,6 +63,7 @@ __all__ = [
     "ProfileFile",
     "ProfileKeyword",
     "Pursuit",
+    "PursuitArtifact",
     "RateCardEntry",
     "Registration",
     "Requirement",
