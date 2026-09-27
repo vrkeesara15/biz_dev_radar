@@ -262,7 +262,7 @@
       "Sign-in page and an authenticated /app layout with region badge render",
       "pnpm lint and pnpm typecheck pass"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-01",
