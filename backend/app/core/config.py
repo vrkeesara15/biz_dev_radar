@@ -98,6 +98,10 @@ class Settings(BaseSettings):
     sam_api_key: str = ""
     # SAM.gov key quota per UTC day (non-federal personal keys are low; see OQ-3)
     sam_daily_quota: int = 10
+    # SAM.gov contract awards search (the successor of the retired ATOM feed); endpoint and
+    # the NAICS list the daily job asks for are configuration, not code (OQ-40).
+    sam_awards_api_url: str = "https://api.sam.gov/contract-awards/v1/search"
+    sam_awards_naics: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
     # polite HTTP client (SPEC 5.1): per-host req/s, backoff attempts, timeout
     http_default_rate_per_sec: float = 2.0
@@ -132,7 +136,7 @@ class Settings(BaseSettings):
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", "sam_awards_naics", mode="before")
     @classmethod
     def _split_origins(cls, value: Any) -> Any:
         if isinstance(value, str):

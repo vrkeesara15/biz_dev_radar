@@ -693,7 +693,7 @@
       "Contracts ending in 6-18 months are flagged recompete_watch = true",
       "Fixture tests for match and no-match cases"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-09",
