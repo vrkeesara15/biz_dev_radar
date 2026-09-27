@@ -8,10 +8,11 @@
  * denied permission, no key configured), so `pushState()` answers with a reason
  * the button can show instead of failing.
  *
- * The key comes from NEXT_PUBLIC_VAPID_PUBLIC_KEY, which Next inlines at build
- * time (see OQ-77): the same caveat as the API base URL.
+ * The key comes from GET /me/push-config at runtime (M7-15), so one image serves
+ * every environment. NEXT_PUBLIC_VAPID_PUBLIC_KEY, which Next inlines at build
+ * time, is only the fallback for a deployment whose API predates that route.
  */
-import { deletePushSubscription, savePushSubscription } from "./api";
+import { deletePushSubscription, getPushConfig, savePushSubscription } from "./api";
 
 export const SERVICE_WORKER_PATH = "/sw.js";
 
@@ -22,8 +23,25 @@ export type PushStatus =
   | { kind: "off" }
   | { kind: "on"; endpoint: string };
 
-export function vapidPublicKey(): string {
+/** The build-time fallback (a deployment whose API has no /me/push-config yet). */
+export function vapidPublicKeyFromEnv(): string {
   return (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "").trim();
+}
+
+let cachedKey: Promise<string> | null = null;
+
+/** The deployment's VAPID public key, or "" when web push is not configured. */
+export async function vapidPublicKey(): Promise<string> {
+  cachedKey ??= getPushConfig()
+    .then((config) => config.vapid_public_key?.trim() || vapidPublicKeyFromEnv())
+    // 404 on an older API, or an unreachable one: fall back to the build-time value.
+    .catch(() => vapidPublicKeyFromEnv());
+  return cachedKey;
+}
+
+/** Test seam: forget the cached key so the next call asks the API again. */
+export function resetVapidPublicKey(): void {
+  cachedKey = null;
 }
 
 /** RFC 8292 keys travel as base64url; `pushManager.subscribe` wants bytes. */
@@ -61,7 +79,7 @@ export async function pushState(): Promise<PushStatus> {
       reason: "This browser cannot receive web push. Email and Slack still work.",
     };
   }
-  if (!vapidPublicKey()) {
+  if (!(await vapidPublicKey())) {
     return { kind: "unconfigured", reason: "Web push is not configured for this deployment." };
   }
   if (Notification.permission === "denied") {
@@ -85,11 +103,12 @@ export async function enablePush(): Promise<PushStatus> {
   if (permission !== "granted") {
     return { kind: "denied", reason: "Permission was not granted, so nothing is sent." };
   }
+  const key = await vapidPublicKey();
   const registration = await navigator.serviceWorker.register(SERVICE_WORKER_PATH);
   await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey()) as BufferSource,
+    applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
   });
   const p256dh = arrayBufferToBase64Url(subscription.getKey("p256dh"));
   const auth = arrayBufferToBase64Url(subscription.getKey("auth"));

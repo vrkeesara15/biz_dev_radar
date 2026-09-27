@@ -1,11 +1,10 @@
 /**
  * Typed wrappers for the tenant settings screens (SPEC 10.4 screen 8).
  *
- * Integrations, billing, consents, data requests and the public privacy page
- * are in the generated schema. Member management is NOT: M0-07 provisions a
- * membership just in time and there is no invite or role route on main yet, so
- * those four calls go through the same-origin proxy with plain fetch against
- * the contract below and surface `NotAvailableError` on 404 (OQ-92).
+ * Integrations, billing, consents, data requests, the public privacy page and —
+ * since M7-15 — tenant members are all in the generated schema, so every call
+ * below is typed from the backend's OpenAPI spec. A 404 still surfaces as
+ * `NotAvailableError` so a screen can say "not on this deployment yet".
  */
 import { browserApi, type Schemas } from "@/lib/api/browser";
 import { ApiError, NotAvailableError } from "@/lib/opportunities/api";
@@ -79,65 +78,33 @@ export const exportTenant = () => unwrap(browserApi.POST("/api/v1/tenant/export"
 
 export const deleteTenant = () => unwrap(browserApi.POST("/api/v1/tenant/delete", {}));
 
-// --- members (contract; not on main yet — see OQ-92) ---------------------------
+// --- members (M7-15) ----------------------------------------------------------
 
-/** One row of GET /api/v1/tenant/members. */
-export type Member = {
-  id: string;
-  user_id: string;
-  email: string;
-  name: string | null;
-  role: string;
-  /** "active" once the person has signed in, "invited" before that. */
-  status?: string | null;
-  invited_at?: string | null;
-  last_seen_at?: string | null;
-};
+/** One row of GET /api/v1/tenant/members; `id` is the membership id. */
+export type Member = Schemas["MemberOut"];
+export type MemberInvite = Schemas["MemberInviteIn"];
 
+/** Shown when a deployment predates the member routes (they answer 404 there). */
 export const MEMBERS_UNAVAILABLE_MESSAGE =
   "Member management arrives with the tenant users endpoint";
 
-async function readBody(response: Response): Promise<unknown> {
-  const text = await response.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
+export const listMembers = (signal?: AbortSignal) =>
+  unwrap(browserApi.GET("/api/v1/tenant/members", { signal }));
 
-async function jsonRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...(init.headers ?? {}),
-    },
-    cache: "no-store",
-  });
-  const body = await readBody(response);
-  if (response.status === 404) throw new NotAvailableError(body);
-  if (!response.ok) throw new ApiError(response.status, body);
-  return body as T;
-}
+export const inviteMember = (body: MemberInvite) =>
+  unwrap(browserApi.POST("/api/v1/tenant/members/invite", { body }));
 
-export const listMembers = () => jsonRequest<Member[]>("/api/v1/tenant/members");
+export const updateMemberRole = (membershipId: string, role: Member["role"]) =>
+  unwrap(
+    browserApi.PATCH("/api/v1/tenant/members/{membership_id}", {
+      params: { path: { membership_id: membershipId } },
+      body: { role },
+    }),
+  );
 
-export const inviteMember = (body: { email: string; role: string }) =>
-  jsonRequest<Member>("/api/v1/tenant/members/invite", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-
-export const updateMemberRole = (memberId: string, role: string) =>
-  jsonRequest<Member>(`/api/v1/tenant/members/${encodeURIComponent(memberId)}`, {
-    method: "PATCH",
-    body: JSON.stringify({ role }),
-  });
-
-export const removeMember = (memberId: string) =>
-  jsonRequest<unknown>(`/api/v1/tenant/members/${encodeURIComponent(memberId)}`, {
-    method: "DELETE",
-  });
+export const removeMember = (membershipId: string) =>
+  unwrap(
+    browserApi.DELETE("/api/v1/tenant/members/{membership_id}", {
+      params: { path: { membership_id: membershipId } },
+    }),
+  );

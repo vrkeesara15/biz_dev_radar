@@ -11,6 +11,7 @@ from app.api.v1 import (
     integrations,
     me,
     me_notifications,
+    members,
     notification_prefs,
     notifications,
     opportunities,
@@ -32,6 +33,7 @@ api_router.include_router(notifications.router)
 api_router.include_router(admin.router)
 api_router.include_router(files.router)
 api_router.include_router(integrations.router)
+api_router.include_router(members.router)
 api_router.include_router(profiles.router)
 api_router.include_router(opportunities.router)
 api_router.include_router(pursuits.router)

@@ -1,0 +1,7 @@
+{% extends "base.txt" %}
+{% block lead %}You have been invited to {{ tenant_name|default('a workspace') }}{% endblock %}
+{% block extra %}
+{{ invited_by|default('A tenant owner') }} added you to {{ tenant_name|default('their workspace') }} on {{ app_name }} as {{ role|default('a member') }}.
+Sign in with this email address to accept.
+{% endblock %}
+{% block actions %}{% endblock %}

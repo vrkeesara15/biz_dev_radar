@@ -38,11 +38,13 @@
             {% if deep_link %}
             <tr><td style="padding-bottom:16px;"><a href="{{ deep_link }}" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 18px;border-radius:6px;">Open in {{ app_name }}</a></td></tr>
             {% endif %}
+            {% block actions %}
             {% if actions %}
             <tr><td style="padding-bottom:16px;font-size:14px;">
               {% for label, href in actions %}<a href="{{ href }}" style="color:#1d4ed8;margin-right:14px;">{{ label }}</a>{% endfor %}
             </td></tr>
             {% endif %}
+            {% endblock %}
             <tr><td style="border-top:1px solid #e5e7eb;padding-top:14px;font-size:12px;line-height:1.6;color:#6b7280;">
               You are receiving this because you asked {{ app_name }} to alert you about {{ category_label }}.<br />
               <a href="{{ unsubscribe_url }}" style="color:#6b7280;">Unsubscribe from {{ category_label }}</a>

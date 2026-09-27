@@ -18,9 +18,11 @@ Top gap: {{ top_gap }}
 {%- if deep_link %}
 Open in {{ app_name }}: {{ deep_link }}
 {% endif %}
+{%- block actions %}
 {%- if actions %}
 {% for label, href in actions %}{{ label }}: {{ href }}
 {% endfor %}{% endif %}
+{%- endblock %}
 --
 You are receiving this because you asked {{ app_name }} to alert you about {{ category_label }}.
 Unsubscribe from {{ category_label }}: {{ unsubscribe_url }}

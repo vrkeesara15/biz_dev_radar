@@ -281,3 +281,29 @@ def test_html_escapes_untrusted_notice_text(settings: Settings) -> None:
     mail = render_email("high_fit_match", _context(settings, payload, "high_fit_match"))
     assert "<script>alert(1)</script>" not in mail.html
     assert "&lt;script&gt;" in mail.html
+
+
+def test_invite_email_names_the_workspace_and_offers_no_one_click_actions(
+    settings: Settings,
+) -> None:
+    """M7-15: the member invitation is transactional — no Pursue/Watch/Pass links."""
+    payload = {
+        "tenant_name": "alpha-federal",
+        "invited_by": "owner@alpha.example",
+        "role": "bid_manager",
+        "actions": MATCH_PAYLOAD["actions"],
+    }
+    context = _context(settings, payload, "member.invited")
+    mail = render_email("member.invited", context)
+    assert template_for("member.invited") == "invite"
+    assert "alpha-federal" in mail.subject and "owner@alpha.example" in mail.subject
+    for part in (mail.html, mail.text):
+        assert "alpha-federal" in part
+        assert "bid_manager" in part
+        assert "owner@alpha.example" in part
+        for action_url in MATCH_PAYLOAD["actions"].values():
+            assert action_url not in part
+    # the footer link is a category token the unsubscribe route accepts
+    token = context["unsubscribe_url"].rsplit("/", 1)[-1]
+    claims = verify_unsubscribe_token(token, settings.auth_secret, now=NOW)
+    assert claims.category == "member.invited"

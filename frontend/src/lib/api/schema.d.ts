@@ -476,6 +476,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/push-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Push Config
+         * @description The VAPID public key the browser needs for `pushManager.subscribe` (RFC 8292).
+         *
+         *     Read at runtime so one image serves every environment; 404 means this deployment has
+         *     no key configured and the web-push toggle stays off (PROGRESS.md OQ-88).
+         */
+        get: operations["push_config_api_v1_me_push_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/push-subscriptions": {
         parameters: {
             query?: never;
@@ -1312,6 +1335,70 @@ export interface paths {
          * @description Start a full export of the tenant: a zip of every table plus the uploaded files.
          */
         post: operations["export_tenant_data_api_v1_tenant_export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Members
+         * @description Everyone in the caller's tenant, oldest membership first. Any member may read it.
+         */
+        get: operations["list_members_api_v1_tenant_members_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/members/{membership_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Member
+         * @description Remove a member from the tenant (their users row and other tenants are untouched).
+         */
+        delete: operations["remove_member_api_v1_tenant_members__membership_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Member Role
+         * @description Change one member's role. The last tenant_owner keeps theirs (409).
+         */
+        patch: operations["update_member_role_api_v1_tenant_members__membership_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/tenant/members/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite Member
+         * @description Create or attach the user with that role and send them an invitation email.
+         */
+        post: operations["invite_member_api_v1_tenant_members_invite_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2299,6 +2386,42 @@ export interface components {
             /** Volume */
             volume: string | null;
         };
+        /** MemberInviteIn */
+        MemberInviteIn: {
+            /** Email */
+            email: string;
+            role: components["schemas"]["Role"];
+        };
+        /**
+         * MemberOut
+         * @description One membership row. `id` is the membership id used by PATCH and DELETE.
+         */
+        MemberOut: {
+            /** Email */
+            email: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Joined At
+             * Format: date-time
+             */
+            joined_at: string;
+            /** Name */
+            name: string | null;
+            role: components["schemas"]["Role"];
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
+        /** MemberRoleIn */
+        MemberRoleIn: {
+            role: components["schemas"]["Role"];
+        };
         /** MeOut */
         MeOut: {
             /** Email */
@@ -2400,6 +2523,8 @@ export interface components {
             quiet_hours_start?: string | null;
             /** Tz */
             tz?: string | null;
+            /** Unsubscribed Categories */
+            unsubscribed_categories?: string[] | null;
         };
         /** NotificationPrefsOut */
         NotificationPrefsOut: {
@@ -2424,6 +2549,8 @@ export interface components {
             tenant_id: string;
             /** Tz */
             tz: string;
+            /** Unsubscribed Categories */
+            unsubscribed_categories: string[];
             /**
              * User Id
              * Format: uuid
@@ -3458,6 +3585,11 @@ export interface components {
              * Format: uuid
              */
             pursuit_id: string;
+        };
+        /** PushConfigOut */
+        PushConfigOut: {
+            /** Vapid Public Key */
+            vapid_public_key: string;
         };
         /** PushDeleteIn */
         PushDeleteIn: {
@@ -5246,6 +5378,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarkAllReadOut"];
+                };
+            };
+        };
+    };
+    push_config_api_v1_me_push_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushConfigOut"];
                 };
             };
         };
@@ -8044,6 +8196,123 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TenantJobOut"];
+                };
+            };
+        };
+    };
+    list_members_api_v1_tenant_members_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberOut"][];
+                };
+            };
+        };
+    };
+    remove_member_api_v1_tenant_members__membership_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membership_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_member_role_api_v1_tenant_members__membership_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membership_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberRoleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invite_member_api_v1_tenant_members_invite_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberInviteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

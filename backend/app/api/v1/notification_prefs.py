@@ -23,10 +23,25 @@ from app.core.preferences import (
 )
 from app.core.timezones import validate_timezone
 from app.models import User, UserNotificationPrefs
+from app.notify.unsubscribe import ALL, CATEGORIES
 from app.services.audit import AuditHint
 from app.services.users import ensure_user_membership
 
 router = APIRouter(prefix="/me/notification-prefs", tags=["me"])
+
+
+def validate_unsubscribed(values: list[str]) -> list[str]:
+    """Known opt-out categories only, de-duplicated; `all` replaces the rest, exactly as
+    clicking the "unsubscribe from everything" link does (app.notify.unsubscribe)."""
+    clean: list[str] = []
+    for raw in values:
+        category = raw.strip()
+        if category not in CATEGORIES:
+            allowed = ", ".join(sorted(CATEGORIES))
+            raise ValueError(f"unknown category {raw!r}; expected one of: {allowed}")
+        if category not in clean:
+            clean.append(category)
+    return [ALL] if ALL in clean else clean
 
 
 class NotificationPrefsOut(BaseModel):
@@ -39,6 +54,9 @@ class NotificationPrefsOut(BaseModel):
     digest_time: str
     min_score_instant: int
     min_score_digest: int
+    # CAN-SPAM opt-outs written by the unsubscribe links (M4-10); `all` silences every
+    # commercial email. Editable here so the settings page can re-subscribe (OQ-87).
+    unsubscribed_categories: list[str]
 
 
 class NotificationPrefsIn(BaseModel):
@@ -51,6 +69,12 @@ class NotificationPrefsIn(BaseModel):
     digest_time: str | None = None
     min_score_instant: Annotated[int | None, Field(ge=0, le=100)] = None
     min_score_digest: Annotated[int | None, Field(ge=0, le=100)] = None
+    unsubscribed_categories: list[str] | None = None
+
+    @field_validator("unsubscribed_categories")
+    @classmethod
+    def _categories(cls, value: list[str] | None) -> list[str] | None:
+        return None if value is None else validate_unsubscribed(value)
 
     @field_validator("channels_by_event")
     @classmethod
@@ -92,6 +116,7 @@ def _out(row: UserNotificationPrefs) -> NotificationPrefsOut:
         digest_time=row.digest_time,
         min_score_instant=row.min_score_instant,
         min_score_digest=row.min_score_digest,
+        unsubscribed_categories=list(row.unsubscribed_categories or []),
     )
 
 
@@ -147,7 +172,7 @@ async def update_prefs(
         validate_min_scores(instant, digest)
     except ValueError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
-    for name in ("channels_by_event", "tz", "digest_time"):
+    for name in ("channels_by_event", "tz", "digest_time", "unsubscribed_categories"):
         if changes.get(name, "x") is None:
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_CONTENT, detail=f"{name} cannot be null"

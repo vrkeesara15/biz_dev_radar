@@ -52,6 +52,8 @@ TEMPLATES: dict[str, str] = {
     NotificationEvent.REGISTRATION_EXPIRY.value: "registration_expiring",
     "adapter_failing": "adapter_failing",
     "adapter.failing": "adapter_failing",
+    # M7-15: the tenant-owner invitation (app/api/v1/members.py)
+    "member.invited": "invite",
 }
 
 # human label used in the footer ("...alert you about high-fit matches")
@@ -65,6 +67,7 @@ CATEGORY_LABELS: dict[str, str] = {
     NotificationEvent.PURSUIT_UPDATE.value: "pursuit updates",
     NotificationEvent.REGISTRATION_EXPIRY.value: "expiring registrations",
     "adapter_failing": "source health alerts",
+    "member.invited": "invitations to a BidRadar workspace",
 }
 
 ACTION_LABELS: tuple[tuple[str, str], ...] = (

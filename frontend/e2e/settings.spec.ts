@@ -65,7 +65,7 @@ test("users and roles: the owner changes a role and invites a colleague", async 
   await expect(dialog).toContainText("Comments on and approves sections only.");
   await dialog.getByRole("button", { name: "Send invitation" }).click();
   await expect(page.getByText("Invited reviewer@example.com as Reviewer")).toBeVisible();
-  expect(api.members.at(-1)).toMatchObject({ email: "reviewer@example.com", role: "reviewer", status: "invited" });
+  expect(api.members.at(-1)).toMatchObject({ email: "reviewer@example.com", role: "reviewer" });
   await expect(page.getByTestId("member-row")).toHaveCount(3);
 
   // All six SPEC 3 roles are explained on the page.

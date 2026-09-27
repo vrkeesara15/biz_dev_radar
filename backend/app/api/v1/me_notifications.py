@@ -3,6 +3,7 @@
 GET    /api/v1/me/notifications?unread=1&limit=50   the bell list + unread count
 POST   /api/v1/me/notifications/{id}/read           mark one read (idempotent)
 POST   /api/v1/me/notifications/read-all            clear the badge
+GET    /api/v1/me/push-config                      the deployment's VAPID public key
 POST   /api/v1/me/push-subscriptions                store this browser's subscription
 DELETE /api/v1/me/push-subscriptions                drop it again
 """
@@ -16,7 +17,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.api.deps import CurrentUserDep, TenantSessionDep
+from app.api.deps import CurrentUserDep, SettingsDep, TenantSessionDep
 from app.models import Notification
 from app.notify.in_app import (
     DEFAULT_LIMIT,
@@ -71,6 +72,10 @@ class PushSubscriptionIn(BaseModel):
 
     endpoint: Annotated[str, Field(min_length=1, max_length=2048)]
     keys: PushKeys
+
+
+class PushConfigOut(BaseModel):
+    vapid_public_key: str
 
 
 class PushSubscriptionOut(BaseModel):
@@ -144,6 +149,19 @@ async def read_one(
     if row.read_at is None:  # pragma: no cover - mark_read always sets it
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="read_at not set")
     return MarkReadOut(id=row.id, read_at=row.read_at)
+
+
+@router.get("/push-config", response_model=PushConfigOut)
+async def push_config(user: CurrentUserDep, settings: SettingsDep) -> PushConfigOut:
+    """The VAPID public key the browser needs for `pushManager.subscribe` (RFC 8292).
+
+    Read at runtime so one image serves every environment; 404 means this deployment has
+    no key configured and the web-push toggle stays off (PROGRESS.md OQ-88).
+    """
+    key = settings.vapid_public_key.strip()
+    if not key:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="web push is not configured")
+    return PushConfigOut(vapid_public_key=key)
 
 
 @router.post(

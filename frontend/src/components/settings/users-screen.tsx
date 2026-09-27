@@ -35,8 +35,17 @@ import {
   isLastOwner,
   roleDescription,
   roleLabel,
+  type TenantRole,
 } from "@/lib/settings/roles";
 import type { Role } from "@/types/next-auth";
+
+/** The membership date, in the viewer's locale; the API has no "invited" state. */
+const joined = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+};
 
 const describe = (caught: unknown, fallback: string) =>
   caught instanceof ApiError ? errorMessage(caught.body, `${fallback} (${caught.status}).`) : fallback;
@@ -55,7 +64,7 @@ export function UsersScreen({ role, currentUserId }: { role?: Role; currentUserI
   const [busy, setBusy] = React.useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = React.useState(false);
   const [email, setEmail] = React.useState("");
-  const [inviteRole, setInviteRole] = React.useState<string>("bid_manager");
+  const [inviteRole, setInviteRole] = React.useState<TenantRole>("bid_manager");
 
   React.useEffect(() => {
     let cancelled = false;
@@ -76,7 +85,7 @@ export function UsersScreen({ role, currentUserId }: { role?: Role; currentUserI
     };
   }, []);
 
-  const changeRole = async (member: Member, next: string) => {
+  const changeRole = async (member: Member, next: TenantRole) => {
     setBusy(member.id);
     try {
       const updated = await updateMemberRole(member.id, next);
@@ -172,7 +181,7 @@ export function UsersScreen({ role, currentUserId }: { role?: Role; currentUserI
               <TableRow className="hover:bg-transparent">
                 <TableHead>Member</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Joined</TableHead>
                 {owner ? <TableHead className="text-right">Actions</TableHead> : null}
               </TableRow>
             </TableHeader>
@@ -196,7 +205,9 @@ export function UsersScreen({ role, currentUserId }: { role?: Role; currentUserI
                           aria-label={`Role for ${member.email}`}
                           value={member.role}
                           disabled={busy === member.id || last}
-                          onChange={(event) => void changeRole(member, event.target.value)}
+                          onChange={(event) =>
+                            void changeRole(member, event.target.value as TenantRole)
+                          }
                         >
                           {ROLE_META.map((meta) => (
                             <option key={meta.value} value={meta.value}>
@@ -214,7 +225,7 @@ export function UsersScreen({ role, currentUserId }: { role?: Role; currentUserI
                       ) : null}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{member.status ?? "active"}</Badge>
+                      <Badge variant="outline">{joined(member.joined_at)}</Badge>
                     </TableCell>
                     {owner ? (
                       <TableCell className="text-right">
@@ -284,7 +295,7 @@ export function UsersScreen({ role, currentUserId }: { role?: Role; currentUserI
               <NativeSelect
                 id="invite-role"
                 value={inviteRole}
-                onChange={(event) => setInviteRole(event.target.value)}
+                onChange={(event) => setInviteRole(event.target.value as TenantRole)}
               >
                 {ROLE_META.map((meta) => (
                   <option key={meta.value} value={meta.value}>

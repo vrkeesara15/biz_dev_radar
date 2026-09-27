@@ -29,7 +29,7 @@ All are listed with placeholders in `.env.example`; none are committed.
 | `NEXT_PUBLIC_API_URL` | Backend base URL used by the API client (default `http://localhost:8000`) |
 | `API_URL` | Spec source for `pnpm gen:api` when `../backend/openapi.json` is absent |
 | `NEXT_PUBLIC_REGION` | `US` (default) or `IN`; shown as the region badge in the top bar |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | RFC 8292 VAPID public key (the backend's `VAPID_PUBLIC_KEY`); without it the web-push button says push is not configured |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | _Optional._ RFC 8292 VAPID public key; the browser reads the key from `GET /api/v1/me/push-config` at runtime (M7-15) and only falls back to this build-time value when that route answers 404. Without either, the web-push button says push is not configured |
 
 A provider whose env is missing is simply not registered, so `pnpm build` and
 local dev work without any OAuth or SMTP credentials; the sign-in page shows

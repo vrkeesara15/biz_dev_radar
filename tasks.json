@@ -2249,6 +2249,6 @@
       "GET /api/v1/me/push-config returns the VAPID public key (or 404 when push is not configured) so the frontend no longer needs NEXT_PUBLIC_VAPID_PUBLIC_KEY",
       "Isolation factories registered; audit rows for member changes; frontend contract in frontend/src/lib/settings/api.ts matches (regenerate schema.d.ts)"
     ],
-    "status": "todo"
+    "status": "done"
   }
 ]

@@ -96,6 +96,8 @@ async def test_notification_prefs_defaults_and_update(
         {"channels_by_event": {"digest": ["pager"]}},
         {"channels_by_event": None},
         {"unknown": 1},
+        {"unsubscribed_categories": ["not_a_category"]},
+        {"unsubscribed_categories": None},
     ],
 )
 async def test_notification_prefs_validation(
@@ -105,6 +107,39 @@ async def test_notification_prefs_validation(
     headers = auth_headers(user_id=uid, tenant_id=tid)
     r = await api_client.put("/api/v1/me/notification-prefs", json=body, headers=headers)
     assert r.status_code == 422, r.text
+
+
+async def test_notification_prefs_expose_and_edit_the_email_opt_outs(
+    api_client: httpx.AsyncClient, database: Database
+) -> None:
+    """M7-15 (OQ-87): the CAN-SPAM opt-outs are readable and writable from Settings."""
+    tid, uid = await _tenant(database)
+    headers = auth_headers(user_id=uid, tenant_id=tid)
+    r = await api_client.get("/api/v1/me/notification-prefs", headers=headers)
+    assert r.status_code == 200 and r.json()["unsubscribed_categories"] == []
+
+    # what the unsubscribe link in an email footer writes is what the route reads back
+    async with database.owner_session() as session:
+        row = (await session.execute(select(UserNotificationPrefs))).scalar_one()
+        row.unsubscribed_categories = ["digest"]
+    r = await api_client.get("/api/v1/me/notification-prefs", headers=headers)
+    assert r.json()["unsubscribed_categories"] == ["digest"]
+
+    # re-subscribing is a plain PUT, and `all` still replaces the rest
+    r = await api_client.put(
+        "/api/v1/me/notification-prefs",
+        json={"unsubscribed_categories": ["digest", "all", "digest"]},
+        headers=headers,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["unsubscribed_categories"] == ["all"]
+    r = await api_client.put(
+        "/api/v1/me/notification-prefs", json={"unsubscribed_categories": []}, headers=headers
+    )
+    assert r.status_code == 200 and r.json()["unsubscribed_categories"] == []
+    async with database.owner_session() as session:
+        row = (await session.execute(select(UserNotificationPrefs))).scalar_one()
+        assert row.unsubscribed_categories == []
 
 
 async def test_notification_prefs_are_per_user_and_tenant(

@@ -35,7 +35,14 @@ UNSUBSCRIBE_PATH = "/api/v1/notifications/unsubscribe/{token}"
 TOKEN_KIND = "notify_unsubscribe"
 ALL = "all"
 
-CATEGORIES: frozenset[str] = frozenset({ALL, *(event.value for event in NotificationEvent)})
+# Emails that address one recipient but are not one of the user's preference events:
+# ops alerts and the member invitation (M7-15). Their footer link must verify like any
+# other, so they are categories too.
+EXTRA_CATEGORIES: frozenset[str] = frozenset({"adapter_failing", "member.invited"})
+
+CATEGORIES: frozenset[str] = frozenset(
+    {ALL, *EXTRA_CATEGORIES, *(event.value for event in NotificationEvent)}
+)
 
 
 class UnsubscribeClaims(BaseModel):

@@ -16,6 +16,7 @@ from app.core.context import set_principal
 from app.core.db import get_database
 from app.core.ratelimit import FixedWindowLimiter, client_ip_from_headers
 from app.core.roles import Role
+from app.notify.core import Dispatcher
 from app.services.audit import write_audit
 from app.services.scanner import Scanner
 from app.services.storage import StorageRouter
@@ -55,6 +56,22 @@ def get_storage_router(request: Request) -> StorageRouter:
 def get_scanner(request: Request) -> Scanner:
     scanner: Scanner = request.app.state.scanner
     return scanner
+
+
+def get_dispatcher(request: Request) -> Dispatcher:
+    """Notification Dispatcher for routes that send mail (M7-15 member invitations).
+
+    Built on first use from the app's settings and cached on app.state so the channels
+    (and their per-tenant resolvers) are made once; tests install their own recorder by
+    setting `app.state.dispatcher` before the request.
+    """
+    dispatcher: Dispatcher | None = getattr(request.app.state, "dispatcher", None)
+    if dispatcher is None:
+        from app.notify.registry import build_dispatcher
+
+        dispatcher = build_dispatcher(request.app.state.settings)
+        request.app.state.dispatcher = dispatcher
+    return dispatcher
 
 
 def client_ip(request: Request, settings: Settings) -> str:
@@ -178,6 +195,7 @@ async def get_admin_write_session(
 
 CurrentUserDep = Annotated[CurrentUser, Depends(get_current_user)]
 SettingsDep = Annotated[Settings, Depends(get_app_settings)]
+DispatcherDep = Annotated[Dispatcher, Depends(get_dispatcher)]
 StorageRouterDep = Annotated[StorageRouter, Depends(get_storage_router)]
 ScannerDep = Annotated[Scanner, Depends(get_scanner)]
 TenantSessionDep = Annotated[AsyncSession, Depends(get_tenant_session)]

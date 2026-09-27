@@ -319,7 +319,7 @@ credential-looking field is added without listing it, and
 | `SMTP_PASSWORD` | SMTP password. | _(empty)_ | - | **yes** |
 | `SMTP_STARTTLS` | Issue STARTTLS before sending. | `false` | - | - |
 | `SMTP_TIMEOUT_SECONDS` | Socket timeout for the SMTP conversation. | `10.0` | - | - |
-| `VAPID_PUBLIC_KEY` | VAPID public key (RFC 8292); empty disables web push. | _(empty)_ | if push | - |
+| `VAPID_PUBLIC_KEY` | VAPID public key (RFC 8292); empty disables web push. Served to the browser at runtime by `GET /api/v1/me/push-config`, so the frontend's `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is now optional (a build-time fallback for an older API). | _(empty)_ | if push | - |
 | `VAPID_PRIVATE_KEY` | VAPID private key. | _(empty)_ | if push | **yes** |
 | `VAPID_SUBJECT` | VAPID `sub` claim — a `mailto:` a push service can reach you at. | `mailto:ops@example.com` | if push | - |
 | `SAM_API_KEY` | api.data.gov key for SAM.gov opportunities, awards and entity lookups. | _(empty)_ | yes | **yes** |

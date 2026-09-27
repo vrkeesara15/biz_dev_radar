@@ -1,0 +1,1 @@
+{{ invited_by|default('A colleague') }} invited you to {{ tenant_name|default(app_name) }} on {{ app_name }}

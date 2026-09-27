@@ -85,8 +85,10 @@ export type MockOptions = {
   matches?: boolean;
   /** When true, POST /opportunities/{id}/pursue|watch|pass answer 201 (M6-01 contract); default 404. */
   pipelineActions?: boolean;
-  /** When true, the tenant member routes work in memory (M7-09 contract); default 404. */
+  /** When true, the tenant member routes work in memory (M7-15); default 404. */
   members?: boolean;
+  /** VAPID public key served by GET /me/push-config; unset means 404 (push off). */
+  vapidPublicKey?: string;
   /** Billing provider to serve: "stripe" (default) or "razorpay" for an IN tenant. */
   billingProvider?: "stripe" | "razorpay";
 };
@@ -278,7 +280,7 @@ export class MockApi {
       if (this.opportunityDetail.id === opportunityId) return json(200, this.opportunityDetail);
       return json(404, { detail: "opportunity not found" });
     }
-    const settingsHandled = this.handleSettings(pathname, method, body, json);
+    const settingsHandled = this.handleSettings(pathname, method, body, json, route);
     if (settingsHandled) return settingsHandled;
     const notificationsHandled = this.handleNotifications(pathname, method, body, url.searchParams, json, route);
     if (notificationsHandled) return notificationsHandled;
@@ -575,12 +577,13 @@ export class MockApi {
     return null;
   }
 
-  /** The M7-09 settings routes: members, integrations, billing, privacy. */
+  /** The M7-09/M7-15 settings routes: members, integrations, billing, privacy. */
   private handleSettings(
     pathname: string,
     method: string,
     body: unknown,
     json: (status: number, payload: unknown) => Promise<void>,
+    route: Route,
   ): Promise<void> | null {
     if (pathname === "/api/v1/tenant/members" && method === "GET") {
       if (!this.options.members) return json(404, { detail: "Not Found" });
@@ -589,15 +592,16 @@ export class MockApi {
     if (pathname === "/api/v1/tenant/members/invite" && method === "POST") {
       if (!this.options.members) return json(404, { detail: "Not Found" });
       const payload = (body ?? {}) as Json;
+      if (this.members.some((row) => row.email === payload.email)) {
+        return json(409, { detail: "already a member of this tenant" });
+      }
       const member = {
         id: this.nextId("mem"),
         user_id: this.nextId("user"),
         email: payload.email,
         name: null,
         role: payload.role ?? "viewer",
-        status: "invited",
-        invited_at: new Date().toISOString(),
-        last_seen_at: null,
+        joined_at: new Date().toISOString(),
       };
       this.members.push(member);
       return json(201, member);
@@ -608,12 +612,21 @@ export class MockApi {
       const [, memberId] = memberMatch;
       const index = this.members.findIndex((row) => row.id === memberId);
       if (index === -1) return json(404, { detail: "member not found" });
+      const owners = this.members.filter((row) => row.role === "tenant_owner");
+      const lastOwner = owners.length === 1 && owners[0].id === memberId;
       if (method === "PATCH") {
-        this.members[index] = { ...this.members[index], ...(body as Json) };
-        return json(200, this.members[index]);
+        const next = { ...this.members[index], ...(body as Json) };
+        if (lastOwner && next.role !== "tenant_owner") {
+          return json(409, { detail: "the last tenant owner cannot be removed or demoted" });
+        }
+        this.members[index] = next;
+        return json(200, next);
       }
-      const [removed] = this.members.splice(index, 1);
-      return json(200, removed);
+      if (lastOwner) {
+        return json(409, { detail: "the last tenant owner cannot be removed or demoted" });
+      }
+      this.members.splice(index, 1);
+      return route.fulfill({ status: 204, body: "" });
     }
     if (pathname === "/api/v1/integrations" && method === "GET") {
       return json(200, this.integrations);
@@ -765,6 +778,12 @@ export class MockApi {
       if (!row) return json(404, { detail: "notification not found" });
       row.read_at = row.read_at ?? new Date().toISOString();
       return json(200, { id: row.id, read_at: row.read_at });
+    }
+    if (pathname === "/api/v1/me/push-config" && method === "GET") {
+      // M7-15: the key the browser needs; 404 is "this deployment has no web push".
+      return this.options.vapidPublicKey
+        ? json(200, { vapid_public_key: this.options.vapidPublicKey })
+        : json(404, { detail: "web push is not configured" });
     }
     if (pathname === "/api/v1/me/push-subscriptions") {
       if (method === "POST") {

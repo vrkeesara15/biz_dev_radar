@@ -49,6 +49,7 @@ from app.models import (
     File,
     Insurance,
     Integration,
+    Membership,
     Notification,
     Opportunity,
     PastPerformance,
@@ -67,7 +68,7 @@ from app.models import (
     Vehicle,
 )
 
-from tests.factories import create_tenant_with_owner
+from tests.factories import create_tenant_with_owner, make_user
 
 # The ONLY routes that may be exercised without a tenant: health, docs, public metadata,
 # auth callbacks and provider webhooks (which authenticate by signature, not by tenant).
@@ -201,8 +202,29 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         # A's owner owns the seeded endpoint (204); B cannot see it at all (404)
         owner_expect=frozenset({204}),
     ),
+    ("GET", "/api/v1/me/push-config"): lambda ctx: RouteCall(
+        # no VAPID key in the test settings, so "configured" is 404 for everyone (M7-15)
+        owner_expect=frozenset({404})
+    ),
     ("GET", "/api/v1/me/notification-prefs"): lambda ctx: RouteCall(),
     ("PUT", "/api/v1/me/notification-prefs"): lambda ctx: RouteCall(json={"min_score_instant": 80}),
+    # --- tenant members (M7-15): reads are open to every member, writes owner-only.
+    # The invite carries a FRESH address on purpose: inviting A's owner into B is a
+    # legitimate multi-tenant membership, not a leak, and would trip the id scan.
+    ("GET", "/api/v1/tenant/members"): lambda ctx: RouteCall(),
+    ("POST", "/api/v1/tenant/members/invite"): lambda ctx: RouteCall(
+        json={"email": f"invite-{uuid.uuid4().hex[:10]}@example.com", "role": "viewer"},
+        owner_expect=frozenset({201}),
+    ),
+    ("PATCH", "/api/v1/tenant/members/{membership_id}"): lambda ctx: RouteCall(
+        path_params={"membership_id": ctx.a.ids["member_membership"]},
+        json={"role": "reviewer"},
+        owner_expect=frozenset({200}),
+    ),
+    ("DELETE", "/api/v1/tenant/members/{membership_id}"): lambda ctx: RouteCall(
+        path_params={"membership_id": ctx.a.ids["member_membership"]},
+        owner_expect=frozenset({204}),
+    ),
     # --- admin console (M7-08): platform_admin only, so a tenant owner always gets 403
     ("GET", "/api/v1/admin/tenants"): lambda ctx: RouteCall(owner_expect=frozenset({403})),
     ("GET", "/api/v1/admin/tenants/{tenant_id}"): lambda ctx: RouteCall(
@@ -393,6 +415,14 @@ async def build_context(database: Database) -> IsolationContext:
     async with database.owner_session() as session:
         ta, ua, ma = await create_tenant_with_owner(session, slug=f"iso-a-{uuid.uuid4().hex[:6]}")
         tb, ub, mb = await create_tenant_with_owner(session, slug=f"iso-b-{uuid.uuid4().hex[:6]}")
+        # a second member of A, so the member routes have a row that is not the last owner
+        member_user = make_user()
+        session.add(member_user)
+        await session.flush()
+        member_membership = Membership(
+            tenant_id=ta.id, user_id=member_user.id, role=Role.BID_MANAGER
+        )
+        session.add(member_membership)
         ledger = UsageLedger(tenant_id=ta.id, metric="profiles", quantity=1, period="lifetime")
         audit = AuditLog(tenant_id=ta.id, user_id=ua.id, action="isolation.seed")
         file_id = uuid.uuid4()
@@ -606,6 +636,9 @@ async def build_context(database: Database) -> IsolationContext:
                 "owner_user": str(ua.id),
                 "owner_email": ua.email,
                 "membership": str(ma.id),
+                "member_membership": str(member_membership.id),
+                "member_user": str(member_user.id),
+                "member_email": member_user.email,
                 "usage_ledger": str(ledger.id),
                 "audit_log": str(audit.id),
                 "file": str(file.id),

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block lead %}You have been invited to {{ tenant_name|default('a workspace') }}{% endblock %}
+{% block extra %}
+<tr><td style="padding-bottom:16px;font-size:14px;line-height:1.6;">
+  {{ invited_by|default('A tenant owner') }} added you to {{ tenant_name|default('their workspace') }} on {{ app_name }} as <strong>{{ role|default('a member') }}</strong>.
+  Sign in with this email address to accept.
+</td></tr>
+{% endblock %}
+{% block actions %}{% endblock %}

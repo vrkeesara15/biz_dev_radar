@@ -58,6 +58,10 @@ export const putNotificationPrefs = (body: Schemas["NotificationPrefsIn"]) =>
     NotificationPrefs & PrefsWire
   >;
 
+/** The deployment's VAPID public key; 404 (NotAvailableError) means push is off. */
+export const getPushConfig = (signal?: AbortSignal) =>
+  unwrap(browserApi.GET("/api/v1/me/push-config", { signal }));
+
 export const savePushSubscription = (body: Schemas["PushSubscriptionIn"]) =>
   unwrap(browserApi.POST("/api/v1/me/push-subscriptions", { body }));
 
