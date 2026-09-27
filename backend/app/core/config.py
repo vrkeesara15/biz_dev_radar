@@ -142,10 +142,13 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 4096
     llm_output_retries: int = 2
 
-    # embeddings
+    # embeddings (SPEC 10.1: configurable provider, default Voyage 1024-dim, batch embed)
     embedding_provider: EmbeddingProviderName = EmbeddingProviderName.VOYAGE
     embedding_model: str = "voyage-3"
     embedding_dim: int = 1024
+    embedding_batch_size: int = 128
+    voyage_api_key: str = ""
+    voyage_api_url: str = "https://api.voyageai.com/v1/embeddings"
 
     # money
     fx_rates: Annotated[dict[str, float], NoDecode] = Field(

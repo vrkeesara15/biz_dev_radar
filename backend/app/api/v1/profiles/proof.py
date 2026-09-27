@@ -193,6 +193,7 @@ past_performance_router = crud_router(
     write_roles=EVIDENCE_EDIT_ROLES,
     validate=validate_past_performance,
     order_by=(PastPerformance.period_end.desc().nulls_last(), PastPerformance.title),
+    reindex=True,
 )
 
 # --- personnel -----------------------------------------------------------------------------
@@ -463,6 +464,7 @@ boilerplate_router = crud_router(
     write_roles=PROFILE_EDIT_ROLES,
     validate=validate_boilerplate,
     order_by=(BoilerplateBlock.kind, BoilerplateBlock.title),
+    reindex=True,
 )
 
 # --- profile files -------------------------------------------------------------------------
@@ -521,6 +523,7 @@ profile_files_router = crud_router(
     write_roles=PROFILE_EDIT_ROLES,
     validate=validate_profile_file,
     order_by=(ProfileFile.kind, ProfileFile.created_at),
+    reindex=True,
 )
 
 # --- rate card -----------------------------------------------------------------------------

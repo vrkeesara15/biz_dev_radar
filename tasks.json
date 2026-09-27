@@ -507,7 +507,7 @@
       "Indexing job chunks profile files, boilerplate, past performance and service lines; re-index on change",
       "similarity_search(profile_id, query, k) returns only the tenant's chunks (isolation test)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-13",

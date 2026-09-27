@@ -24,6 +24,7 @@ from app.services.status_job import SCHEDULE as STATUS_SCHEDULE
 
 RUN_SOURCE_TASK = "bidradar.run_source"
 ROLL_STATUS_TASK = "bidradar.roll_status"
+INDEX_PROFILE_TASK = "bidradar.index_profile"
 
 
 def cron_to_crontab(expression: str) -> crontab:
@@ -99,3 +100,11 @@ def roll_status_task(self: Any) -> dict[str, Any]:
     from app.jobs.status import run_status_job
 
     return run_status_job()
+
+
+@celery_app.task(name=INDEX_PROFILE_TASK, bind=True, max_retries=0)  # type: ignore[untyped-decorator]
+def index_profile_task(self: Any, tenant_id: str, profile_id: str) -> dict[str, Any]:
+    """Re-index one profile's knowledge base (M1-12); queued by profile mutations."""
+    from app.jobs.index_profile import index_profile_sync
+
+    return index_profile_sync(tenant_id, profile_id)
