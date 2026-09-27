@@ -1773,7 +1773,7 @@
       "POST /opportunities/{id}/pursue|watch|pass create/track pursuits; PATCH /pursuits/{id} moves stage; drafting requires Gate 1 approval (409 otherwise)",
       "Pursuing enqueues the agent workflow; internal_due_at = response_due_at - 48h"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-02",

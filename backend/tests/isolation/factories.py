@@ -333,6 +333,24 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("POST", "/api/v1/pursuits"): lambda ctx: RouteCall(
         json={"profile_id": ctx.a.ids["profile"], "opportunity_id": ctx.shared["opportunity"]}
     ),
+    # --- board actions (M6-01): the notice is global, so B may act on it — with its OWN
+    # profile. B has none, so the call 404s; A reuses its existing pursuit (200).
+    ("POST", "/api/v1/opportunities/{opportunity_id}/pursue"): lambda ctx: RouteCall(
+        path_params={"opportunity_id": ctx.shared["opportunity"]},
+        json={"profile_id": ctx.a.ids["profile"], "run_agents": False},
+    ),
+    ("POST", "/api/v1/opportunities/{opportunity_id}/watch"): lambda ctx: RouteCall(
+        path_params={"opportunity_id": ctx.shared["opportunity"]},
+        json={"profile_id": ctx.a.ids["profile"]},
+    ),
+    ("POST", "/api/v1/opportunities/{opportunity_id}/pass"): lambda ctx: RouteCall(
+        path_params={"opportunity_id": ctx.shared["opportunity"]},
+        json={"profile_id": ctx.a.ids["profile"], "reason": "isolation probe"},
+    ),
+    ("GET", "/api/v1/pursuits"): lambda ctx: RouteCall(params={"page": 1}),
+    ("PATCH", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"stage": "qualifying"}
+    ),
     ("GET", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
     ),
