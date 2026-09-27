@@ -33,6 +33,37 @@ from app.notify.teams import TeamsChannel, TeamsSettings, load_teams_settings
 
 CHANNEL_NAMES: tuple[str, ...] = ("in_app", "email", "slack", "teams", "push")
 
+# `core.preferences.NotificationChannel` (the vocabulary of user_notification_prefs and
+# the settings UI) and the dispatcher's channel keys are not spelled the same; this is
+# the single place that maps one onto the other (M4-08 / M4-14).
+CHANNEL_ALIASES: dict[str, str] = {
+    "web_push": "push",
+    "webpush": "push",
+    "in-app": "in_app",
+    "inapp": "in_app",
+    "bell": "in_app",
+    # SPEC 7 lists WhatsApp for India, but no channel implementation exists yet; a
+    # preference that asks for it is dropped rather than silently delivered elsewhere.
+    "whatsapp": "",
+}
+
+
+def normalize_channels(channels: object) -> tuple[str, ...]:
+    """Map any spelling onto the dispatcher's channel keys, de-duplicated and ordered.
+
+    Unknown names (and whatsapp, which has no channel yet) are dropped.
+    """
+    if channels is None:
+        return ()
+    values = channels if isinstance(channels, list | tuple | set) else [channels]
+    out: list[str] = []
+    for raw in values:
+        name = str(raw).strip().lower()
+        name = CHANNEL_ALIASES.get(name, name)
+        if name in CHANNEL_NAMES and name not in out:
+            out.append(name)
+    return tuple(sorted(out, key=CHANNEL_NAMES.index))
+
 
 def slack_resolver(database: Database):  # type: ignore[no-untyped-def]
     async def resolve(tenant_id: uuid.UUID) -> SlackSettings | None:

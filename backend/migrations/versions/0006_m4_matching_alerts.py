@@ -26,6 +26,8 @@ TENANT_TABLES = (
     "matches",
     "match_feedback",
     "keyword_suggestions",
+    "saved_searches",
+    "alert_rules",
     "notifications",
     "notification_deliveries",
     "integrations",
@@ -149,6 +151,44 @@ def upgrade() -> None:
     op.create_index(
         "ix_keyword_suggestions_tenant_status", "keyword_suggestions", ["tenant_id", "status"]
     )
+
+    # --- saved searches and alert rules (M4-08) ------------------------------------------------
+    op.create_table(
+        "saved_searches",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("user_id", "users.id"),
+        sa.Column("name", sa.String(120), nullable=False),
+        _jsonb("filters"),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("tenant_id", "user_id", "name", name="uq_saved_searches_user_name"),
+    )
+    for col in ("tenant_id", "user_id"):
+        op.create_index(f"ix_saved_searches_{col}", "saved_searches", [col])
+
+    op.create_table(
+        "alert_rules",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("saved_search_id", "saved_searches.id", nullable=True),
+        _fk("profile_id", "company_profiles.id", nullable=True),
+        _fk("user_id", "users.id", nullable=True),
+        sa.Column("name", sa.String(120), nullable=False),
+        sa.Column("min_score", sa.Integer(), nullable=False, server_default="70"),
+        sa.Column(
+            "channels",
+            postgresql.ARRAY(sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{}'::text[]"),
+        ),
+        sa.Column("mode", sa.String(16), nullable=False, server_default="instant"),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("tenant_id", "name", name="uq_alert_rules_tenant_name"),
+    )
+    for col in ("tenant_id", "saved_search_id", "profile_id", "user_id"):
+        op.create_index(f"ix_alert_rules_{col}", "alert_rules", [col])
+    op.create_index("ix_alert_rules_tenant_enabled", "alert_rules", ["tenant_id", "enabled"])
 
     # --- notifications + deliveries (M4-09) -----------------------------------------------------
     op.create_table(

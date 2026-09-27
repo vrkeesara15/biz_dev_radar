@@ -1255,7 +1255,7 @@
       "New matches are evaluated against every alert rule of the tenant and produce notification events",
       "Isolation factories registered"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-09",

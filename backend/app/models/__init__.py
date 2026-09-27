@@ -9,10 +9,13 @@ from app.models.files import File
 from app.models.integrations import Integration, IntegrationKind
 from app.models.knowledge import KBChunk
 from app.models.matching import (
+    AlertMode,
+    AlertRule,
     KeywordSuggestion,
     Match,
     MatchBand,
     MatchFeedback,
+    SavedSearch,
     SuggestionStatus,
     Thumb,
 )
@@ -61,6 +64,8 @@ __all__ = [
     "AgencySpendStat",
     "AgentRun",
     "AgentStep",
+    "AlertMode",
+    "AlertRule",
     "AuditLog",
     "AwardsEnrichment",
     "Base",
@@ -102,6 +107,7 @@ __all__ = [
     "RateCardEntry",
     "Registration",
     "Requirement",
+    "SavedSearch",
     "ServiceLine",
     "Source",
     "SourceRun",

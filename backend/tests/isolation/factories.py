@@ -39,6 +39,7 @@ from app.core.profile_fields import (
 )
 from app.core.roles import Role
 from app.models import (
+    AlertRule,
     AuditLog,
     BillingCustomer,
     BillingEventRecord,
@@ -64,6 +65,7 @@ from app.models import (
     PushSubscription,
     RateCardEntry,
     Registration,
+    SavedSearch,
     ServiceLine,
     TeamingPartner,
     UsageLedger,
@@ -352,6 +354,19 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         path_params={"kind": "slack"},
         json={"enabled": True, "config": {"channel": "#probe"}},
     ),
+    # --- saved searches and alert rules (M4-08): tenant-scoped; B must see none of A's
+    ("GET", "/api/v1/saved-searches"): lambda ctx: RouteCall(role=Role.VIEWER),
+    ("POST", "/api/v1/saved-searches"): lambda ctx: RouteCall(
+        json={"name": f"Probe search {uuid.uuid4().hex[:6]}", "filters": {"region": "us"}},
+        role=Role.VIEWER,
+    ),
+    ("GET", "/api/v1/alert-rules"): lambda ctx: RouteCall(),
+    ("POST", "/api/v1/alert-rules"): lambda ctx: RouteCall(
+        json={"name": f"Probe rule {uuid.uuid4().hex[:6]}", "min_score": 80}
+    ),
+    ("PATCH", "/api/v1/alert-rules/{rule_id}"): lambda ctx: RouteCall(
+        path_params={"rule_id": ctx.a.ids["alert_rule"]}, json={"enabled": False}
+    ),
     # --- pursuits (M5-02): tenant-scoped; B posting A's profile id gets 404 (RLS hides it)
     ("POST", "/api/v1/pursuits"): lambda ctx: RouteCall(
         json={"profile_id": ctx.a.ids["profile"], "opportunity_id": ctx.shared["opportunity"]}
@@ -629,7 +644,24 @@ async def build_context(database: Database) -> IsolationContext:
             delta_weight=Decimal("0.4"),
             evidence={"support": 4, "lift": 0.3},
         )
-        session.add_all([match, keyword_suggestion])
+        saved_search = SavedSearch(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            name="Alpha saved search",
+            filters={"q": "alpha secret term", "region": "us"},
+        )
+        session.add_all([match, keyword_suggestion, saved_search])
+        await session.flush()
+        alert_rule = AlertRule(
+            tenant_id=ta.id,
+            saved_search_id=saved_search.id,
+            profile_id=profile.id,
+            user_id=ua.id,
+            name="Alpha alert rule",
+            min_score=70,
+            channels=["in_app", "email"],
+        )
+        session.add(alert_rule)
         await session.flush()
         feedback = MatchFeedback(
             tenant_id=ta.id, match_id=match.id, user_id=ua.id, thumb="up", reason="alpha reason"
@@ -689,6 +721,10 @@ async def build_context(database: Database) -> IsolationContext:
                 "match_feedback": str(feedback.id),
                 "keyword_suggestion": str(keyword_suggestion.id),
                 "keyword_suggestion_term": "alpha suggested term",
+                "saved_search": str(saved_search.id),
+                "saved_search_name": "Alpha saved search",
+                "alert_rule": str(alert_rule.id),
+                "alert_rule_name": "Alpha alert rule",
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",
