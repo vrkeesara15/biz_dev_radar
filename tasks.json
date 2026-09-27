@@ -1581,7 +1581,7 @@
       "Never fills a price not present in the rate card; test asserts placeholders",
       "India variant includes GST and EMD lines as placeholders"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-10",

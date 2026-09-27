@@ -267,6 +267,12 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/pursuits/{pursuit_id}/packet"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
     ),
+    # inline so no broker is needed; B's call must 404 before any run row is created
+    ("POST", "/api/v1/pursuits/{pursuit_id}/agents/run"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={"step": "pricing", "inline": True},
+        owner_expect=frozenset({202}),
+    ),
     ("POST", "/api/v1/pursuits/{pursuit_id}/agents/approve-budget"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]},
         json={"additional_usd": "5", "reason": "isolation probe"},

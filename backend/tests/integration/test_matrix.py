@@ -149,6 +149,7 @@ async def _setup(
             "tenant_id": tenant.id,
             "user_id": user.id,
             "email": user.email,
+            "profile_id": profile.id,
             "pursuit_id": pursuit.id,
             "opportunity_id": opp.id,
             "document_id": doc.id,

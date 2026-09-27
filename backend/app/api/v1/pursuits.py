@@ -5,6 +5,7 @@ and the budget approval that resumes a run the cost guard paused.
     GET  /api/v1/pursuits/{pursuit_id}                     cost_so_far, cap, budget, latest run
     GET  /api/v1/pursuits/{pursuit_id}/matrix              matrix + format rules + checklist
     GET  /api/v1/pursuits/{pursuit_id}/packet              uploads, portal, signatures, deadline
+    POST /api/v1/pursuits/{pursuit_id}/agents/run          {step: collect|...|all}
     POST /api/v1/pursuits/{pursuit_id}/agents/approve-budget {additional_usd, reason?}
 
 M6-01 adds POST /opportunities/{id}/pursue|watch|pass, PATCH (stages) and the decision
@@ -20,12 +21,14 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents import pipeline
 from app.agents.cost_guard import CostSnapshot, cost_snapshot
 from app.agents.llm import LLMClient
+from app.agents.runner import AgentRunner
 from app.agents.services import AgentServices, services_from_settings
 from app.api.deps import TENANT_ROLES, CurrentUser, SettingsDep, TenantSessionDep, require_role
 from app.core.compliance import (
@@ -51,6 +54,7 @@ ManagerDep = Annotated[CurrentUser, Depends(require_role(*MANAGER_ROLES))]
 ReaderDep = Annotated[CurrentUser, Depends(require_role(*TENANT_ROLES))]
 
 MAX_APPROVAL_USD = Decimal("10000")
+_NO_LLM = run_agents_job_module.NoLLM()  # steps that need a model fail loudly, others run
 
 
 class PursuitCreateIn(BaseModel):
@@ -130,6 +134,34 @@ class PursuitPacketOut(BaseModel):
     checklist: list[ChecklistItem]
     checklist_version: int | None
     generated_at: datetime | None
+
+
+class RunAgentsIn(BaseModel):
+    """`step` is one agent name or "all"; "all" runs every implemented step in order and
+    pauses at the first one a later task still has to add."""
+
+    step: str = Field(default=pipeline.STEP_ALL, max_length=32)
+    # run in the API process (tests / no worker); otherwise queued on Celery
+    inline: bool = False
+
+    @field_validator("step")
+    @classmethod
+    def _known(cls, value: str) -> str:
+        if not pipeline.valid_step(value):
+            raise ValueError(
+                f"unknown step {value!r}; one of {(pipeline.STEP_ALL, *pipeline.PIPELINE_ORDER)}"
+            )
+        return value
+
+
+class RunAgentsOut(BaseModel):
+    run_id: uuid.UUID
+    step: str
+    steps: list[str]  # the implemented steps this run will execute, in order
+    mode: str  # queued | inline
+    task_id: str | None = None
+    result: dict[str, Any] | None = None
+    pursuit: PursuitOut
 
 
 class ApproveBudgetIn(BaseModel):
@@ -367,6 +399,49 @@ async def get_packet(
         checklist=checklist,
         checklist_version=checklist_version,
         generated_at=generated,
+    )
+
+
+@router.post(
+    "/{pursuit_id}/agents/run", response_model=RunAgentsOut, status_code=status.HTTP_202_ACCEPTED
+)
+async def run_agents(
+    pursuit_id: uuid.UUID,
+    body: RunAgentsIn,
+    session: TenantSessionDep,
+    user: ManagerDep,
+    request: Request,
+    settings: SettingsDep,
+) -> RunAgentsOut:
+    """Start the pursuit pipeline (SPEC 8, 10.3). The run is queued on Celery
+    (`bidradar.run_agents`) or executed in the API process; the cost guard still decides
+    before every step, so a run can come back needs_approval having spent nothing."""
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    specs, _finish = pipeline.plan_steps(body.step)
+    runner = AgentRunner(tenant_id=user.tenant_id, llm=app_llm(request) or _NO_LLM)
+    run_id = await runner.start(
+        kind=pursuit_svc.PIPELINE_RUN_KIND, pursuit_id=pursuit.id, params={"step": body.step}
+    )
+    await session.commit()  # the worker / inline job reads the run in its own session
+    request.state.audit = AuditHint(
+        action="pursuit.agents_run",
+        object_type="pursuit",
+        object_id=str(pursuit.id),
+        meta={"step": body.step, "run_id": str(run_id)},
+    )
+    mode, task_id, result = await dispatch_run(
+        request, settings, run_id, user.tenant_id, inline=body.inline
+    )
+    session.expire_all()
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    return RunAgentsOut(
+        run_id=run_id,
+        step=body.step,
+        steps=[spec.agent for spec in specs],
+        mode=mode,
+        task_id=task_id,
+        result=result,
+        pursuit=await load_pursuit_out(session, pursuit, user.tenant_id),
     )
 
 
