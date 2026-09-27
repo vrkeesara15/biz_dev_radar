@@ -2227,5 +2227,28 @@
       "All automated boxes green; manual boxes marked with instructions"
     ],
     "status": "todo"
+  },
+  {
+    "id": "M7-15",
+    "milestone": "M7",
+    "title": "Gap closure: tenant members API, notification opt-out exposure, VAPID public key",
+    "spec_refs": [
+      "3",
+      "7",
+      "10.3",
+      "10.4"
+    ],
+    "depends_on": [
+      "M0-07",
+      "M4-12",
+      "M7-09"
+    ],
+    "acceptance": [
+      "GET /api/v1/tenant/members lists memberships (user id, email, name, role, joined_at); POST /api/v1/tenant/members/invite {email, role} creates or attaches the user with that role and emits an invite email event; PATCH /api/v1/tenant/members/{membership_id} {role} and DELETE remove/change roles; tenant_owner only for writes; the last tenant_owner cannot be removed or demoted (409)",
+      "NotificationPrefsOut exposes unsubscribed_categories and NotificationPrefsIn accepts it so the settings page can edit opt-outs",
+      "GET /api/v1/me/push-config returns the VAPID public key (or 404 when push is not configured) so the frontend no longer needs NEXT_PUBLIC_VAPID_PUBLIC_KEY",
+      "Isolation factories registered; audit rows for member changes; frontend contract in frontend/src/lib/settings/api.ts matches (regenerate schema.d.ts)"
+    ],
+    "status": "todo"
   }
 ]
