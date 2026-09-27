@@ -1031,7 +1031,7 @@
       "OCR language set eng+hin for IN region documents",
       "Optional Hindi summary generated when profile languages include 'hi' (FakeLLM test)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-08",

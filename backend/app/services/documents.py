@@ -21,6 +21,7 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.http import PoliteClient
+from app.core.config import Region, Settings, get_settings
 from app.core.parsing import OCR, ParsedDocument, ParseError, chunk_pages, parse_document
 from app.core.paths import parsed_text_key
 from app.models import DocumentChunk, Opportunity, OpportunityDocument
@@ -37,6 +38,15 @@ MAX_DOCUMENT_BYTES = 50 * 1024 * 1024
 
 class DocumentTooLargeError(ValueError):
     pass
+
+
+def ocr_languages_for(region: Region | str | None, settings: Settings | None = None) -> str:
+    """Tesseract language set for a document of a notice in `region` (SPEC 12, M3-07):
+    Hindi + English (`OCR_LANGUAGES_IN`) for IN, `OCR_LANGUAGES` everywhere else."""
+    settings = settings or get_settings()
+    if region is not None and Region(region) is Region.IN:
+        return settings.ocr_languages_in
+    return settings.ocr_languages
 
 
 def download_document(document: OpportunityDocument, client: PoliteClient) -> bytes:
@@ -64,10 +74,17 @@ async def parse_and_store(
     storage: Storage,
     ocr: OCR | None = None,
     languages: str | None = None,
+    region: Region | str | None = None,
+    settings: Settings | None = None,
 ) -> ParsedDocument | None:
     """Parse `data`, persist text + chunks and update the row. Returns None on failure
-    (the row is marked failed with the reason in `parse_error`)."""
+    (the row is marked failed with the reason in `parse_error`).
+
+    `languages` is the OCR language set; when it is not given and `region` is, the set
+    comes from `ocr_languages_for(region)` (IN documents are read with eng+hin)."""
     kwargs: dict[str, Any] = {"file_name": document.file_name, "mime_type": document.mime_type}
+    if not languages and region is not None:
+        languages = ocr_languages_for(region, settings)
     if languages:
         kwargs["languages"] = languages
     try:
