@@ -32,15 +32,15 @@ log = structlog.get_logger(__name__)
 DUE_WINDOW_DAYS = 7
 DUE_LIMIT = 50
 FEEDBACK_TABLE = "match_feedback"
-# the verdicts the matching branch is expected to record; a different shape answers null
-FEEDBACK_USEFUL_VALUES = ("useful", "good", "relevant")
+# M4-07 records a thumb per (match, user); "up" is a useful alert (OQ-135 resolved)
+FEEDBACK_USEFUL_VALUES = ("up",)
 TABLE_EXISTS_SQL = (
     "SELECT 1 FROM information_schema.tables "
     "WHERE table_schema = current_schema() AND table_name = :name"
 )
 # FEEDBACK_TABLE is a module constant, never user input (ruff S608 is about injection)
 FEEDBACK_SQL = (
-    "SELECT count(*) FILTER (WHERE verdict = ANY(:useful)) AS useful, count(*) AS rated "
+    "SELECT count(*) FILTER (WHERE thumb = ANY(:useful)) AS useful, count(*) AS rated "
     f"FROM {FEEDBACK_TABLE}"
 )
 
@@ -135,9 +135,11 @@ async def feedback_precision(session: AsyncSession) -> tuple[float | None, int]:
     if found is None:
         return None, 0
     try:
-        row = (
-            await session.execute(text(FEEDBACK_SQL), {"useful": list(FEEDBACK_USEFUL_VALUES)})
-        ).one()
+        # a savepoint keeps a column-shape error from aborting the caller's transaction
+        async with session.begin_nested():
+            row = (
+                await session.execute(text(FEEDBACK_SQL), {"useful": list(FEEDBACK_USEFUL_VALUES)})
+            ).one()
     except (ProgrammingError, DBAPIError) as exc:  # a different column shape
         log.info("dashboard.match_feedback_unreadable", error=str(exc)[:200])
         return None, 0

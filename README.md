@@ -191,6 +191,7 @@ or Redis.
 | `make isolation` | the cross-tenant suite: two tenants, every endpoint, any 200 with foreign data fails |
 | `make smoke` | the live adapter smoke; a no-op unless `BIDRADAR_LIVE=1` |
 | `make db-reset` / `db-reset-dev` | drop and recreate `bidradar_test` / `bidradar` with the extensions |
+| `make load-db` / `make load-smoke` | create `bidradar_load`, then seed + score + search it at 10% of the SPEC 12 size |
 
 Narrower runs:
 
@@ -208,6 +209,7 @@ CI runs the same targets ([.github/workflows/ci.yml](.github/workflows/ci.yml)):
 `nightly-smoke.yml` runs the live smoke at 03:00 UTC and pages the ops channel on
 failure — see [docs/runbooks/broken-source.md](docs/runbooks/broken-source.md) when it
 does.
+`load.yml` runs the scaled load smoke at 03:30 UTC and uploads its JSON reports.
 
 ### The live smoke
 
@@ -220,6 +222,27 @@ Every **enabled** adapter must return at least one record. The India half of the
 is a manual run from an Indian IP or an `asia-south1` job, because several portals
 refuse connections from elsewhere (PROGRESS OQ-14); the recipe is in
 [docs/adapters.md](docs/adapters.md#5-live-smoke).
+
+### The load tests
+
+SPEC 12's load target — *50k opportunities, 200 profiles scored in < 10 min; search p95
+< 500 ms* — is measured by three scripts in [scripts/load/](scripts/load/README.md),
+against their **own** database (`bidradar_load`) so a load run never collides with
+`make test` on `bidradar_test`:
+
+```bash
+make load-db                 # CREATE DATABASE bidradar_load + extensions (compose)
+make load-smoke              # 10% of the SPEC size: 5,000 notices x 20 profiles
+make load-full               # the SPEC size itself: 50,000 notices x 200 profiles
+```
+
+`scripts/load/seed.py` writes the corpus (deterministic in `--seed`, `FakeEmbeddings`
+so no provider key is needed), `scripts/load/score.py` shards the batch scorer per
+profile over a process pool and **exits 1** over its wall-clock budget, and
+`scripts/load/search.py` fires 500 randomized `GET /api/v1/opportunities` calls and
+**exits 1** if p95 exceeds 500 ms. Each writes a JSON report under `load-report/`.
+[scripts/load/README.md](scripts/load/README.md) has the measured numbers, the
+extrapolation and what the budget means at a scaled size.
 
 ### One database per worktree
 
@@ -304,6 +327,20 @@ credential-looking field is added without listing it, and
 | `NOTIFY_MAX_ATTEMPTS` | Attempts per channel before a notification falls back to email. | `3` | - | - |
 | `OPS_SLACK_WEBHOOK_URL` | Slack incoming webhook for operator alerts (`adapter.failing` after > 2 consecutive runs, nightly smoke failures). Empty disables the channel. | _(empty)_ | yes | **yes** |
 | `OPS_EMAIL` | Operator mailbox that receives the same ops alerts by email. Empty disables it. | _(empty)_ | yes | - |
+| `WHATSAPP_PROVIDER` | `gupshup` \| `twilio` \| empty. Selects the WhatsApp Business BSP; empty disables the channel (IN tenants only). | _(empty)_ | if WhatsApp | - |
+| `WHATSAPP_TEMPLATE_DEADLINE` | Pre-approved BSP template name for deadline reminders. | _(empty)_ | if WhatsApp | - |
+| `WHATSAPP_TEMPLATE_HIGH_MATCH` | Pre-approved BSP template name for high-fit alerts. | _(empty)_ | if WhatsApp | - |
+| `WHATSAPP_TEMPLATE_LANGUAGE` | Template language code sent to the BSP. | `en` | - | - |
+| `WHATSAPP_WEBHOOK_SECRET` | Shared secret used to verify BSP delivery-status webhooks. | _(empty)_ | if WhatsApp | **yes** |
+| `GUPSHUP_API_KEY` | Gupshup API key. | _(empty)_ | if gupshup | **yes** |
+| `GUPSHUP_API_URL` | Gupshup WhatsApp API base URL. | `https://api.gupshup.io/wa/api/v1` | - | - |
+| `GUPSHUP_APP_NAME` | Gupshup app name. | `BidRadar` | if gupshup | - |
+| `GUPSHUP_SOURCE_NUMBER` | Gupshup WhatsApp sender number (E.164). | _(empty)_ | if gupshup | - |
+| `TWILIO_ACCOUNT_SID` | Twilio account SID. | _(empty)_ | if twilio | - |
+| `TWILIO_AUTH_TOKEN` | Twilio auth token. | _(empty)_ | if twilio | **yes** |
+| `TWILIO_API_URL` | Twilio API base URL. | `https://api.twilio.com` | - | - |
+| `TWILIO_WHATSAPP_FROM` | Twilio WhatsApp sender (`whatsapp:+E164`). | _(empty)_ | if twilio | - |
+| `HOURS_SAVED_PER_PACKAGE` | Labelled estimate of analyst hours saved per submitted package, used by the dashboard KPI. | `20` | - | - |
 | `NOTIFY_BACKOFF_SECONDS` | Backoff ladder between those attempts, in seconds. | `[1.0,2.0,4.0]` | - | - |
 | `NOTIFY_ACTION_TTL_SECONDS` | How long a signed Pursue/Watch/Pass/Assign or unsubscribe link stays valid. | `1209600` | - | - |
 | `EMAIL_PROVIDER` | `ses` \| `sendgrid` \| `smtp` \| `memory`. `smtp` points at Mailpit locally; `memory` is for tests. | `smtp` | yes | - |

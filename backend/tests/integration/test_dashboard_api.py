@@ -8,11 +8,13 @@ from decimal import Decimal
 from typing import Any
 
 import httpx
+import pytest
 from app.core.config import Region, Settings
 from app.core.db import Database
 from app.core.opportunity import NoticeType
 from app.core.roles import Role
-from app.models import CompanyProfile, Opportunity, Pursuit
+from app.models import CompanyProfile, Match, MatchFeedback, Opportunity, Pursuit
+from app.services import dashboard as dashboard_service
 from app.services.dashboard import FEEDBACK_TABLE, dashboard, feedback_precision
 from sqlalchemy import text
 
@@ -156,47 +158,66 @@ async def test_an_empty_tenant_reports_no_rates_rather_than_zeros(
     assert kpis.alert_precision is None
 
 
-async def test_alert_precision_is_null_until_match_feedback_exists(
-    database: Database, clean_db: Database
-) -> None:
+async def test_alert_precision_counts_up_thumbs(database: Database, clean_db: Database) -> None:
+    """M4-07 stores one thumb per (match, user); precision = up / rated, null until rated."""
     ctx = await _tenant(database)
     async with database.session(ctx["tenant_id"]) as session:
         assert await feedback_precision(session) == (None, 0)
 
-    # stand the table up the way the matching branch will, and the KPI lights up
     async with database.owner_session(ctx["tenant_id"]) as session:
-        await session.execute(
-            text(f"CREATE TABLE {FEEDBACK_TABLE} (id serial primary key, verdict text)")
+        raters = []
+        for _i in range(4):
+            _tenant_row, rater, _ = await create_tenant_with_owner(session)
+            raters.append(rater.id)
+        opportunity = Opportunity(
+            source_id="sam_opps",
+            external_id=f"kpi-fb-{uuid.uuid4().hex[:8]}",
+            region=Region.US,
+            country="US",
+            currency="USD",
+            notice_type=NoticeType.RFP,
+            title="Rated notice",
+            source_tz="America/New_York",
         )
-        await session.execute(
-            text(
-                f"INSERT INTO {FEEDBACK_TABLE} (verdict) VALUES "
-                "('useful'), ('useful'), ('useful'), ('not_relevant')"
+        session.add(opportunity)
+        await session.flush()
+        match = Match(
+            tenant_id=ctx["tenant_id"],
+            profile_id=ctx["profile_id"],
+            opportunity_id=opportunity.id,
+            opportunity_version=1,
+            profile_version=1,
+            score=Decimal("81.00"),
+            band="high",
+        )
+        session.add(match)
+        await session.flush()
+        for rater_id, thumb in zip(raters, ("up", "up", "up", "down"), strict=True):
+            session.add(
+                MatchFeedback(
+                    tenant_id=ctx["tenant_id"], match_id=match.id, user_id=rater_id, thumb=thumb
+                )
             )
-        )
-    try:
-        async with database.owner_session(ctx["tenant_id"]) as session:
-            precision, rated = await feedback_precision(session)
-        assert (precision, rated) == (0.75, 4)
-    finally:
-        async with database.owner_session(ctx["tenant_id"]) as session:
-            await session.execute(text(f"DROP TABLE {FEEDBACK_TABLE}"))
+        await session.flush()
+
+    async with database.session(ctx["tenant_id"]) as session:
+        assert await feedback_precision(session) == (0.75, 4)
 
 
 async def test_an_unexpected_feedback_shape_answers_null(
-    database: Database, clean_db: Database
+    database: Database, clean_db: Database, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A column-shape mismatch answers null and leaves the caller's transaction usable."""
     ctx = await _tenant(database)
-    async with database.owner_session(ctx["tenant_id"]) as session:
-        await session.execute(
-            text(f"CREATE TABLE {FEEDBACK_TABLE} (id serial primary key, rating int)")
-        )
-    try:
-        async with database.owner_session(ctx["tenant_id"]) as session:
-            assert await feedback_precision(session) == (None, 0)
-    finally:
-        async with database.owner_session(ctx["tenant_id"]) as session:
-            await session.execute(text(f"DROP TABLE {FEEDBACK_TABLE}"))
+    monkeypatch.setattr(
+        dashboard_service,
+        "FEEDBACK_SQL",
+        f"SELECT count(*) FILTER (WHERE verdict = ANY(:useful)), count(*) FROM {FEEDBACK_TABLE}",
+    )
+    async with database.session(ctx["tenant_id"]) as session:
+        assert await feedback_precision(session) == (None, 0)
+        # the savepoint kept the transaction alive
+        assert (await session.execute(text("SELECT 1"))).scalar_one() == 1
 
 
 async def test_the_route_renders_both_time_zones_and_reads_for_every_role(
