@@ -1,0 +1,216 @@
+name: deploy
+
+# SPEC 12: "every merge deploys to dev, a tag promotes to staging, and production runs in
+# both US and India regions from the same image."
+#
+#   push to main  -> build both images once, push to Artifact Registry, deploy dev
+#   tag v*        -> RESOLVE the digest main already built for that commit and promote it
+#                    to staging-in, then (after approval) to prod-us and prod-in
+#
+# A promotion never rebuilds. `resolve` looks up the digest of the image tagged with the
+# tagged commit's SHA and every downstream job deploys that digest, so the bits in
+# production are byte-for-byte the bits dev and staging-in ran.
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+
+# There is deliberately no workflow_dispatch: a deploy is caused by a merge or a tag, and
+# anything else is the by-hand gcloud sequence in docs/runbooks/deploy.md, done by a
+# person who can see what they are overriding. Re-run a failed job from the Actions UI.
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # Workload Identity Federation; no service-account JSON key exists.
+
+env:
+  REGISTRY_REGION: us-east1
+  REPOSITORY: bidradar
+
+jobs:
+  # ---------------------------------------------------------------- build (main only)
+  build:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      backend_image: ${{ steps.digests.outputs.backend_image }}
+      frontend_image: ${{ steps.digests.outputs.frontend_image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ vars.GCP_DEV_PROJECT }}
+          workload_identity_provider: ${{ vars.GCP_DEV_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEV_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_DEV_PROJECT }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGISTRY_REGION }}-docker.pkg.dev --quiet
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push the backend image
+        id: backend
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.REGISTRY_REGION }}-docker.pkg.dev/${{ vars.GCP_DEV_PROJECT }}/${{ env.REPOSITORY }}/backend:sha-${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build and push the front-end image
+        id: frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          provenance: false
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.DEV_API_BASE_URL }}
+          tags: |
+            ${{ env.REGISTRY_REGION }}-docker.pkg.dev/${{ vars.GCP_DEV_PROJECT }}/${{ env.REPOSITORY }}/frontend:sha-${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+      # Everything downstream refers to the digest, never to sha-<commit>: a tag can be
+      # moved, a digest cannot.
+      - id: digests
+        name: Record the image digests
+        run: |
+          set -euo pipefail
+          BASE="${{ env.REGISTRY_REGION }}-docker.pkg.dev/${{ vars.GCP_DEV_PROJECT }}/${{ env.REPOSITORY }}"
+          echo "backend_image=${BASE}/backend@${{ steps.backend.outputs.digest }}" >> "$GITHUB_OUTPUT"
+          echo "frontend_image=${BASE}/frontend@${{ steps.frontend.outputs.digest }}" >> "$GITHUB_OUTPUT"
+
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: dev
+      url: ${{ steps.deploy.outputs.api_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: deploy
+        uses: ./.github/actions/deploy-cloud-run
+        with:
+          environment: dev
+          project_id: ${{ vars.GCP_DEV_PROJECT }}
+          region: us-east1
+          name_prefix: bidradar-dev
+          backend_image: ${{ needs.build.outputs.backend_image }}
+          frontend_image: ${{ needs.build.outputs.frontend_image }}
+          workload_identity_provider: ${{ vars.GCP_DEV_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEV_DEPLOY_SA }}
+
+  # ---------------------------------------------------------------- promote (tag only)
+  resolve:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    outputs:
+      backend_image: ${{ steps.digests.outputs.backend_image }}
+      frontend_image: ${{ steps.digests.outputs.frontend_image }}
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ vars.GCP_DEV_PROJECT }}
+          workload_identity_provider: ${{ vars.GCP_DEV_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEV_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_DEV_PROJECT }}
+
+      # No build step in this job on purpose: a tag promotes what main already produced.
+      - id: digests
+        name: Resolve the digest main built for this commit
+        run: |
+          set -euo pipefail
+          BASE="${{ env.REGISTRY_REGION }}-docker.pkg.dev/${{ vars.GCP_DEV_PROJECT }}/${{ env.REPOSITORY }}"
+          for image in backend frontend; do
+            DIGEST=$(gcloud artifacts docker images describe \
+              "${BASE}/${image}:sha-${{ github.sha }}" \
+              --format 'value(image_summary.digest)')
+            if [ -z "$DIGEST" ]; then
+              echo "::error::no image for ${image}:sha-${{ github.sha }}; tag a commit that main built" >&2
+              exit 1
+            fi
+            echo "${image}_image=${BASE}/${image}@${DIGEST}" >> "$GITHUB_OUTPUT"
+          done
+
+  deploy-staging-in:
+    needs: resolve
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Requires reviewers in the repository's environment settings (SPEC 12: a tag
+    # promotes to staging, a human confirms production).
+    environment:
+      name: staging-in
+      url: ${{ steps.deploy.outputs.api_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: deploy
+        uses: ./.github/actions/deploy-cloud-run
+        with:
+          environment: staging-in
+          project_id: ${{ vars.GCP_STAGING_IN_PROJECT }}
+          region: asia-south1
+          name_prefix: bidradar-stg-in
+          backend_image: ${{ needs.resolve.outputs.backend_image }}
+          frontend_image: ${{ needs.resolve.outputs.frontend_image }}
+          workload_identity_provider: ${{ vars.GCP_STAGING_IN_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_STAGING_IN_DEPLOY_SA }}
+
+  # prod-us and prod-in take the SAME digest staging-in just ran. Each has its own
+  # protected environment, so each needs its own approval.
+  deploy-prod:
+    needs: [resolve, deploy-staging-in]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - environment: prod-us
+            region: us-east1
+            name_prefix: bidradar-prod-us
+            project_var: GCP_PROD_US_PROJECT
+            wif_var: GCP_PROD_US_WIF_PROVIDER
+            sa_var: GCP_PROD_US_DEPLOY_SA
+          - environment: prod-in
+            region: asia-south1
+            name_prefix: bidradar-prod-in
+            project_var: GCP_PROD_IN_PROJECT
+            wif_var: GCP_PROD_IN_WIF_PROVIDER
+            sa_var: GCP_PROD_IN_DEPLOY_SA
+    environment:
+      name: ${{ matrix.environment }}
+      url: ${{ steps.deploy.outputs.api_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: deploy
+        uses: ./.github/actions/deploy-cloud-run
+        with:
+          environment: ${{ matrix.environment }}
+          project_id: ${{ vars[matrix.project_var] }}
+          region: ${{ matrix.region }}
+          name_prefix: ${{ matrix.name_prefix }}
+          backend_image: ${{ needs.resolve.outputs.backend_image }}
+          frontend_image: ${{ needs.resolve.outputs.frontend_image }}
+          workload_identity_provider: ${{ vars[matrix.wif_var] }}
+          service_account: ${{ vars[matrix.sa_var] }}

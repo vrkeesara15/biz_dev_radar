@@ -99,3 +99,126 @@ def test_terraform_validate_job_covers_every_environment(repo_root: Path) -> Non
     assert "hashicorp/setup-terraform" in text
     envs = {p.name for p in (repo_root / "infra" / "terraform" / "envs").iterdir() if p.is_dir()}
     assert envs == {"dev", "staging-in", "prod-us", "prod-in"}
+
+
+# ------------------------------------------------------------------ M7-03 deploy
+
+
+def _yaml(repo_root: Path, name: str) -> dict[str, Any]:
+    data = yaml.safe_load((repo_root / ".github" / "workflows" / name).read_text())
+    assert isinstance(data, dict)
+    return data
+
+
+def _triggers(workflow: dict[str, Any]) -> Any:
+    return workflow.get("on") or workflow.get(True)  # PyYAML 1.1 reads bare `on:` as True
+
+
+def test_deploy_runs_on_main_and_on_version_tags(repo_root: Path) -> None:
+    triggers = _triggers(_yaml(repo_root, "deploy.yml"))
+    assert triggers["push"]["branches"] == ["main"]
+    assert triggers["push"]["tags"] == ["v*"]
+
+
+def test_deploy_uses_workload_identity_and_never_a_json_key(repo_root: Path) -> None:
+    text = (repo_root / ".github" / "workflows" / "deploy.yml").read_text()
+    action = (repo_root / ".github" / "actions" / "deploy-cloud-run" / "action.yml").read_text()
+    for source in (text, action):
+        assert "google-github-actions/auth@v2" in source
+        assert "workload_identity_provider" in source
+        assert "credentials_json" not in source, "a JSON key must never appear (SPEC 11)"
+    assert _yaml(repo_root, "deploy.yml")["permissions"]["id-token"] == "write"
+
+
+def test_merge_to_main_builds_then_deploys_dev(repo_root: Path) -> None:
+    jobs = _yaml(repo_root, "deploy.yml")["jobs"]
+    assert "refs/heads/main" in jobs["build"]["if"]
+    assert jobs["deploy-dev"]["needs"] == "build"
+    assert jobs["deploy-dev"]["environment"]["name"] == "dev"
+
+
+def test_a_tag_promotes_the_same_digest_and_never_rebuilds(repo_root: Path) -> None:
+    """SPEC 12: production runs the same image staging-in ran."""
+    jobs = _yaml(repo_root, "deploy.yml")["jobs"]
+    resolve = jobs["resolve"]
+    assert "refs/tags/v" in resolve["if"]
+    resolve_text = _steps_text(resolve)
+    assert "build-push-action" not in resolve_text, "a promotion must not rebuild the image"
+    assert "gcloud artifacts docker images describe" in resolve_text
+
+    for name in ("deploy-staging-in", "deploy-prod"):
+        job = jobs[name]
+        images = [
+            step["with"]["backend_image"]
+            for step in job["steps"]
+            if isinstance(step.get("with"), dict) and "backend_image" in step["with"]
+        ]
+        assert images, name
+        for value in images:
+            assert "needs.resolve.outputs.backend_image" in value, name
+
+    # The composite action refuses anything that is not pinned by digest.
+    action = (repo_root / ".github" / "actions" / "deploy-cloud-run" / "action.yml").read_text()
+    assert "*@sha256:*" in action
+
+
+def test_promotion_order_is_staging_then_both_productions(repo_root: Path) -> None:
+    jobs = _yaml(repo_root, "deploy.yml")["jobs"]
+    assert jobs["deploy-staging-in"]["environment"]["name"] == "staging-in"
+    prod = jobs["deploy-prod"]
+    assert "deploy-staging-in" in prod["needs"]
+    environments = {entry["environment"] for entry in prod["strategy"]["matrix"]["include"]}
+    assert environments == {"prod-us", "prod-in"}
+    regions = {
+        entry["environment"]: entry["region"] for entry in prod["strategy"]["matrix"]["include"]
+    }
+    assert regions == {"prod-us": "us-east1", "prod-in": "asia-south1"}
+    # Each production gets its own protected environment, so each needs its own approval.
+    assert prod["environment"]["name"] == "${{ matrix.environment }}"
+
+
+def test_migrations_run_as_a_job_before_the_traffic_shift(repo_root: Path) -> None:
+    action = yaml.safe_load(
+        (repo_root / ".github" / "actions" / "deploy-cloud-run" / "action.yml").read_text()
+    )
+    names = [str(step.get("name", step.get("id", ""))) for step in action["runs"]["steps"]]
+    blob = "\n".join(str(step.get("run", "")) for step in action["runs"]["steps"])
+    assert "gcloud run jobs execute" in blob and "--wait" in blob
+    migrate_at = next(i for i, name in enumerate(names) if "migration" in name.lower())
+    traffic_at = next(i for i, name in enumerate(names) if "traffic" in name.lower())
+    assert migrate_at < traffic_at, "the schema must be migrated before traffic moves"
+    assert "-migrate" in blob, "the migrate Cloud Run job is what runs alembic"
+
+
+def test_preview_deploys_a_tagged_zero_traffic_revision(repo_root: Path) -> None:
+    workflow = _yaml(repo_root, "preview.yml")
+    triggers = _triggers(workflow)
+    assert set(triggers["pull_request"]["types"]) == {
+        "opened",
+        "synchronize",
+        "reopened",
+        "closed",
+    }
+    deploy = workflow["jobs"]["deploy"]
+    assert "closed" in deploy["if"] and "head.repo.full_name == github.repository" in deploy["if"]
+    text = _steps_text(deploy)
+    assert '--tag "${TAG}"' in text and "--no-traffic" in text
+    assert "pr-${{ github.event.pull_request.number }}" in (
+        (repo_root / ".github" / "workflows" / "preview.yml").read_text()
+    )
+    assert "github-script" in text, "the PR gets a comment with the URL"
+
+
+def test_preview_is_torn_down_when_the_pr_closes(repo_root: Path) -> None:
+    teardown = _yaml(repo_root, "preview.yml")["jobs"]["teardown"]
+    assert teardown["if"] == "github.event.action == 'closed'"
+    text = _steps_text(teardown)
+    assert "--remove-tags" in text
+
+
+def test_deploy_runbook_exists(repo_root: Path) -> None:
+    runbook = repo_root / "docs" / "runbooks" / "deploy.md"
+    assert runbook.is_file()
+    text = runbook.read_text()
+    for topic in ("rollback", "preview", "migration"):
+        assert topic in text.lower(), f"the runbook does not cover {topic}"

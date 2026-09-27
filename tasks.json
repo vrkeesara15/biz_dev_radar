@@ -2006,7 +2006,7 @@
       "Migrations run as a Cloud Run job before traffic shift",
       "Workflow YAML validated in tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-04",

@@ -1,0 +1,145 @@
+name: Deploy BidRadar to Cloud Run
+description: >-
+  Run the migration job with the new image, then move api, worker, beat and the front end
+  onto it. Used by every environment so the order is the same everywhere: schema first,
+  traffic second.
+
+inputs:
+  environment:
+    description: dev | staging-in | prod-us | prod-in
+    required: true
+  project_id:
+    required: true
+    description: GCP project for this environment.
+  region:
+    required: true
+    description: us-east1 or asia-south1.
+  name_prefix:
+    required: true
+    description: Resource name prefix, e.g. bidradar-prod-in.
+  backend_image:
+    required: true
+    description: Backend image BY DIGEST; a tag would let the deployed bits drift.
+  frontend_image:
+    required: true
+    description: Front-end image by digest.
+  workload_identity_provider:
+    required: true
+    description: Workload Identity Federation provider; there is no JSON key.
+  service_account:
+    required: true
+    description: Deployer service account to impersonate.
+
+outputs:
+  api_url:
+    description: URL of the api service after the deploy.
+    value: ${{ steps.urls.outputs.api_url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Refuse a floating tag
+      shell: bash
+      run: |
+        set -euo pipefail
+        for image in "${{ inputs.backend_image }}" "${{ inputs.frontend_image }}"; do
+          case "$image" in
+            *@sha256:*) ;;
+            *) echo "::error::${image} is not pinned by digest; promotion must not rebuild or re-resolve" >&2; exit 1 ;;
+          esac
+        done
+
+    - id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        project_id: ${{ inputs.project_id }}
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        service_account: ${{ inputs.service_account }}
+
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ inputs.project_id }}
+
+    # Schema first. The job runs as the owner role (DATABASE_URL_OWNER) and must finish
+    # before any request reaches the new code, so --wait is not optional.
+    - name: Run migrations as a Cloud Run job
+      shell: bash
+      run: |
+        set -euo pipefail
+        JOB="${{ inputs.name_prefix }}-migrate"
+        gcloud run jobs update "$JOB" \
+          --region "${{ inputs.region }}" \
+          --image "${{ inputs.backend_image }}" \
+          --quiet
+        gcloud run jobs execute "$JOB" \
+          --region "${{ inputs.region }}" \
+          --wait
+
+    - name: Deploy backend services
+      shell: bash
+      run: |
+        set -euo pipefail
+        for service in api worker beat; do
+          gcloud run services update "${{ inputs.name_prefix }}-${service}" \
+            --region "${{ inputs.region }}" \
+            --image "${{ inputs.backend_image }}" \
+            --quiet
+        done
+
+    - name: Deploy the front end
+      shell: bash
+      run: |
+        set -euo pipefail
+        gcloud run services update "${{ inputs.name_prefix }}-web" \
+          --region "${{ inputs.region }}" \
+          --image "${{ inputs.frontend_image }}" \
+          --quiet
+
+    - name: Point all traffic at the new revision
+      shell: bash
+      run: |
+        set -euo pipefail
+        for service in api worker beat web; do
+          gcloud run services update-traffic "${{ inputs.name_prefix }}-${service}" \
+            --region "${{ inputs.region }}" \
+            --to-latest \
+            --quiet
+        done
+
+    - id: urls
+      shell: bash
+      run: |
+        set -euo pipefail
+        API_URL=$(gcloud run services describe "${{ inputs.name_prefix }}-api" \
+          --region "${{ inputs.region }}" --format 'value(status.url)')
+        echo "api_url=${API_URL}" >> "$GITHUB_OUTPUT"
+
+    - name: Smoke the health endpoint
+      shell: bash
+      run: |
+        set -euo pipefail
+        URL="${{ steps.urls.outputs.api_url }}/healthz"
+        for attempt in $(seq 1 30); do
+          if curl -fsS --max-time 10 "$URL"; then
+            echo
+            echo "healthy after ${attempt} attempt(s)"
+            exit 0
+          fi
+          sleep 5
+        done
+        echo "::error::${URL} never became healthy; see docs/runbooks/deploy.md to roll back" >&2
+        exit 1
+
+    - name: Summary
+      shell: bash
+      run: |
+        {
+          echo "### Deployed to ${{ inputs.environment }}"
+          echo
+          echo "| what | value |"
+          echo "| --- | --- |"
+          echo "| region | ${{ inputs.region }} |"
+          echo "| backend | \`${{ inputs.backend_image }}\` |"
+          echo "| frontend | \`${{ inputs.frontend_image }}\` |"
+          echo "| api | ${{ steps.urls.outputs.api_url }} |"
+        } >> "$GITHUB_STEP_SUMMARY"
