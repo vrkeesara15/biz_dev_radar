@@ -13,6 +13,7 @@ from sqlalchemy.exc import ProgrammingError
 
 from tests.auth import auth_headers
 from tests.factories import create_tenant_with_owner
+from tests.isolation.factories import is_public
 
 
 async def _tenant(database: Database, **overrides):  # type: ignore[no-untyped-def]
@@ -87,16 +88,27 @@ async def test_every_mutating_route_under_api_v1_is_audited(
     database: Database,  # type: ignore[no-untyped-def]
 ) -> None:
     """Drive every POST/PUT/PATCH/DELETE route with an empty body as an authenticated
-    user; each must leave exactly one audit row whatever its status code."""
+    user; each must leave exactly one audit row whatever its status code.
+
+    Provider webhooks (PUBLIC_ROUTES) are the one exception: they carry no user, so the
+    middleware has no tenant to write into. Their effect is audited inside the service
+    instead (action billing.webhook, see test_billing_api.py). The exempt set is asserted
+    below so a new route cannot slip out of the audit trail unnoticed."""
     tid, uid = await _tenant(database, is_internal=True)
     headers = auth_headers(user_id=uid, tenant_id=tid, role=Role.PLATFORM_ADMIN)
     spec = app.openapi()
-    mutating = [
+    all_mutating = [
         (method.upper(), path)
         for path, ops in spec["paths"].items()
         for method in ops
         if method.upper() in {"POST", "PUT", "PATCH", "DELETE"} and path.startswith("/api/v1/")
     ]
+    mutating = [route for route in all_mutating if not is_public(*route)]
+    exempt = sorted(route for route in all_mutating if is_public(*route))
+    assert exempt == [
+        ("POST", "/api/v1/webhooks/razorpay"),
+        ("POST", "/api/v1/webhooks/stripe"),
+    ], f"unexpected route exempted from the audit middleware: {exempt}"
     assert mutating, "expected mutating routes"
     for method, path in mutating:
         concrete = path.replace("{tenant_id}", str(tid)).replace("{id}", str(uuid.uuid4()))

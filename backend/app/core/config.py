@@ -120,6 +120,8 @@ class Settings(BaseSettings):
     # SAM.gov contract awards search (the successor of the retired ATOM feed); endpoint and
     # the NAICS list the daily job asks for are configuration, not code (OQ-40).
     sam_awards_api_url: str = "https://api.sam.gov/contract-awards/v1/search"
+    # SAM.gov Entity Management API (profile autofill by UEI, SPEC 4.1)
+    sam_entity_api_url: str = "https://api.sam.gov/entity-information/v3/entities"
     sam_awards_naics: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
     # polite HTTP client (SPEC 5.1): per-host req/s, backoff attempts, timeout
@@ -142,15 +144,44 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 4096
     llm_output_retries: int = 2
 
-    # embeddings
+    # embeddings (SPEC 10.1: configurable provider, default Voyage 1024-dim, batch embed)
     embedding_provider: EmbeddingProviderName = EmbeddingProviderName.VOYAGE
     embedding_model: str = "voyage-3"
     embedding_dim: int = 1024
+    embedding_batch_size: int = 128
+    voyage_api_key: str = ""
+    voyage_api_url: str = "https://api.voyageai.com/v1/embeddings"
 
     # money
     fx_rates: Annotated[dict[str, float], NoDecode] = Field(
         default_factory=lambda: {"USD": 1.0, "INR": 0.012}
     )
+
+    # billing (SPEC 10.1): Stripe for us tenants (USD), Razorpay for in tenants (INR + GST).
+    # *_PRICE_IDS / *_PLAN_IDS are JSON maps plan -> provider price/plan id, e.g.
+    # {"pro": "price_123", "enterprise": "price_456"}.
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_api_url: str = "https://api.stripe.com/v1"
+    stripe_price_ids: Annotated[dict[str, str], NoDecode] = Field(default_factory=dict)
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
+    razorpay_api_url: str = "https://api.razorpay.com/v1"
+    razorpay_plan_ids: Annotated[dict[str, str], NoDecode] = Field(default_factory=dict)
+    # our GSTIN (supplier) and the GST rate applied to SaaS subscriptions (SAC 998314)
+    billing_gstin: str = ""
+    billing_gst_rate_pct: int = 18
+
+    # privacy (SPEC 11): DPDP consent notice, data-principal requests, grievance officer.
+    # Bumping a *_version makes the next acceptance a new consents row (the old one stays).
+    dpdp_notice_version: str = "v1"
+    privacy_policy_version: str = "v1"
+    terms_version: str = "v1"
+    # statutory answer-by window for a data-principal request, in days from receipt
+    data_request_sla_days: int = 30
+    grievance_officer_name: str = ""
+    grievance_officer_email: str = ""
 
     # seed
     seed_admin_email: str = "admin@example.com"
@@ -171,11 +202,18 @@ class Settings(BaseSettings):
             return [part.strip() for part in stripped.split(",") if part.strip()]
         return value
 
-    @field_validator("fx_rates", "http_rate_limits", "llm_prices", mode="before")
+    @field_validator(
+        "fx_rates",
+        "http_rate_limits",
+        "llm_prices",
+        "stripe_price_ids",
+        "razorpay_plan_ids",
+        mode="before",
+    )
     @classmethod
     def _parse_json_map(cls, value: Any) -> Any:
         if isinstance(value, str):
-            return json.loads(value)
+            return json.loads(value) if value.strip() else {}
         return value
 
     @field_validator("embedding_dim")

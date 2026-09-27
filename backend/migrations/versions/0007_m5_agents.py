@@ -2,10 +2,12 @@
 pursuit artifacts (tenant-scoped, RLS).
 
 Revision ID: 0007_m5_agents
-Revises: 0004_m5_agent_runtime
+Revises: 0009_m7_billing_privacy
 
 Every M5 pipeline task (M5-02..M5-14) edits this file in place until the milestone closes
-(CLAUDE.md). down_revision is re-pointed by the orchestrator at merge time.
+(CLAUDE.md). Numbered by merge order: 0006 and 0008 are held by the M3/M4 worktrees, so
+after merging main this file chains onto main's head (0009_m7_billing_privacy) to keep a
+single alembic head; the orchestrator renumbers it at merge time.
 """
 
 from collections.abc import Sequence
@@ -17,7 +19,7 @@ from migrations.rls import enable_rls, grant_app
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0007_m5_agents"
-down_revision: str | None = "0004_m5_agent_runtime"
+down_revision: str | None = "0009_m7_billing_privacy"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

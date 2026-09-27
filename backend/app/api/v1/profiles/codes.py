@@ -198,4 +198,5 @@ service_lines_router = crud_router(
     out=ServiceLineOut,
     write_roles=PROFILE_EDIT_ROLES,
     order_by=(ServiceLine.name,),
+    reindex=True,
 )

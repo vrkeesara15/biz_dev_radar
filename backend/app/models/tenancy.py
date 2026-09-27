@@ -3,9 +3,20 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Enum, ForeignKey, Numeric, String, UniqueConstraint, false, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Numeric,
+    String,
+    UniqueConstraint,
+    false,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,6 +49,9 @@ class Tenant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     pursuit_cost_cap_usd: Mapped[Decimal] = mapped_column(
         Numeric(12, 2), nullable=False, server_default=text("15")
     )
+    # Set by the tenant-delete job (M7-07): every tenant-scoped row is gone, the tenants
+    # row and its audit_log trail are kept so the erasure itself stays auditable.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     memberships: Mapped[list[Membership]] = relationship(back_populates="tenant")
 

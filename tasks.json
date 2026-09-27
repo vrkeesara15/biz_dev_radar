@@ -465,7 +465,7 @@
       "Capability PDF path parses text and extracts service lines, certifications, past performance candidates",
       "Tests use FakeLLM and recorded fixtures only"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-11",
@@ -507,7 +507,7 @@
       "Indexing job chunks profile files, boilerplate, past performance and service lines; re-index on change",
       "similarity_search(profile_id, query, k) returns only the tenant's chunks (isolation test)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-13",
@@ -890,7 +890,7 @@
       "Due dates shown in the user's time zone with the buyer's alongside",
       "Disclaimer and source link visible on every record"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-01",
@@ -2028,7 +2028,7 @@
       "Plan change is enforced immediately by PlanService",
       "Mocked provider tests incl. signature failure -> 400"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-05",
@@ -2086,7 +2086,7 @@
       "Erasure removes files from storage and rows across tenant tables; audit row kept",
       "docs/privacy/sub-processors.md and grievance officer contact in settings"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-08",

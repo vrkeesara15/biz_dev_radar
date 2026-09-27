@@ -21,8 +21,11 @@ from app.core.db import get_database
 from app.core.plan import PlanLimitExceeded
 from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
+from app.services.billing import providers_from_settings
+from app.services.embeddings import embeddings_from_settings
 from app.services.enrichment import install_enrichment
 from app.services.events import get_event_bus
+from app.services.opportunity_embeddings import install_opportunity_embeddings
 from app.services.scanner import scanner_from_settings
 from app.services.sources import sync_sources_on_startup
 from app.services.storage import StorageRouter
@@ -37,6 +40,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     await sync_sources_on_startup()
     # summary_ai on opportunity.created/amended, only when an LLM is configured (M2-13)
     install_enrichment(settings, get_database(), app.state.storage_router, get_event_bus())
+    # opportunities.embedding on the same events, after the summary (M1-12 / M4)
+    install_opportunity_embeddings(settings, get_event_bus(), embeddings=app.state.embeddings)
     yield
 
 
@@ -67,6 +72,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # LLM client for pipeline runs executed in-process (None without a key); tests inject
     # a FakeLLM here. agent_services is built lazily from storage_router + scanner.
     app.state.llm = llm_from_settings(settings)
+    # embedding provider (Voyage | fake) for the knowledge base and autofill (M1-12)
+    app.state.embeddings = embeddings_from_settings(settings)
+    # billing providers (Stripe for us, Razorpay for in); tests install fakes on app.state
+    app.state.billing_providers = providers_from_settings(settings)
     # add_middleware wraps outward: the LAST added is the outermost. Final order:
     # RequestId (outermost) -> CORS -> Audit -> routes.
     app.add_middleware(AuditMiddleware, trust_proxy=settings.trust_proxy_headers)

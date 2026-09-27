@@ -97,6 +97,27 @@ with the same `AUTH_SECRET` the Playwright web server is started with, so no
 mail server or OAuth is needed. `pnpm e2e` skips with a message when Chromium
 is not installed (`pnpm exec playwright install chromium`).
 
+## Opportunity screens (M2-18)
+
+- `/app/opportunities` — filter sidebar (query, region, notice type, NAICS,
+  due before, status, minimum fit score), TanStack Table results (score,
+  title, buyer, value, due, type, source) with server-side pagination. The
+  filter state lives in the query string (`src/lib/opportunities/filters.ts`),
+  so any URL is a saved search; the saved-search bar talks to
+  `GET/POST /api/v1/saved-searches` (M4-08) and explains itself on 404.
+- `/app/opportunities/[id]` — header with buyer breadcrumb and dual-zone
+  dates, Pursue / Watch / Pass (with reason) posting to
+  `/api/v1/opportunities/{id}/pursue|watch|pass` (M6-01; a 404 becomes a
+  toast), summary, fit-score placeholder ready for `match`, eligibility
+  checks, documents, versions diff, contacts, also-from links and the
+  attribution footer with the SPEC 11 disclaimer.
+- Dates: `src/lib/opportunities/dates.ts` mirrors the backend's
+  `dual_tz` / `countdown` for both wire shapes (ISO string + `source_tz`, or
+  the OQ-24 `TzDateOut` object): buyer's clock first, the viewer's second.
+- E2E: `e2e/opportunities.spec.ts` runs against `e2e/mock-api.ts`, which
+  serves `e2e/fixtures/opportunities.json` / `opportunity-detail.json` with
+  the API's filter semantics (Chromium pinned to Asia/Kolkata).
+
 ## Scripts
 
 | Script | What it does |
