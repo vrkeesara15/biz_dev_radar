@@ -424,7 +424,7 @@
       "Region-specific fields only count for that region",
       "Deterministic unit tests for an empty, half-filled and full profile"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-09",
