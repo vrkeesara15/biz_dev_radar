@@ -30,6 +30,7 @@ __all__ = [
     "AdapterHealth",
     "AdapterStatus",
     "Contact",
+    "DegradedNotes",
     "DetailStatus",
     "DocumentKind",
     "DocumentRef",
@@ -78,6 +79,37 @@ class AdapterHealth:
     @property
     def ok(self) -> bool:
         return self.status is AdapterStatus.OK
+
+
+class DegradedNotes:
+    """Bounded, de-duplicated list of 'page looked wrong' notes an adapter collects during
+    fetch(); non-empty notes turn health() DEGRADED (SPEC 5.1 layout-change detection)."""
+
+    MAX = 10
+
+    def __init__(self) -> None:
+        self.items: list[str] = []
+
+    def add(self, note: str) -> None:
+        if note not in self.items and len(self.items) < self.MAX:
+            self.items.append(note)
+
+    def reset(self) -> None:
+        self.items.clear()
+
+    def __bool__(self) -> bool:
+        return bool(self.items)
+
+    @property
+    def message(self) -> str:
+        return "; ".join(self.items)
+
+
+def safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 @runtime_checkable

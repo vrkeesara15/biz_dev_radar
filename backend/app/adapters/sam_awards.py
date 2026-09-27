@@ -18,15 +18,18 @@ import structlog
 from app.adapters.base import (
     AdapterHealth,
     AdapterStatus,
+    DegradedNotes,
     DocumentRef,
     OpportunityIn,
     RawRecord,
+    safe_int,
 )
 from app.adapters.http import PoliteClient
 from app.adapters.registry import register
 from app.core.config import Settings, get_settings
 from app.core.normalize.sam_awards import (
     SOURCE_ID,
+    ContractAward,
     award_from_record,
     award_search_params,
     award_to_opportunity,
@@ -67,6 +70,7 @@ class SamAwardsAdapter:
         self.page_size = page_size
         self._last_error: str | None = None
         self._last_run_at: datetime | None = None
+        self._notes = DegradedNotes()
 
     @property
     def client(self) -> PoliteClient:
@@ -96,6 +100,19 @@ class SamAwardsAdapter:
                 return [row for row in value if isinstance(row, dict)]
         return []
 
+    def _check_layout(self, payload: dict[str, Any], rows: list[dict[str, Any]]) -> None:
+        """Degraded notes for a 200 page whose shape is not the documented one."""
+        lists: list[list[Any]] = [
+            value for key in RESULT_KEYS if isinstance(value := payload.get(key), list)
+        ]
+        if not lists:
+            self._notes.add(
+                f"no result list under {list(RESULT_KEYS)} (layout change?); "
+                f"keys={sorted(str(k) for k in payload)[:8]}"
+            )
+        elif len(lists[0]) != len(rows):
+            self._notes.add(f"{len(lists[0]) - len(rows)} non-object award row(s) skipped")
+
     def _blocked(self) -> str | None:
         if not self.settings.sam_api_key:
             return "SAM_API_KEY is not configured"
@@ -106,6 +123,7 @@ class SamAwardsAdapter:
     def fetch(self, since: datetime, cursor: str | None) -> Iterator[RawRecord]:
         now = self._now()
         self._last_run_at = now
+        self._notes.reset()
         blocked = self._blocked()
         if blocked:
             self._last_error = blocked
@@ -135,12 +153,23 @@ class SamAwardsAdapter:
                         archive_id=f"search/{params['signedDateFrom'].replace('/', '-')}/{offset}",
                     )
                     rows = self._rows(payload)
-                    total = int(payload.get("totalRecords") or 0)
+                    self._check_layout(payload, rows)
+                    total = safe_int(payload.get("totalRecords"), 0)
                     next_offset = offset + len(rows)
                     done = not rows or next_offset >= total
-                    for position, row in enumerate(rows):
-                        award = award_from_record(row)
-                        last = position == len(rows) - 1
+                    parsed: list[tuple[dict[str, Any], ContractAward]] = []
+                    for row in rows:
+                        try:
+                            award = award_from_record(row)
+                        except Exception as exc:
+                            self._notes.add(f"unparseable award row skipped: {exc}"[:200])
+                            continue
+                        if not award.award_id:
+                            self._notes.add("award row without an award id skipped")
+                            continue
+                        parsed.append((row, award))
+                    for position, (row, award) in enumerate(parsed):
+                        last = position == len(parsed) - 1
                         yield RawRecord(
                             source_id=self.source_id,
                             external_id=award.award_id,
@@ -180,4 +209,6 @@ class SamAwardsAdapter:
             return AdapterHealth(AdapterStatus.DEGRADED, self._last_run_at, blocked)
         if self._last_error:
             return AdapterHealth(AdapterStatus.FAILING, self._last_run_at, self._last_error)
+        if self._notes:
+            return AdapterHealth(AdapterStatus.DEGRADED, self._last_run_at, self._notes.message)
         return AdapterHealth(AdapterStatus.OK, self._last_run_at, None)

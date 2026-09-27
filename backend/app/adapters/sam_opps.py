@@ -21,9 +21,11 @@ import structlog
 from app.adapters.base import (
     AdapterHealth,
     AdapterStatus,
+    DegradedNotes,
     DocumentRef,
     OpportunityIn,
     RawRecord,
+    safe_int,
 )
 from app.adapters.http import PoliteClient
 from app.adapters.registry import register
@@ -87,6 +89,7 @@ class SamOpportunitiesAdapter:
         self.page_size = min(page_size, PAGE_SIZE)
         self._last_error: str | None = None
         self._last_run_at: datetime | None = None
+        self._notes = DegradedNotes()
 
     @property
     def client(self) -> PoliteClient:
@@ -128,6 +131,7 @@ class SamOpportunitiesAdapter:
 
     def fetch(self, since: datetime, cursor: str | None) -> Iterator[RawRecord]:
         self._last_run_at = self._now()
+        self._notes.reset()
         if not self.settings.sam_api_key:
             self._last_error = "SAM_API_KEY is not configured"
             log.warning("sam_opps.no_api_key")
@@ -152,12 +156,25 @@ class SamOpportunitiesAdapter:
                 {**window_params, "limit": self.page_size, "offset": offset},
                 archive_id=f"search/{posted_from.replace('/', '-')}/{offset}",
             )
+            if "opportunitiesData" not in data:
+                self._notes.add(
+                    "search response has no 'opportunitiesData' key (layout change?); "
+                    f"keys={sorted(str(k) for k in data if not str(k).startswith('_'))[:8]}"
+                )
             items = data.get("opportunitiesData") or []
-            total = int(data.get("totalRecords") or 0)
+            if not isinstance(items, list):
+                self._notes.add("'opportunitiesData' is not a list (layout change?)")
+                items = []
+            total = safe_int(data.get("totalRecords"), 0)
+            if "totalRecords" in data and not isinstance(data.get("totalRecords"), int):
+                self._notes.add(f"'totalRecords' is not an integer: {data.get('totalRecords')!r}")
+            valid = [item for item in items if isinstance(item, dict) and item.get("noticeId")]
+            if len(valid) != len(items):
+                self._notes.add(f"{len(items) - len(valid)} record(s) without noticeId skipped")
             next_offset = offset + len(items)
             done = not items or next_offset >= total
-            for position, item in enumerate(items):
-                last = position == len(items) - 1
+            for position, item in enumerate(valid):
+                last = position == len(valid) - 1
                 yield RawRecord(
                     source_id=self.source_id,
                     external_id=str(item.get("noticeId") or ""),
@@ -268,4 +285,6 @@ class SamOpportunitiesAdapter:
             )
         if self._last_error:
             return AdapterHealth(AdapterStatus.FAILING, self._last_run_at, self._last_error)
+        if self._notes:
+            return AdapterHealth(AdapterStatus.DEGRADED, self._last_run_at, self._notes.message)
         return AdapterHealth(AdapterStatus.OK, self._last_run_at, None)

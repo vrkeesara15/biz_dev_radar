@@ -1,0 +1,46 @@
+{
+ "errorcode": 0,
+ "msg": "ok",
+ "token": "x",
+ "data": {
+  "hitCount": "many",
+  "startRecord": 0,
+  "oppHits": [
+   {
+    "id": "332894",
+    "number": "W911NF21S0009",
+    "title": "LPS Qubit Collaboratory (LQC)",
+    "agencyCode": "DOD-AMC",
+    "agency": "Dept of the Army -- Materiel Command",
+    "openDate": "04/16/2021",
+    "closeDate": "04/30/2027",
+    "oppStatus": "posted",
+    "docType": "synopsis",
+    "cfdaList": [
+     "12.431"
+    ]
+   },
+   {
+    "number": "NO-ID",
+    "title": "hit without id"
+   },
+   7,
+   {
+    "id": "abc",
+    "title": "non numeric id"
+   },
+   {
+    "id": "999999",
+    "number": null,
+    "title": null,
+    "openDate": "not a date",
+    "closeDate": 20261030,
+    "oppStatus": [
+     "posted"
+    ],
+    "cfdaList": "12.431",
+    "agency": 5
+   }
+  ]
+ }
+}

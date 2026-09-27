@@ -812,7 +812,7 @@
       "Every normalized record validates as OpportunityIn",
       ".github/workflows/nightly-smoke.yml runs `make smoke` (>= 1 live record per adapter) and posts to the ops Slack webhook on failure"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-15",

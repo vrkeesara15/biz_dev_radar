@@ -1,0 +1,87 @@
+{
+ "total": 1,
+ "opportunities": [
+  {
+   "noticeId": "3f9c1a2b7e8d4c5a9b0e1f2a3b4c5d6e",
+   "title": "Enterprise Cloud Migration and Managed Services",
+   "solicitationNumber": "W911NF-26-R-0007",
+   "fullParentPathName": "DEPT OF DEFENSE.DEPT OF THE ARMY.AMC.ACC.ACC-APG.ACC-APG RTP DIV",
+   "fullParentPathCode": "097.2100.W6QK.W911NF",
+   "postedDate": "2026-09-20",
+   "type": "Presolicitation",
+   "baseType": "Presolicitation",
+   "archiveType": "auto15",
+   "archiveDate": "2026-11-04",
+   "typeOfSetAsideDescription": "Total Small Business Set-Aside (FAR 19.5)",
+   "typeOfSetAside": "SBA",
+   "responseDeadLine": "2026-10-20T14:00:00-04:00",
+   "naicsCode": "541512",
+   "naicsCodes": [
+    "541512"
+   ],
+   "classificationCode": "DA01",
+   "active": "Yes",
+   "award": null,
+   "pointOfContact": [
+    {
+     "fax": null,
+     "type": "primary",
+     "email": "contracting.officer@army.mil",
+     "phone": "9195491234",
+     "title": "Contracting Officer",
+     "fullName": "Alex Contracting"
+    },
+    {
+     "fax": null,
+     "type": "secondary",
+     "email": "specialist@army.mil",
+     "phone": null,
+     "title": "Contract Specialist",
+     "fullName": "Sam Specialist"
+    }
+   ],
+   "description": "https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=3f9c1a2b7e8d4c5a9b0e1f2a3b4c5d6e",
+   "organizationType": "OFFICE",
+   "officeAddress": {
+    "zipcode": "27709",
+    "city": "RESEARCH TRIANGLE PARK",
+    "countryCode": "USA",
+    "state": "NC"
+   },
+   "placeOfPerformance": {
+    "streetAddress": "4300 S Miami Blvd",
+    "city": {
+     "code": "19260",
+     "name": "Durham"
+    },
+    "state": {
+     "code": "NC",
+     "name": "North Carolina"
+    },
+    "zip": "27703",
+    "country": {
+     "code": "USA",
+     "name": "UNITED STATES"
+    }
+   },
+   "additionalInfoLink": null,
+   "uiLink": "https://sam.gov/opp/3f9c1a2b7e8d4c5a9b0e1f2a3b4c5d6e/view",
+   "links": [
+    {
+     "rel": "self",
+     "href": "https://api.sam.gov/prod/opportunities/v2/search?noticeid=3f9c1a2b7e8d4c5a9b0e1f2a3b4c5d6e&limit=1",
+     "hreflang": null,
+     "media": null,
+     "title": null,
+     "type": null,
+     "deprecation": null
+    }
+   ],
+   "resourceLinks": [
+    "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/0a1b2c3d4e5f60718293a4b5c6d7e8f9/download?&token=",
+    "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/1b2c3d4e5f60718293a4b5c6d7e8f9a0/download?&token="
+   ]
+  }
+ ],
+ "links": []
+}

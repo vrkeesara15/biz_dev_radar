@@ -19,6 +19,7 @@ import structlog
 from app.adapters.base import (
     AdapterHealth,
     AdapterStatus,
+    DegradedNotes,
     DocumentRef,
     OpportunityIn,
     RawRecord,
@@ -29,6 +30,7 @@ from app.core.config import Settings, get_settings
 from app.core.normalize.usaspending import (
     DOD_LAG_NOTE,
     SOURCE_ID,
+    AwardRecord,
     award_from_row,
     award_to_opportunity,
     fiscal_year_start,
@@ -74,6 +76,7 @@ class UsaSpendingAdapter:
         self.naics_codes = naics_codes
         self.fiscal_years = fiscal_years
         self._last_error: str | None = None
+        self._notes = DegradedNotes()
         self._last_run_at: datetime | None = None
 
     @property
@@ -103,6 +106,7 @@ class UsaSpendingAdapter:
     def fetch(self, since: datetime, cursor: str | None) -> Iterator[RawRecord]:
         now = self._now()
         self._last_run_at = now
+        self._notes.reset()
         years = last_fiscal_years(now, self.fiscal_years)
         start = (
             max(fiscal_year_start(years[0]), since.date()) if since else fiscal_year_start(years[0])
@@ -121,13 +125,35 @@ class UsaSpendingAdapter:
                     start, end, page=page, limit=self.page_size, naics_codes=self.naics_codes
                 )
                 payload, response = self._post(body, archive_id=f"spending_by_award/{page}")
+                if "results" not in payload:
+                    self._notes.add(
+                        "response has no 'results' key (layout change?); "
+                        f"keys={sorted(str(k) for k in payload)[:8]}"
+                    )
                 results = payload.get("results") or []
-                meta = payload.get("page_metadata") or {}
+                if not isinstance(results, list):
+                    self._notes.add("'results' is not a list (layout change?)")
+                    results = []
+                meta = payload.get("page_metadata")
+                meta = meta if isinstance(meta, dict) else {}
                 has_next = bool(meta.get("hasNext")) and bool(results)
                 reached_cap = page * self.page_size >= self.max_results
-                for position, row in enumerate(results):
-                    award = award_from_row(row)
-                    last = position == len(results) - 1
+                parsed: list[tuple[dict[str, Any], AwardRecord]] = []
+                for row in results:
+                    if not isinstance(row, dict):
+                        self._notes.add("non-object result row skipped")
+                        continue
+                    try:
+                        award = award_from_row(row)
+                    except Exception as exc:
+                        self._notes.add(f"unparseable award row skipped: {exc}"[:200])
+                        continue
+                    if not (award.generated_internal_id or award.award_id):
+                        self._notes.add("award row without an id skipped")
+                        continue
+                    parsed.append((row, award))
+                for position, (row, award) in enumerate(parsed):
+                    last = position == len(parsed) - 1
                     yield RawRecord(
                         source_id=self.source_id,
                         external_id=award.generated_internal_id or award.award_id,
@@ -169,5 +195,9 @@ class UsaSpendingAdapter:
         if self._last_error:
             return AdapterHealth(
                 AdapterStatus.FAILING, self._last_run_at, f"{self._last_error}; {DOD_LAG_NOTE}"
+            )
+        if self._notes:
+            return AdapterHealth(
+                AdapterStatus.DEGRADED, self._last_run_at, f"{self._notes.message}; {DOD_LAG_NOTE}"
             )
         return AdapterHealth(AdapterStatus.OK, self._last_run_at, DOD_LAG_NOTE)

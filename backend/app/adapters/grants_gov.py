@@ -18,9 +18,11 @@ import structlog
 from app.adapters.base import (
     AdapterHealth,
     AdapterStatus,
+    DegradedNotes,
     DocumentRef,
     OpportunityIn,
     RawRecord,
+    safe_int,
 )
 from app.adapters.http import PoliteClient
 from app.adapters.registry import register
@@ -83,6 +85,7 @@ class GrantsGovAdapter:
         self.with_details = with_details
         self._last_error: str | None = None
         self._last_run_at: datetime | None = None
+        self._notes = DegradedNotes()
 
     @property
     def client(self) -> PoliteClient:
@@ -125,10 +128,25 @@ class GrantsGovAdapter:
             if date_range:
                 body["dateRange"] = date_range
             payload, _ = self._post(SEARCH_URL, body, archive_id=f"search2/{start}")
-            data = payload.get("data") or {}
+            data = payload.get("data")
+            if not isinstance(data, dict) or "oppHits" not in data:
+                container = data if isinstance(data, dict) else payload
+                self._notes.add(
+                    "search2 response has no data.oppHits (layout change?); "
+                    f"keys={sorted(str(k) for k in container)[:8]}"
+                )
+                data = data if isinstance(data, dict) else {}
             hits = data.get("oppHits") or []
-            total = int(data.get("hitCount") or 0)
-            for hit in hits:
+            if not isinstance(hits, list):
+                self._notes.add("data.oppHits is not a list (layout change?)")
+                hits = []
+            total = safe_int(data.get("hitCount"), 0)
+            if "hitCount" in data and not isinstance(data.get("hitCount"), int):
+                self._notes.add(f"hitCount is not an integer: {data.get('hitCount')!r}")
+            valid = [h for h in hits if isinstance(h, dict) and str(h.get("id") or "").isdigit()]
+            if len(valid) != len(hits):
+                self._notes.add(f"{len(hits) - len(valid)} hit(s) without a numeric id skipped")
+            for hit in valid:
                 yield start, hit
             start += len(hits)
             if not hits or start >= total:
@@ -136,6 +154,7 @@ class GrantsGovAdapter:
 
     def fetch(self, since: datetime, cursor: str | None) -> Iterator[RawRecord]:
         self._last_run_at = self._now()
+        self._notes.reset()
         resume = decode_cursor(cursor)
         days = (self._now() - since).total_seconds() / 86_400
         date_range = resume.get("dateRange") if resume else date_range_for(days)
@@ -202,4 +221,6 @@ class GrantsGovAdapter:
     def health(self) -> AdapterHealth:
         if self._last_error:
             return AdapterHealth(AdapterStatus.FAILING, self._last_run_at, self._last_error)
+        if self._notes:
+            return AdapterHealth(AdapterStatus.DEGRADED, self._last_run_at, self._notes.message)
         return AdapterHealth(AdapterStatus.OK, self._last_run_at, None)
