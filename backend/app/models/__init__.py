@@ -4,6 +4,7 @@ from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import PlanLimit, UsageLedger
 from app.models.files import File
+from app.models.notify import UserNotificationPrefs
 from app.models.profile import CompanyProfile
 from app.models.profile_items import (
     Certification,
@@ -49,5 +50,6 @@ __all__ = [
     "UUIDPrimaryKeyMixin",
     "UsageLedger",
     "User",
+    "UserNotificationPrefs",
     "Vehicle",
 ]

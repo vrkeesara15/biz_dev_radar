@@ -52,6 +52,7 @@ from app.models import (
     ServiceLine,
     TeamingPartner,
     UsageLedger,
+    UserNotificationPrefs,
     Vehicle,
 )
 
@@ -151,6 +152,8 @@ def child_routes(
 FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/me"): lambda ctx: RouteCall(),
     ("PATCH", "/api/v1/me"): lambda ctx: RouteCall(json={"name": "Isolation probe"}),
+    ("GET", "/api/v1/me/notification-prefs"): lambda ctx: RouteCall(),
+    ("PUT", "/api/v1/me/notification-prefs"): lambda ctx: RouteCall(json={"min_score_instant": 80}),
     ("GET", "/api/v1/admin/tenants"): lambda ctx: RouteCall(owner_expect=frozenset({403})),
     ("POST", "/api/v1/admin/tenants/{tenant_id}/support-access"): lambda ctx: RouteCall(
         path_params={"tenant_id": ctx.a.id},
@@ -359,7 +362,15 @@ async def build_context(database: Database) -> IsolationContext:
                 rate_currency="USD",
             ),
         }
-        session.add_all([certification, code, keyword, service_line, partner, *proof.values()])
+        prefs = UserNotificationPrefs(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            channels_by_event={"digest": ["slack"]},
+            tz="Asia/Kolkata",
+        )
+        session.add_all(
+            [certification, code, keyword, service_line, partner, prefs, *proof.values()]
+        )
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -396,6 +407,7 @@ async def build_context(database: Database) -> IsolationContext:
                 "registration_identifier": "ALPHA-SAM",
                 "boilerplate_title": "Alpha Overview",
                 "rate_card_category": "Alpha Architect",
+                "notification_prefs": str(prefs.id),
             },
         )
         b = TenantCtx(

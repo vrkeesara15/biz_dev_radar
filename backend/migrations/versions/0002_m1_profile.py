@@ -141,7 +141,19 @@ TENANT_TABLES: list[str] = [
     "boilerplate_blocks",
     "profile_files",
     "rate_card_entries",
+    "user_notification_prefs",
 ]
+
+# SPEC 6 stage-2 weights and SPEC 8 bid/no-bid criteria (kept in sync with
+# app.core.preferences by tests/unit/test_migration_defaults.py). Plain strings, not
+# sa.text(): text() would read ":25" as a bind parameter.
+SCORING_WEIGHTS_DEFAULT = (
+    '{"code_match":25,"semantic_similarity":25,"keyword_match":10,"eligibility":15,'
+    '"value_fit":5,"geography":5,"buyer_affinity":5,"past_performance_relevance":10}'
+)
+BID_NO_BID_WEIGHTS_DEFAULT = (
+    '{"fit":25,"eligibility":20,"capacity":15,"competition":15,"value":10,"win_probability":15}'
+)
 
 
 def _uuid_pk() -> sa.Column[object]:
@@ -315,13 +327,37 @@ def upgrade() -> None:
         _text_list("teaming_roles"),
         # proof (4.5)
         sa.Column("cleared_personnel_count", sa.Integer()),
+        # preferences (4.6)
+        sa.Column(
+            "scoring_weights",
+            postgresql.JSONB(),
+            nullable=False,
+            server_default=SCORING_WEIGHTS_DEFAULT,
+        ),
+        sa.Column(
+            "bid_no_bid_weights",
+            postgresql.JSONB(),
+            nullable=False,
+            server_default=BID_NO_BID_WEIGHTS_DEFAULT,
+        ),
+        sa.Column(
+            "required_approver_roles",
+            postgresql.ARRAY(sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{bid_manager}'::text[]"),
+        ),
+        sa.Column(
+            "output_languages",
+            postgresql.ARRAY(sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{en}'::text[]"),
+        ),
         # bank details (encrypted)
         sa.Column("bank_name", sa.String(200)),
         sa.Column("bank_account_number", _encrypted()),
         sa.Column("bank_routing_code", _encrypted()),
-        sa.CheckConstraint(
-            "year_founded BETWEEN 1800 AND 2100", name="ck_company_profiles_year_founded_range"
-        ),
+        # the naming convention of Base.metadata applies: -> ck_company_profiles_year_founded_range
+        sa.CheckConstraint("year_founded BETWEEN 1800 AND 2100", name="year_founded_range"),
     )
 
     # --- certifications (M1-02 socio-economic, M1-05 security/compliance) ------------------
@@ -489,6 +525,31 @@ def upgrade() -> None:
         sa.Column("min_years_experience", sa.Integer()),
         sa.Column("notes", sa.Text()),
     )
+
+    # --- user notification preferences (M1-06, SPEC 4.6 / 7) -----------------------------
+    _tenant_table(
+        "user_notification_prefs",
+        sa.Column(
+            "user_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "channels_by_event",
+            postgresql.JSONB(),
+            nullable=False,
+            server_default=sa.text("'{}'::jsonb"),
+        ),
+        sa.Column("quiet_hours_start", sa.String(5)),
+        sa.Column("quiet_hours_end", sa.String(5)),
+        sa.Column("tz", sa.String(64), nullable=False, server_default=sa.text("'UTC'")),
+        sa.Column("digest_time", sa.String(5), nullable=False, server_default="08:00"),
+        sa.Column("min_score_instant", sa.Integer(), nullable=False, server_default=sa.text("70")),
+        sa.Column("min_score_digest", sa.Integer(), nullable=False, server_default=sa.text("50")),
+        sa.UniqueConstraint("user_id", "tenant_id", name="uq_user_notification_prefs_user_tenant"),
+    )
+    op.create_index("ix_user_notification_prefs_user_id", "user_notification_prefs", ["user_id"])
 
     # --- privileges + RLS for every tenant table above --------------------------------------
     for table in TENANT_TABLES:

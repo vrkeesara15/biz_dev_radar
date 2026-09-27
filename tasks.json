@@ -383,7 +383,7 @@
       "Bid/no-bid criteria weights and required approver roles stored on the profile",
       "Output languages list defaults to ['en']; 'hi' allowed for IN profiles"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-07",

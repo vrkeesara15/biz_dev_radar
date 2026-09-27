@@ -21,6 +21,11 @@ from app.core.geo import (
     normalize_us_states,
 )
 from app.core.notice_types import ContractType, NoticeType, TeamingRole
+from app.core.preferences import (
+    validate_bid_no_bid_weights,
+    validate_output_languages,
+    validate_scoring_weights,
+)
 from app.core.profile_fields import (
     ENCRYPTED_FIELDS,
     NORMALIZERS,
@@ -31,6 +36,7 @@ from app.core.profile_fields import (
     SamStatus,
     UdyamCategory,
 )
+from app.core.roles import Role
 from app.models import CompanyProfile
 
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -130,10 +136,37 @@ class ProfileWrite(BaseModel):
     teaming_roles: list[TeamingRole] | None = None
     # 4.5 proof: personnel clearances count (US); the rest are sub-resources
     cleared_personnel_count: Annotated[int | None, Field(ge=0)] = None
+    # 4.6 preferences
+    scoring_weights: dict[str, int] | None = None
+    bid_no_bid_weights: dict[str, int] | None = None
+    required_approver_roles: list[Role] | None = None
+    output_languages: list[str] | None = None  # region-checked in validate_for_region()
     # bank (encrypted)
     bank_name: Annotated[str | None, Field(max_length=200)] = None
     bank_account_number: Annotated[str | None, Field(max_length=64)] = None
     bank_routing_code: Annotated[str | None, Field(max_length=32)] = None
+
+    @field_validator("scoring_weights")
+    @classmethod
+    def _scoring(cls, value: dict[str, int] | None) -> dict[str, int] | None:
+        return None if value is None else validate_scoring_weights(value)
+
+    @field_validator("bid_no_bid_weights")
+    @classmethod
+    def _bid_no_bid(cls, value: dict[str, int] | None) -> dict[str, int] | None:
+        return None if value is None else validate_bid_no_bid_weights(value)
+
+    @field_validator("required_approver_roles")
+    @classmethod
+    def _approvers(cls, value: list[Role] | None) -> list[Role] | None:
+        if value is None:
+            return None
+        roles = list(dict.fromkeys(value))
+        if Role.PLATFORM_ADMIN in roles:
+            raise ValueError("platform_admin cannot be a required approver")
+        if any(r in (Role.VIEWER,) for r in roles):
+            raise ValueError("viewers cannot approve")
+        return roles
 
     @field_validator("target_countries")
     @classmethod
@@ -228,6 +261,16 @@ class ProfileWrite(BaseModel):
             return value
         return NORMALIZERS[info.field_name](value)
 
+    def region_errors(self, region: Region) -> list[str]:
+        """Validation that needs the profile's region (output languages)."""
+        errors: list[str] = []
+        if self.output_languages is not None:
+            try:
+                self.output_languages = validate_output_languages(region, self.output_languages)
+            except ValueError as exc:
+                errors.append(str(exc))
+        return errors
+
     def changes(self) -> dict[str, Any]:
         """Fields the client actually sent, minus echoed masks of encrypted fields."""
         data = self.model_dump(exclude_unset=True, mode="python")
@@ -244,6 +287,9 @@ class ProfileWrite(BaseModel):
             "notice_types_wanted",
             "contract_types_preferred",
             "teaming_roles",
+            "required_approver_roles",
+            "scoring_weights",
+            "bid_no_bid_weights",
         ):
             if data.get(name) is not None:
                 data[name] = as_json[name]
@@ -322,6 +368,11 @@ class ProfileOut(BaseModel):
     teaming_roles: list[TeamingRole]
     # 4.5
     cleared_personnel_count: int | None
+    # 4.6
+    scoring_weights: dict[str, int]
+    bid_no_bid_weights: dict[str, int]
+    required_approver_roles: list[Role]
+    output_languages: list[str]
 
     @classmethod
     def from_row(cls, row: CompanyProfile) -> ProfileOut:

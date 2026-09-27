@@ -5,6 +5,7 @@ EIN/PAN/GSTIN/TAN and bank details use EncryptedString (SPEC 11)."""
 
 from __future__ import annotations
 
+import json
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
@@ -28,6 +29,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.config import Region
+from app.core.preferences import DEFAULT_BID_NO_BID_WEIGHTS, DEFAULT_SCORING_WEIGHTS
 from app.core.profile_fields import (
     LegalStructure,
     LocalSupplierClass,
@@ -38,6 +40,9 @@ from app.core.profile_fields import (
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.tenancy import RegionEnum, _values
 from app.models.types import EncryptedString
+
+_SCORING_DEFAULT = json.dumps(DEFAULT_SCORING_WEIGHTS, separators=(",", ":"))
+_BID_DEFAULT = json.dumps(DEFAULT_BID_NO_BID_WEIGHTS, separators=(",", ":"))
 
 LegalStructureEnum = Enum(LegalStructure, name="legal_structure", values_callable=_values)
 SamStatusEnum = Enum(SamStatus, name="sam_status", values_callable=_values)
@@ -156,6 +161,20 @@ class CompanyProfile(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
 
     # --- proof (SPEC 4.5): personnel clearances count; the rest lives in child tables
     cleared_personnel_count: Mapped[int | None] = mapped_column(Integer)
+
+    # --- preferences (SPEC 4.6): defaults from app.core.preferences, validated by the API
+    scoring_weights: Mapped[dict[str, int]] = mapped_column(
+        JSONB, nullable=False, server_default=_SCORING_DEFAULT
+    )
+    bid_no_bid_weights: Mapped[dict[str, int]] = mapped_column(
+        JSONB, nullable=False, server_default=_BID_DEFAULT
+    )
+    required_approver_roles: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{bid_manager}'::text[]")
+    )
+    output_languages: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{en}'::text[]")
+    )
 
     # --- bank details (both regions, encrypted; SPEC 11)
     bank_name: Mapped[str | None] = mapped_column(String(200))

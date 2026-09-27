@@ -8,7 +8,8 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.deps import TenantSessionDep
 from app.api.v1.profiles.common import EditorDep, ReaderDep, get_profile, reject_region_foreign
-from app.api.v1.profiles.schemas import ProfileCreate, ProfileOut, ProfileUpdate
+from app.api.v1.profiles.schemas import ProfileCreate, ProfileOut, ProfileUpdate, ProfileWrite
+from app.core.config import Region
 from app.core.plan import Resource
 from app.models import CompanyProfile, Tenant
 from app.services.audit import AuditHint
@@ -17,11 +18,38 @@ from app.services.profiles import PROFILE_COUNTERS, apply_changes
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
+# Columns with defaults that a PUT may replace but never null out.
+NOT_NULLABLE = (
+    "legal_name",
+    "scoring_weights",
+    "bid_no_bid_weights",
+    "required_approver_roles",
+    "output_languages",
+    "dba_names",
+    "addresses",
+    "employees_by_country",
+    "annual_revenue",
+    "audited_fiscal_years",
+    "solvency_certificate_available",
+    "remote_ok",
+    "is_active",
+)
+
+
+def _region_checks(body: ProfileWrite, region: Region) -> None:
+    errors = body.region_errors(region)
+    if errors:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"error": "region_mismatch", "region": region.value, "fields": errors},
+        )
+
 
 @router.post("", response_model=ProfileOut, status_code=status.HTTP_201_CREATED)
 async def create_profile(
     body: ProfileCreate, user: EditorDep, session: TenantSessionDep, request: Request
 ) -> ProfileOut:
+    _region_checks(body, body.region)
     changes = body.changes()
     region = changes.pop("region")
     reject_region_foreign(region, set(changes))
@@ -57,12 +85,14 @@ async def update_profile(
     request: Request,
 ) -> ProfileOut:
     row = await get_profile(session, profile_id)
+    _region_checks(body, row.region)
     changes = body.changes()
     reject_region_foreign(row.region, set(changes))
-    if changes.get("legal_name", "x") is None:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT, detail="legal_name cannot be null"
-        )
+    for name in NOT_NULLABLE:
+        if changes.get(name, "x") is None:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT, detail=f"{name} cannot be null"
+            )
     written = apply_changes(row, changes)
     await session.flush()
     await session.refresh(row)
