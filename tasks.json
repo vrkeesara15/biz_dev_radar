@@ -1986,7 +1986,7 @@
       "terraform validate and fmt -check pass in CI",
       "Outputs document bucket and DB locations for the residency check"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-03",

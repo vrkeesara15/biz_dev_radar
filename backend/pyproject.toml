@@ -50,6 +50,7 @@ dev = [
   "types-pyyaml>=6",
   "respx>=0.21,<1",
   "types-openpyxl>=3.1.5.20260827",
+  "python-hcl2>=8.1.4",
 ]
 
 [build-system]

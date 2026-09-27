@@ -169,3 +169,27 @@ jobs:
           tags: bidradar-${{ matrix.name }}:ci
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  # M7-02: HCL must be formatted and every environment must resolve its modules.
+  # `-backend=false` means no GCP credentials are needed to check the configuration.
+  terraform-validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.3"
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive
+      - name: terraform validate per environment
+        run: |
+          set -euo pipefail
+          for env_dir in envs/*/; do
+            echo "::group::${env_dir}"
+            terraform -chdir="${env_dir}" init -backend=false -input=false -no-color
+            terraform -chdir="${env_dir}" validate -no-color
+            echo "::endgroup::"
+          done

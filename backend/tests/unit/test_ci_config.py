@@ -85,3 +85,17 @@ def test_dockerfiles_exist_for_every_build_context(repo_root: Path) -> None:
     job = _workflow(repo_root)["jobs"]["docker-build"]
     for entry in job["strategy"]["matrix"]["include"]:
         assert (repo_root / entry["context"] / "Dockerfile").is_file()
+
+
+def test_terraform_validate_job_covers_every_environment(repo_root: Path) -> None:
+    """M7-02 acceptance: terraform validate and fmt -check pass in CI."""
+    job = _workflow(repo_root)["jobs"]["terraform-validate"]
+    assert job["defaults"]["run"]["working-directory"] == "infra/terraform"
+    text = _steps_text(job)
+    assert "terraform fmt -check -recursive" in text
+    assert 'terraform -chdir="${env_dir}" validate' in text
+    # No credentials: the configuration is checked, not planned against a project.
+    assert "-backend=false" in text
+    assert "hashicorp/setup-terraform" in text
+    envs = {p.name for p in (repo_root / "infra" / "terraform" / "envs").iterdir() if p.is_dir()}
+    assert envs == {"dev", "staging-in", "prod-us", "prod-in"}
