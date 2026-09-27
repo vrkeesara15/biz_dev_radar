@@ -549,7 +549,7 @@
       "Watermark helper returns since = last_posted_at - 2 days",
       "A minimal FixtureAdapter used by tests proves the pipeline end-to-end"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-02",

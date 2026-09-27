@@ -1,0 +1,122 @@
+"""Run one adapter end-to-end: watermark -> fetch -> normalize -> sink, with a source_runs row.
+
+The sink is injected: M2-01 tests use a collector, the ingest pipeline (M2-09) plugs in
+`app.services.ingest.ingest`. Adapters are synchronous generators; each record is
+normalised and handed to the async sink in turn. Per-record failures are recorded in
+`source_runs.errors` and never abort the run; a failure of `fetch()` itself marks the
+run `failing` and leaves the watermark untouched.
+"""
+
+from __future__ import annotations
+
+import traceback
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import Any
+
+import structlog
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.adapters.base import OpportunityIn, RawRecord, SourceAdapter
+from app.core.watermark import advance_watermark, since_from_watermark
+from app.services import sources as source_svc
+
+log = structlog.get_logger(__name__)
+
+Sink = Callable[[AsyncSession, OpportunityIn, RawRecord], Awaitable[Any]]
+
+MAX_ERRORS_KEPT = 50
+
+
+@dataclass(slots=True)
+class RunResult:
+    run_id: Any
+    status: str
+    fetched: int = 0
+    upserted: int = 0
+    errors: list[dict[str, Any]] = field(default_factory=list)
+    watermark: datetime | None = None
+    cursor: str | None = None
+    since: datetime | None = None
+    records: list[OpportunityIn] = field(default_factory=list)
+
+
+def _error(stage: str, exc: BaseException, external_id: str | None = None) -> dict[str, Any]:
+    return {
+        "stage": stage,
+        "external_id": external_id,
+        "type": type(exc).__name__,
+        "message": str(exc)[:500],
+        "trace": "".join(traceback.format_exception_only(type(exc), exc))[-500:],
+    }
+
+
+async def collect_sink(session: AsyncSession, opp: OpportunityIn, raw: RawRecord) -> bool:
+    """Default sink until the ingest pipeline exists: accept every record."""
+    return True
+
+
+async def run_source(
+    session: AsyncSession,
+    adapter: SourceAdapter,
+    *,
+    sink: Sink = collect_sink,
+    now: datetime | None = None,
+    keep_records: bool = False,
+) -> RunResult:
+    now = now or datetime.now(UTC)
+    source = await source_svc.get_source(session, adapter.source_id)
+    run = await source_svc.start_run(session, adapter.source_id, now=now)
+    since = since_from_watermark(source.watermark_at, now=now)
+    result = RunResult(
+        run_id=run.id, status=source_svc.RUN_RUNNING, since=since, cursor=source.cursor
+    )
+    watermark = source.watermark_at
+    cursor = source.cursor
+    fetch_failed = False
+    try:
+        for raw in adapter.fetch(since, cursor):
+            result.fetched += 1
+            try:
+                opp = adapter.normalize(raw)
+                if raw.raw_ref is not None:
+                    opp = opp.model_copy(update={"extra": {**opp.extra, "raw_ref": raw.raw_ref}})
+                accepted = await sink(session, opp, raw)
+            except Exception as exc:
+                log.warning("source.record_failed", source=adapter.source_id, error=str(exc))
+                if len(result.errors) < MAX_ERRORS_KEPT:
+                    result.errors.append(_error("normalize", exc, raw.external_id))
+                continue
+            if accepted:
+                result.upserted += 1
+            if keep_records:
+                result.records.append(opp)
+            watermark = advance_watermark(watermark, opp.posted_at)
+            cursor = raw.meta.get("cursor", cursor)
+    except Exception as exc:
+        fetch_failed = True
+        log.error("source.fetch_failed", source=adapter.source_id, error=str(exc))
+        result.errors.append(_error("fetch", exc))
+
+    if fetch_failed:
+        status = source_svc.RUN_FAILING
+    elif result.errors:
+        status = source_svc.RUN_DEGRADED
+    else:
+        status = source_svc.RUN_OK
+    result.status = status
+    result.watermark = watermark if not fetch_failed else source.watermark_at
+    result.cursor = cursor if not fetch_failed else source.cursor
+    await source_svc.finish_run(
+        session,
+        run,
+        status=status,
+        fetched=result.fetched,
+        upserted=result.upserted,
+        errors=result.errors,
+        watermark=result.watermark,
+        cursor=result.cursor,
+        now=datetime.now(UTC),
+    )
+    return result

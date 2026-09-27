@@ -1,6 +1,16 @@
 """M0-05: model inventory and tenant-scoping conventions."""
 
-from app.models import AuditLog, Base, Membership, PlanLimit, Tenant, UsageLedger, User
+from app.models import (
+    AuditLog,
+    Base,
+    Membership,
+    PlanLimit,
+    Source,
+    SourceRun,
+    Tenant,
+    UsageLedger,
+    User,
+)
 
 
 def test_m0_tables_registered() -> None:
@@ -22,7 +32,7 @@ def test_tenant_scoped_tables_have_not_null_tenant_id() -> None:
 
 
 def test_global_tables_have_no_tenant_id() -> None:
-    for model in (Tenant, User, PlanLimit):
+    for model in (Tenant, User, PlanLimit, Source, SourceRun):
         assert "tenant_id" not in model.__table__.c
 
 

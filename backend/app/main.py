@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app import __version__
+from app.adapters.registry import load_builtin_adapters
 from app.api import health
 from app.api.audit_middleware import AuditMiddleware
 from app.api.middleware import RequestIdMiddleware
@@ -18,12 +19,16 @@ from app.core.config import Settings, get_settings
 from app.core.plan import PlanLimitExceeded
 from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
+from app.services.sources import sync_sources_on_startup
 
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
     configure_logging(settings.log_level, json_output=settings.is_production)
+    # One `sources` row per registered adapter (SPEC 10.2); best-effort, never fatal.
+    load_builtin_adapters()
+    await sync_sources_on_startup()
     yield
 
 

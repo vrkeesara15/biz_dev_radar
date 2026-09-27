@@ -13,7 +13,14 @@ from sqlalchemy.exc import DBAPIError, ProgrammingError
 from tests.factories import create_tenant_with_owner, make_user
 
 # Tables that legitimately hold no tenant rows. Everything else in `public` must have RLS.
-RLS_EXEMPT_TABLES = {"alembic_version", "plan_limits"}
+RLS_EXEMPT_TABLES = {
+    "alembic_version",
+    "plan_limits",
+    # M2 ingestion tables are global: public notices shared by every tenant (SPEC 5.3),
+    # adapter bookkeeping and spend statistics. No tenant_id, no policy, app-role DML grants.
+    "sources",
+    "source_runs",
+}
 
 
 async def _two_tenants(database: Database) -> tuple[Tenant, User, Tenant, User]:
