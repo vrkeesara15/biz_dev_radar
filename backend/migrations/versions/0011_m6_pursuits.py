@@ -9,7 +9,8 @@ worktrees land.
 
 M6-01 extends `pursuits` (stage CHECK, watch, pass_reason, submitted_at, decided_by /
 decided_at). M6-02 adds `pursuit_dates`; M6-07 adds `pursuit_tasks` and
-`pursuit_comments`.
+`pursuit_comments`; M6-04 adds `calendar_connections`, `calendar_events` and
+`user_notification_prefs.calendar_token`.
 """
 
 from collections.abc import Sequence
@@ -28,6 +29,7 @@ from app.core.collab import (
 )
 from app.core.key_dates import KIND_CUSTOM, KINDS, SOURCE_AUTO, SOURCES
 from app.core.pursuit_stages import STAGES
+from app.models.calendar import CALENDAR_PROVIDERS
 from migrations.rls import enable_rls, grant_app
 from sqlalchemy.dialects import postgresql
 
@@ -44,7 +46,15 @@ TASK_STATUS_LIST = ", ".join(f"'{value}'" for value in TASK_STATUSES)
 TASK_SOURCE_LIST = ", ".join(f"'{value}'" for value in TASK_SOURCES)
 TARGET_TYPE_LIST = ", ".join(f"'{value}'" for value in TARGET_TYPES)
 
-TENANT_TABLES = ("pursuit_dates", "pursuit_tasks", "pursuit_comments")
+CALENDAR_PROVIDER_LIST = ", ".join(f"'{value}'" for value in CALENDAR_PROVIDERS)
+
+TENANT_TABLES = (
+    "pursuit_dates",
+    "pursuit_tasks",
+    "pursuit_comments",
+    "calendar_connections",
+    "calendar_events",
+)
 
 
 def _ts(name: str, *, nullable: bool = True, default_now: bool = False) -> sa.Column[object]:
@@ -58,12 +68,14 @@ def upgrade() -> None:
     _upgrade_pursuits()
     _upgrade_pursuit_dates()
     _upgrade_collab()
+    _upgrade_calendar()
     for table in TENANT_TABLES:
         grant_app(op, table)
         enable_rls(op, table)
 
 
 def downgrade() -> None:
+    op.drop_column("user_notification_prefs", "calendar_token")
     for table in reversed(TENANT_TABLES):
         op.drop_table(table)
     _downgrade_pursuits()
@@ -135,6 +147,7 @@ def _upgrade_pursuit_dates() -> None:
         ),
         sa.Column("label", sa.String(200), nullable=False),
         sa.Column("note", sa.Text()),
+        sa.Column("sequence", sa.Integer(), nullable=False, server_default=sa.text("0")),
         sa.Column(
             "acknowledged_by",
             postgresql.UUID(as_uuid=True),
@@ -257,3 +270,66 @@ def _upgrade_collab() -> None:
         "pursuit_comments",
         ["pursuit_id", "target_type", "target_id"],
     )
+
+
+# --- M6-04 iCal feed token and per-user calendar connections --------------------------------
+
+
+def _upgrade_calendar() -> None:
+    # the nonce inside the signed feed token; rotating it revokes every old link
+    op.add_column("user_notification_prefs", sa.Column("calendar_token", sa.String(128)))
+    op.create_table(
+        "calendar_connections",
+        _uuid_pk(),
+        _tenant_id(),
+        sa.Column(
+            "user_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column("provider", sa.String(16), nullable=False),
+        sa.Column("calendar_id", sa.String(256), nullable=False, server_default="primary"),
+        sa.Column("secret_ref", sa.Text()),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
+        sa.Column("last_error", sa.Text()),
+        _ts("last_synced_at"),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint(
+            "tenant_id", "user_id", "provider", name="uq_calendar_connections_user_provider"
+        ),
+        sa.CheckConstraint(
+            f"provider IN ({CALENDAR_PROVIDER_LIST})", name="ck_calendar_connections_provider"
+        ),
+    )
+    op.create_index("ix_calendar_connections_tenant_id", "calendar_connections", ["tenant_id"])
+    op.create_index("ix_calendar_connections_user_id", "calendar_connections", ["user_id"])
+
+    op.create_table(
+        "calendar_events",
+        _uuid_pk(),
+        _tenant_id(),
+        sa.Column(
+            "connection_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("calendar_connections.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "pursuit_date_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("pursuit_dates.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column("provider_event_id", sa.String(512), nullable=False),
+        sa.Column("sequence", sa.Integer(), nullable=False, server_default=sa.text("0")),
+        _ts("synced_at"),
+        sa.Column("last_error", sa.Text()),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint(
+            "connection_id", "pursuit_date_id", name="uq_calendar_events_connection_date"
+        ),
+    )
+    op.create_index("ix_calendar_events_tenant_id", "calendar_events", ["tenant_id"])
+    op.create_index("ix_calendar_events_connection_id", "calendar_events", ["connection_id"])
+    op.create_index("ix_calendar_events_pursuit_date_id", "calendar_events", ["pursuit_date_id"])

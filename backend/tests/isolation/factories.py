@@ -42,6 +42,7 @@ from app.models import (
     BillingCustomer,
     BillingEventRecord,
     BoilerplateBlock,
+    CalendarConnection,
     Certification,
     CompanyProfile,
     Consent,
@@ -95,6 +96,11 @@ PUBLIC_ROUTES: list[tuple[str, str]] = [
     ("POST", "/api/v1/integrations/slack/actions"),
     # M7-07: the published privacy notice (grievance officer, sub-processors, versions)
     ("GET", "/api/v1/privacy"),
+    # M6-04: the iCal feed. A calendar client cannot hold a session, so the URL carries a
+    # signed token (tenant + user + a nonce matched against user_notification_prefs);
+    # tests/integration/test_calendar_api.py proves a foreign, tampered or rotated token
+    # is 401 and that the feed only ever contains that user's own dates.
+    ("GET", "/api/v1/calendar.ics"),
 ]
 
 OK_STATUSES = frozenset({200, 201, 202, 204})
@@ -351,6 +357,13 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         json={"profile_id": ctx.a.ids["profile"], "reason": "isolation probe"},
     ),
     ("GET", "/api/v1/pursuits"): lambda ctx: RouteCall(params={"page": 1}),
+    # --- calendar (M6-04): every route is about the CALLER, so B never sees A's link
+    ("GET", "/api/v1/me/calendar"): lambda ctx: RouteCall(),
+    ("POST", "/api/v1/me/calendar-token"): lambda ctx: RouteCall(),
+    (
+        "DELETE",
+        "/api/v1/me/calendar-connections/{connection_id}",
+    ): lambda ctx: RouteCall(path_params={"connection_id": ctx.a.ids["calendar_connection"]}),
     # --- key dates (M6-02)
     ("GET", "/api/v1/pursuits/{pursuit_id}/dates"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
@@ -702,6 +715,13 @@ async def build_context(database: Database) -> IsolationContext:
             assignee_user_id=ua.id,
             created_by=ua.id,
         )
+        calendar_connection = CalendarConnection(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            provider="google",
+            calendar_id="alpha-secret-calendar",
+            secret_ref="env:ALPHA_CALENDAR_TOKEN",
+        )
         pursuit_comment = PursuitComment(
             tenant_id=ta.id,
             pursuit_id=pursuit.id,
@@ -709,7 +729,7 @@ async def build_context(database: Database) -> IsolationContext:
             body="alpha secret comment",
             author_user_id=ua.id,
         )
-        session.add_all([pursuit_date, pursuit_task, pursuit_comment])
+        session.add_all([pursuit_date, pursuit_task, pursuit_comment, calendar_connection])
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -758,6 +778,8 @@ async def build_context(database: Database) -> IsolationContext:
                 "pursuit_task_title": "Alpha secret task",
                 "pursuit_comment": str(pursuit_comment.id),
                 "pursuit_comment_body": "alpha secret comment",
+                "calendar_connection": str(calendar_connection.id),
+                "calendar_id": "alpha-secret-calendar",
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",

@@ -84,9 +84,14 @@ async def sync_auto_dates(
     *,
     now: datetime | None = None,
     reset_acknowledgements: bool = False,
+    calendar_push: bool = False,
 ) -> SyncResult:
     """Create / shift / drop the auto rows so they match the notice. Never touches a
-    `user` row. Also keeps pursuits.internal_due_at (due - 48 h) in step."""
+    `user` row. Also keeps pursuits.internal_due_at (due - 48 h) in step.
+
+    With `calendar_push`, every row that appears, moves or disappears is mirrored into
+    the owner's connected Google / Outlook calendar (M6-04); a provider failure is
+    recorded on the row and never breaks the recalculation."""
     moment = now or datetime.now(UTC)
     wanted: dict[str, KeyDate] = {
         d.kind: d for d in auto_dates(notice_dates(opportunity), str(opportunity.region), moment)
@@ -117,6 +122,7 @@ async def sync_auto_dates(
         if row.at == target.at:
             continue
         row.at = target.at
+        row.sequence += 1  # RFC 5545: calendars only accept a higher SEQUENCE (M6-04)
         row.note = DEADLINE_MOVED_NOTE if reset_acknowledgements else target.note
         if reset_acknowledgements:
             row.acknowledged_at = None
@@ -126,12 +132,35 @@ async def sync_auto_dates(
     for kind, row in existing.items():
         if kind in wanted or kind not in AUTO_KINDS or row.source != SOURCE_AUTO:
             continue
+        if calendar_push:  # drop the provider event before the row it maps to goes away
+            await push_calendar(session, row, action=CALENDAR_DELETE)
         await session.delete(row)
         result.removed.append(kind)
 
     pursuit.internal_due_at = pursuit_svc.internal_due_at(opportunity.response_due_at)
     await session.flush()
+    if calendar_push:
+        for row in (*result.created, *result.moved):
+            await push_calendar(session, row)
     return result
+
+
+CALENDAR_UPSERT = "upsert"
+CALENDAR_DELETE = "delete"
+
+
+async def push_calendar(
+    session: AsyncSession, date: PursuitDate, *, action: str = CALENDAR_UPSERT
+) -> None:
+    """Mirror one key date into the owner's connected calendars (M6-04), best effort:
+    a calendar problem must never abort the recalculation the deadline asked for."""
+    from app.core.config import get_settings
+    from app.services.calendar import sync_date
+
+    try:
+        await sync_date(session, get_settings(), date, action=action)
+    except Exception as exc:  # the feed stays correct either way
+        log.warning("key_dates.calendar_push_failed", date_id=str(date.id), error=str(exc))
 
 
 async def recalculate_for_opportunity(
@@ -146,7 +175,12 @@ async def recalculate_for_opportunity(
     out: dict[str, SyncResult] = {}
     for pursuit in pursuits:
         out[str(pursuit.id)] = await sync_auto_dates(
-            session, pursuit, opportunity, now=now, reset_acknowledgements=True
+            session,
+            pursuit,
+            opportunity,
+            now=now,
+            reset_acknowledgements=True,
+            calendar_push=True,
         )
     return out
 

@@ -16,6 +16,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    Integer,
     String,
     Text,
     text,
@@ -65,6 +66,9 @@ class PursuitDate(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     label: Mapped[str] = mapped_column(String(200), nullable=False)
     # "5 days before the deadline", or the note left when an amendment shifted the row
     note: Mapped[str | None] = mapped_column(Text)
+    # RFC 5545 SEQUENCE (M6-04): bumped on every change so calendars accept the newer
+    # version of the event this row renders as.
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     acknowledged_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )

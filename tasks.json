@@ -1831,7 +1831,7 @@
       "Events created/updated/deleted as pursuit_dates change",
       "ics validated with the icalendar library in tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-05",

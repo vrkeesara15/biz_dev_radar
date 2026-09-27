@@ -21,11 +21,18 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import TENANT_ROLES, CurrentUser, TenantSessionDep, require_role
+from app.api.deps import (
+    TENANT_ROLES,
+    CurrentUser,
+    SettingsDep,
+    TenantSessionDep,
+    require_role,
+)
 from app.core.display_time import TzDateOut, tz_fields
 from app.core.key_dates import KINDS, SOURCE_USER, label_for
 from app.core.roles import Role
 from app.models import Opportunity, PursuitDate, User
+from app.services import calendar as calendar_svc
 from app.services import key_dates as key_date_svc
 from app.services import pursuits as pursuit_svc
 from app.services.audit import AuditHint
@@ -142,6 +149,7 @@ async def create_date(
     session: TenantSessionDep,
     user: WriterDep,
     request: Request,
+    settings: SettingsDep,
 ) -> KeyDateOut:
     """Add a date. A second auto kind on the same pursuit is a 409 (edit the first)."""
     pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
@@ -169,6 +177,7 @@ async def create_date(
     )
     session.add(row)
     await session.flush()
+    await calendar_svc.sync_date(session, settings, row)
     request.state.audit = AuditHint(
         action="pursuit.date_created",
         object_type="pursuit_date",
@@ -186,6 +195,7 @@ async def update_date(
     session: TenantSessionDep,
     user: WriterDep,
     request: Request,
+    settings: SettingsDep,
 ) -> KeyDateOut:
     """Edit a date. Editing pins it: `source` becomes `user`, so an amendment that moves
     the buyer's deadline will shift the other auto rows but never this one."""
@@ -201,8 +211,10 @@ async def update_date(
     if body.note is not None:
         row.note = body.note
     row.source = SOURCE_USER
+    row.sequence += 1  # RFC 5545: a calendar only accepts a higher SEQUENCE (M6-04)
     await session.flush()
     await session.refresh(row)
+    await calendar_svc.sync_date(session, settings, row)
     request.state.audit = AuditHint(
         action="pursuit.date_updated",
         object_type="pursuit_date",
@@ -219,8 +231,10 @@ async def delete_date(
     session: TenantSessionDep,
     user: WriterDep,
     request: Request,
+    settings: SettingsDep,
 ) -> None:
     row = await _load(session, pursuit_id, date_id)
+    await calendar_svc.sync_date(session, settings, row, action=calendar_svc.ACTION_DELETE)
     request.state.audit = AuditHint(
         action="pursuit.date_deleted",
         object_type="pursuit_date",

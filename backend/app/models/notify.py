@@ -47,3 +47,6 @@ class UserNotificationPrefs(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Ba
     unsubscribed_categories: Mapped[list[str]] = mapped_column(
         ARRAY(Text()), nullable=False, server_default=text("'{}'::text[]")
     )
+    # M6-04: the nonce inside this user's signed iCal feed token. NULL = no feed issued;
+    # rotating it (POST /me/calendar-token) revokes every link handed out before.
+    calendar_token: Mapped[str | None] = mapped_column(String(128))
