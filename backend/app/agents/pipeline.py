@@ -54,6 +54,7 @@ STEP_MODULES: tuple[str, ...] = (
     "app.agents.extractor",
     "app.agents.matrix",
     "app.agents.bid_no_bid",
+    "app.agents.outline",
     "app.agents.pricing",
 )
 
