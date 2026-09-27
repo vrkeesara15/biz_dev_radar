@@ -7,6 +7,7 @@ from app.models.billing import BillingCustomer, BillingEventRecord, PlanLimit, U
 from app.models.compliance import ComplianceItem, PursuitArtifact
 from app.models.files import File
 from app.models.integrations import Integration, IntegrationKind
+from app.models.key_dates import PursuitDate
 from app.models.knowledge import KBChunk
 from app.models.matching import Match, MatchBand
 from app.models.notifications import (
@@ -89,6 +90,7 @@ __all__ = [
     "ProfileKeyword",
     "Pursuit",
     "PursuitArtifact",
+    "PursuitDate",
     "PushSubscription",
     "RateCardEntry",
     "Registration",

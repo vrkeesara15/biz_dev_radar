@@ -27,6 +27,7 @@ from app.services.embeddings import embeddings_from_settings
 from app.services.enrichment import install_enrichment
 from app.services.events import get_event_bus
 from app.services.gem_extraction import install_gem_extraction
+from app.services.key_dates import install_key_date_recalc
 from app.services.opportunity_embeddings import install_opportunity_embeddings
 from app.services.scanner import scanner_from_settings
 from app.services.sources import sync_sources_on_startup
@@ -46,6 +47,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     install_enrichment(settings, get_database(), app.state.storage_router, get_event_bus())
     # opportunities.embedding on the same events, after the summary (M1-12 / M4)
     install_opportunity_embeddings(settings, get_event_bus(), embeddings=app.state.embeddings)
+    # SPEC 9: an amendment that moves the deadline re-dates every pursuit of the notice
+    install_key_date_recalc(get_event_bus(), get_database())
     yield
 
 

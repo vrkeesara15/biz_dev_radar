@@ -50,6 +50,7 @@ from app.core.roles import Role
 from app.jobs import run_agents as run_agents_job_module
 from app.models import AgentRun, ComplianceItem, Opportunity, Pursuit, Requirement, User
 from app.models.agents import RUN_NEEDS_APPROVAL, RUN_QUEUED
+from app.services import key_dates as key_date_svc
 from app.services import pursuits as pursuit_svc
 from app.services.audit import AuditHint
 from app.services.plan import PlanService
@@ -693,6 +694,8 @@ async def open_pursuit(
         pursuit.internal_due_at = pursuit_svc.internal_due_at(opportunity.response_due_at)
     if pursuit.owner_user_id is None:
         pursuit.owner_user_id = user.id
+    # SPEC 9: the key dates exist from the moment the card does (M6-02)
+    await key_date_svc.sync_auto_dates(session, pursuit, opportunity)
     return pursuit, opportunity, created
 
 

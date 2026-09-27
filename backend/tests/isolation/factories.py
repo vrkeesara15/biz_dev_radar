@@ -57,6 +57,7 @@ from app.models import (
     ProfileFile,
     ProfileKeyword,
     Pursuit,
+    PursuitDate,
     PushSubscription,
     RateCardEntry,
     Registration,
@@ -348,6 +349,36 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         json={"profile_id": ctx.a.ids["profile"], "reason": "isolation probe"},
     ),
     ("GET", "/api/v1/pursuits"): lambda ctx: RouteCall(params={"page": 1}),
+    # --- key dates (M6-02)
+    ("GET", "/api/v1/pursuits/{pursuit_id}/dates"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/dates"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={"kind": "custom", "at": "2026-10-01T10:00:00Z", "label": "isolation probe"},
+    ),
+    ("PUT", "/api/v1/pursuits/{pursuit_id}/dates/{date_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "date_id": ctx.a.ids["pursuit_date"],
+        },
+        json={"label": "isolation probe"},
+    ),
+    ("DELETE", "/api/v1/pursuits/{pursuit_id}/dates/{date_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "date_id": ctx.a.ids["pursuit_date"],
+        }
+    ),
+    (
+        "POST",
+        "/api/v1/pursuits/{pursuit_id}/dates/{date_id}/acknowledge",
+    ): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "date_id": ctx.a.ids["pursuit_date"],
+        }
+    ),
     ("PATCH", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"stage": "qualifying"}
     ),
@@ -614,6 +645,17 @@ async def build_context(database: Database) -> IsolationContext:
         )
         session.add(pursuit)
         await session.flush()
+        pursuit_date = PursuitDate(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            kind="portal_submission",
+            at=datetime.now(UTC) + timedelta(days=10),
+            buyer_tz="America/New_York",
+            source="auto",
+            label="Alpha submission due",
+        )
+        session.add(pursuit_date)
+        await session.flush()
         a = TenantCtx(
             id=ta.id,
             owner_id=ua.id,
@@ -655,6 +697,8 @@ async def build_context(database: Database) -> IsolationContext:
                 "rate_card_category": "Alpha Architect",
                 "notification_prefs": str(prefs.id),
                 "pursuit": str(pursuit.id),
+                "pursuit_date": str(pursuit_date.id),
+                "pursuit_date_label": "Alpha submission due",
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",

@@ -33,6 +33,7 @@ from app.services.awards import run_awards_enrichment
 from app.services.enrichment import install_enrichment
 from app.services.events import EventBus, get_event_bus
 from app.services.gem_extraction import install_gem_extraction
+from app.services.key_dates import install_key_date_recalc
 from app.services.opportunity_embeddings import install_opportunity_embeddings
 from app.services.source_runner import RunResult, run_source
 from app.services.spend import run_spend_stats
@@ -111,6 +112,7 @@ async def _run_with_fresh_database(source_id: str, mode: str) -> dict[str, Any]:
         install_gem_extraction(settings, db, storage, bus)
         install_enrichment(settings, db, storage, bus)
         install_opportunity_embeddings(settings, bus)
+        install_key_date_recalc(bus, db)
         return await run_source_job(source_id, database=db, settings=settings, bus=bus, mode=mode)
     finally:
         await db.dispose()
