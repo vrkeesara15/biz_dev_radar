@@ -113,6 +113,18 @@ class Settings(BaseSettings):
     # contact / compliance
     contact_email: str = "ops@example.com"
 
+    # notifications (SPEC 7): deep links point at the web app, one-click action links at
+    # the API; failed channel sends retry this many times (backoff seconds, comma list)
+    # before falling back to email.
+    app_base_url: str = "http://localhost:3000"
+    api_base_url: str = "http://localhost:8000"
+    notify_max_attempts: int = 3
+    notify_backoff_seconds: Annotated[list[float], NoDecode] = Field(
+        default_factory=lambda: [1.0, 2.0, 4.0]
+    )
+    # signed action links (Pursue / Watch / Pass / Assign, unsubscribe) stay valid this long
+    notify_action_ttl_seconds: int = 60 * 60 * 24 * 14
+
     # third-party keys (never committed)
     sam_api_key: str = ""
     # SAM.gov key quota per UTC day (non-federal personal keys are low; see OQ-3)
@@ -161,7 +173,7 @@ class Settings(BaseSettings):
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"
 
-    @field_validator("cors_origins", "sam_awards_naics", mode="before")
+    @field_validator("cors_origins", "sam_awards_naics", "notify_backoff_seconds", mode="before")
     @classmethod
     def _split_origins(cls, value: Any) -> Any:
         if isinstance(value, str):

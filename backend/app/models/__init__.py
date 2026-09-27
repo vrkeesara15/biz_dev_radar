@@ -6,6 +6,12 @@ from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMix
 from app.models.billing import PlanLimit, UsageLedger
 from app.models.files import File
 from app.models.matching import Match, MatchBand
+from app.models.notifications import (
+    DeliveryChannel,
+    DeliveryStatus,
+    Notification,
+    NotificationDelivery,
+)
 from app.models.notify import UserNotificationPrefs
 from app.models.opportunities import (
     AwardsEnrichment,
@@ -46,12 +52,16 @@ __all__ = [
     "BoilerplateBlock",
     "Certification",
     "CompanyProfile",
+    "DeliveryChannel",
+    "DeliveryStatus",
     "DocumentChunk",
     "File",
     "Insurance",
     "Match",
     "MatchBand",
     "Membership",
+    "Notification",
+    "NotificationDelivery",
     "Opportunity",
     "OpportunityDocument",
     "OpportunityVersion",

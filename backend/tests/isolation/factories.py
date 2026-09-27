@@ -67,6 +67,10 @@ PUBLIC_ROUTES: list[tuple[str, str]] = [
     ("GET", "/api/v1/system/info"),
     ("*", "/api/v1/auth/*"),
     ("POST", "/api/v1/webhooks/*"),
+    # M4-09: one-click actions clicked from email/Slack/Teams carry a signed token (HS256,
+    # AUTH_SECRET) that names the tenant, user and notification; there is no bearer session.
+    # tests/integration/test_notify_core.py proves a foreign or tampered token is 401.
+    ("GET", "/api/v1/notifications/actions/*"),
 ]
 
 OK_STATUSES = frozenset({200, 201, 202, 204})

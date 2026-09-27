@@ -18,7 +18,7 @@ down_revision: str | None = "0004_m5_agent_runtime"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-TENANT_TABLES = ("matches",)
+TENANT_TABLES = ("matches", "notifications", "notification_deliveries")
 
 
 def _uuid_pk() -> sa.Column[object]:
@@ -94,6 +94,65 @@ def upgrade() -> None:
         op.create_index(f"ix_matches_{col}", "matches", [col])
     op.create_index(
         "ix_matches_tenant_band_created", "matches", ["tenant_id", "band", "created_at"]
+    )
+
+    # --- notifications + deliveries (M4-09) -----------------------------------------------------
+    op.create_table(
+        "notifications",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("user_id", "users.id"),
+        sa.Column("event_type", sa.String(64), nullable=False),
+        sa.Column(
+            "opportunity_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("opportunities.id", ondelete="SET NULL"),
+        ),
+        sa.Column("pursuit_id", postgresql.UUID(as_uuid=True)),
+        sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1")),
+        sa.Column("idempotency_key", sa.Text(), nullable=False),
+        _jsonb("payload"),
+        _ts("read_at"),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("idempotency_key", name="uq_notifications_idempotency_key"),
+    )
+    for col in ("tenant_id", "user_id", "opportunity_id"):
+        op.create_index(f"ix_notifications_{col}", "notifications", [col])
+    op.create_index(
+        "ix_notifications_user_unread",
+        "notifications",
+        ["tenant_id", "user_id", "read_at", "created_at"],
+    )
+
+    op.create_table(
+        "notification_deliveries",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("notification_id", "notifications.id"),
+        sa.Column("channel", sa.String(16), nullable=False),
+        sa.Column("status", sa.String(16), nullable=False, server_default="queued"),
+        sa.Column("idempotency_key", sa.Text(), nullable=False),
+        sa.Column("attempts", sa.Integer(), nullable=False, server_default=sa.text("0")),
+        sa.Column("last_error", sa.Text()),
+        _ts("scheduled_for"),
+        _ts("sent_at"),
+        _ts("opened_at"),
+        sa.Column(
+            "fallback_of_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("notification_deliveries.id", ondelete="SET NULL"),
+        ),
+        sa.Column("fallback_reason", sa.Text()),
+        sa.Column("provider_ref", sa.String(256)),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("idempotency_key", name="uq_notification_deliveries_idempotency_key"),
+    )
+    for col in ("tenant_id", "notification_id"):
+        op.create_index(f"ix_notification_deliveries_{col}", "notification_deliveries", [col])
+    op.create_index(
+        "ix_notification_deliveries_status_scheduled",
+        "notification_deliveries",
+        ["status", "scheduled_for"],
     )
 
     for table in TENANT_TABLES:

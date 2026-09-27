@@ -1276,7 +1276,7 @@
       "Every notification payload includes deep link and one-click actions Pursue, Watch, Pass (with reason), Assign as signed action URLs",
       "Delivery within 5 minutes of scoring asserted in the integration test with a fake clock"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-10",
