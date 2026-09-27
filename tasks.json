@@ -1733,7 +1733,7 @@
       "Feedback is retrievable per tenant for future prompt examples; never shared across tenants",
       "Unit test on diff generation"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-18",

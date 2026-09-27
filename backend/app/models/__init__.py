@@ -5,7 +5,7 @@ from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import BillingCustomer, BillingEventRecord, PlanLimit, UsageLedger
 from app.models.compliance import ComplianceItem, PursuitArtifact
-from app.models.drafts import Comment, Draft, DraftVersion, Task
+from app.models.drafts import Comment, Draft, DraftFeedback, DraftVersion, Task
 from app.models.files import File
 from app.models.integrations import Integration, IntegrationKind
 from app.models.knowledge import KBChunk
@@ -71,6 +71,7 @@ __all__ = [
     "DeliveryStatus",
     "DocumentChunk",
     "Draft",
+    "DraftFeedback",
     "DraftVersion",
     "File",
     "Insurance",

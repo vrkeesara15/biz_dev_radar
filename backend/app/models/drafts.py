@@ -168,3 +168,44 @@ class Comment(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class DraftFeedback(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
+    """A human's edit of a draft section, kept as a unified diff (SPEC 8: "human-in-the-
+    loop edits are diffed and saved as feedback to improve future drafts").
+
+    Written by `services.drafts.save_version` whenever a user saves over an existing
+    version, so the row always names the two versions it compares. Tenant-scoped and
+    never read across tenants (`services.draft_feedback.recent_examples`).
+    """
+
+    __tablename__ = "draft_feedback"
+
+    pursuit_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("pursuits.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    draft_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("drafts.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    section_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    from_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("draft_versions.id", ondelete="SET NULL")
+    )
+    to_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("draft_versions.id", ondelete="SET NULL")
+    )
+    # agent | user: whether the edit improved an agent draft or another person's edit
+    from_author: Mapped[str] = mapped_column(
+        String(8), nullable=False, server_default=text("'agent'")
+    )
+    diff_text: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("''"))
+    # {"added": n, "removed": n, "changed": bool}
+    stats: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    edited_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )

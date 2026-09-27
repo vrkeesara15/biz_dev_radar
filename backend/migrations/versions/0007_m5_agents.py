@@ -30,6 +30,7 @@ TENANT_TABLES = (
     "pursuit_artifacts",
     "drafts",
     "draft_versions",
+    "draft_feedback",
     "tasks",
     "comments",
 )
@@ -246,6 +247,27 @@ def upgrade() -> None:
         ["id"],
         ondelete="SET NULL",
     )
+
+    # --- human edit diffs as drafting feedback (M5-17) --------------------------------
+    op.create_table(
+        "draft_feedback",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        _fk("draft_id", "drafts.id", ondelete="CASCADE", nullable=False),
+        sa.Column("section_id", sa.String(64), nullable=False),
+        _fk("from_version_id", "draft_versions.id", ondelete="SET NULL", nullable=True),
+        _fk("to_version_id", "draft_versions.id", ondelete="SET NULL", nullable=True),
+        sa.Column("from_author", sa.String(8), nullable=False, server_default=sa.text("'agent'")),
+        sa.Column("diff_text", sa.Text(), nullable=False, server_default=sa.text("''")),
+        sa.Column(
+            "stats", postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")
+        ),
+        _fk("edited_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("created_at", nullable=False, default_now=True),
+    )
+    for col in ("tenant_id", "pursuit_id", "draft_id", "section_id"):
+        op.create_index(f"ix_draft_feedback_{col}", "draft_feedback", [col])
 
     op.create_table(
         "tasks",

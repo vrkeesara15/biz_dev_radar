@@ -4,6 +4,7 @@
     GET  /api/v1/pursuits/{id}/drafts/{section_id}         one section's current version
     PUT  /api/v1/pursuits/{id}/drafts/{section_id}         optimistic save (base_version)
     POST /api/v1/pursuits/{id}/drafts/{section_id}/approve reviewer / bid manager / owner
+    GET  /api/v1/pursuits/{id}/drafts/{section_id}/feedback human edit diffs (M5-17)
     GET  /api/v1/pursuits/{id}/comments                    comments on drafts, matrix rows
     POST /api/v1/pursuits/{id}/comments                    and the scorecard
     POST /api/v1/pursuits/{id}/comments/{comment_id}/resolve
@@ -38,6 +39,7 @@ from app.models.drafts import (
     COMMENT_TARGETS,
     DRAFT_STATUS_APPROVED,
 )
+from app.services import draft_feedback as feedback_svc
 from app.services import drafts as draft_svc
 from app.services import pursuits as pursuit_svc
 from app.services.audit import AuditHint, audit
@@ -57,6 +59,7 @@ ApproverDep = Annotated[CurrentUser, Depends(require_role(*APPROVE_ROLES))]
 
 AUDIT_DRAFT_READ = "draft.read"
 AUDIT_DRAFT_LIST = "draft.list"
+AUDIT_DRAFT_FEEDBACK = "draft.feedback_read"
 
 
 class DraftVersionOut(BaseModel):
@@ -136,6 +139,30 @@ class DraftPutIn(BaseModel):
             if self.body_html is not None
             else markdown_to_html(self.body_markdown or "")
         )
+
+
+class DraftFeedbackOut(BaseModel):
+    """One human edit of a section, kept as a unified diff (SPEC 8: edits are saved as
+    feedback to improve future drafts). Tenant-scoped; never read across tenants."""
+
+    id: uuid.UUID
+    pursuit_id: uuid.UUID
+    draft_id: uuid.UUID
+    section_id: str
+    from_version_id: uuid.UUID | None
+    to_version_id: uuid.UUID | None
+    from_author: str
+    diff_text: str
+    stats: dict[str, Any] = Field(default_factory=dict)
+    edited_by: uuid.UUID | None
+    created_at: datetime
+
+
+class DraftFeedbackListOut(BaseModel):
+    pursuit_id: uuid.UUID
+    section_id: str
+    items: list[DraftFeedbackOut] = Field(default_factory=list)
+    count: int = 0
 
 
 class CommentIn(BaseModel):
@@ -408,6 +435,37 @@ async def approve_draft(
     await session.flush()
     await session.refresh(draft)
     return await draft_out(session, pursuit, draft)
+
+
+@router.get("/{pursuit_id}/drafts/{section_id}/feedback", response_model=DraftFeedbackListOut)
+async def list_draft_feedback(
+    pursuit_id: uuid.UUID,
+    section_id: str,
+    session: TenantSessionDep,
+    user: ReaderDep,
+) -> DraftFeedbackListOut:
+    """The human edits of this section, newest first, as unified diffs (SPEC 8).
+
+    Reading them is reading draft text, so it is audited like any other draft read and
+    the viewer role cannot see it. Feedback never leaves its tenant.
+    """
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    draft = await _load_draft(session, pursuit, section_id)
+    rows = await feedback_svc.for_section(session, pursuit.id, section_id)
+    await audit(
+        session,
+        AUDIT_DRAFT_FEEDBACK,
+        draft,
+        user_id=user.id,
+        meta={"pursuit_id": str(pursuit.id), "section_id": section_id, "count": len(rows)},
+    )
+    await session.commit()
+    return DraftFeedbackListOut(
+        pursuit_id=pursuit.id,
+        section_id=section_id,
+        items=[DraftFeedbackOut.model_validate(row, from_attributes=True) for row in rows],
+        count=len(rows),
+    )
 
 
 async def _check_target(

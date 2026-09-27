@@ -21,6 +21,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.citations import kb_token
+from app.core.diffs import diff_stats, unified_diff
 from app.core.grounding import validate
 from app.core.html_text import html_to_text
 from app.core.markdown import sanitize_html
@@ -29,6 +30,7 @@ from app.models import (
     Comment,
     CompanyProfile,
     Draft,
+    DraftFeedback,
     DraftVersion,
     KBChunk,
     PastPerformance,
@@ -37,6 +39,7 @@ from app.models import (
 )
 from app.models.drafts import (
     AUTHOR_AGENT,
+    AUTHOR_USER,
     COMMENT_TARGETS,
     DRAFT_STATUS_APPROVED,
     DRAFT_STATUS_DRAFT,
@@ -175,6 +178,9 @@ async def save_version(
     flagged for the UI) and the draft's `current_version_id` is repointed at the new row.
     """
     draft = await get_draft(session, pursuit_id, section_id)
+    previous: DraftVersion | None = None
+    if draft is not None:
+        previous = await get_version(session, draft)
     if draft is None:
         draft = Draft(
             tenant_id=tenant_id,
@@ -212,7 +218,49 @@ async def save_version(
     await session.flush()
     draft.current_version_id = row.id
     await session.flush()
+    if author == AUTHOR_USER and previous is not None:
+        await record_feedback(session, draft, previous, row, edited_by=author_user_id)
     return draft, row
+
+
+async def record_feedback(
+    session: AsyncSession,
+    draft: Draft,
+    previous: DraftVersion,
+    current: DraftVersion,
+    *,
+    edited_by: uuid.UUID | None = None,
+) -> DraftFeedback | None:
+    """Keep a human edit as a unified diff against the version it started from.
+
+    SPEC 8: "human-in-the-loop edits are diffed and saved as feedback to improve future
+    drafts". An edit that changed nothing in the rendered text is not feedback, so it is
+    not stored.
+    """
+    patch = unified_diff(
+        previous.body_text,
+        current.body_text,
+        before_label=f"v{previous.version} ({previous.author})",
+        after_label=f"v{current.version} ({current.author})",
+    )
+    stats = diff_stats(patch)
+    if not stats.changed:
+        return None
+    row = DraftFeedback(
+        tenant_id=draft.tenant_id,
+        pursuit_id=draft.pursuit_id,
+        draft_id=draft.id,
+        section_id=draft.section_id,
+        from_version_id=previous.id,
+        to_version_id=current.id,
+        from_author=previous.author,
+        diff_text=patch,
+        stats=dict(stats.as_dict()),
+        edited_by=edited_by,
+    )
+    session.add(row)
+    await session.flush()
+    return row
 
 
 async def create_task(

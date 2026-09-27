@@ -375,6 +375,12 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         },
         json={"body_html": "<p>isolation probe</p>", "base_version": 1},
     ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}/feedback"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "section_id": ctx.a.ids["draft_section"],
+        }
+    ),
     ("POST", "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}/approve"): lambda ctx: RouteCall(
         path_params={
             "pursuit_id": ctx.a.ids["pursuit"],
