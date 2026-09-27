@@ -1093,7 +1093,7 @@
       "Exports and emails carry the same attribution and the verify-on-portal disclaimer",
       "docs/legal.md records the requirement for a written legal opinion before commercial resale of Indian portal data"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-01",
