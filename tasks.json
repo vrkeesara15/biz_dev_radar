@@ -1469,7 +1469,7 @@
       "Output stored versioned in agent_steps and opportunity_documents",
       "Fixture test with PDF + DOCX + scanned PDF"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-04",
