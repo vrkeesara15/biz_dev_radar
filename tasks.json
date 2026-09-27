@@ -673,7 +673,7 @@
       "Expiring contracts (period_of_performance end in 6-18 months) recorded for recompete watch",
       "Fixture tests; DoD lag note surfaced in AdapterHealth"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-08",

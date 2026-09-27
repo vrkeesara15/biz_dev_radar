@@ -12,9 +12,11 @@ from app.models.opportunities import (
     OpportunityVersion,
 )
 from app.models.sources import Source, SourceRun
+from app.models.spend import AgencySpendStat
 from app.models.tenancy import Membership, Tenant, User
 
 __all__ = [
+    "AgencySpendStat",
     "AuditLog",
     "AwardsEnrichment",
     "Base",

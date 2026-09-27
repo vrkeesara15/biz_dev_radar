@@ -56,6 +56,7 @@ GLOBAL_TABLES = (
     "opportunity_documents",
     "document_chunks",
     "awards_enrichment",
+    "agency_spend_stats",
 )
 
 
@@ -321,6 +322,27 @@ def upgrade() -> None:
     op.create_index(
         "ix_awards_enrichment_source_award", "awards_enrichment", ["source_id", "award_id"]
     )
+
+    op.create_table(
+        "agency_spend_stats",
+        _uuid_pk(),
+        sa.Column("agency", sa.Text(), nullable=False),
+        sa.Column("sub_agency", sa.Text(), nullable=False, server_default=sa.text("''")),
+        sa.Column("naics", sa.String(16), nullable=False, server_default=sa.text("''")),
+        sa.Column("psc", sa.String(16), nullable=False, server_default=sa.text("''")),
+        sa.Column("fiscal_year", sa.Integer(), nullable=False),
+        sa.Column("obligations", sa.Numeric(20, 2), nullable=False),
+        sa.Column("award_count", sa.Integer(), nullable=False),
+        sa.Column(
+            "source_id", sa.String(64), nullable=False, server_default=sa.text("'usaspending'")
+        ),
+        _ts("computed_at", nullable=False, default_now=True),
+        sa.UniqueConstraint(
+            "agency", "sub_agency", "naics", "psc", "fiscal_year", name="uq_agency_spend_stats_key"
+        ),
+    )
+    for col in ("agency", "naics", "psc", "fiscal_year"):
+        op.create_index(f"ix_agency_spend_stats_{col}", "agency_spend_stats", [col])
 
     for table in GLOBAL_TABLES:
         grant_app(op, table)

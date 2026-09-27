@@ -1,0 +1,111 @@
+{
+  "spending_level": "awards",
+  "limit": 6,
+  "results": [
+    {
+      "internal_id": 281086673,
+      "Award ID": "47QFRA24F0005",
+      "Recipient Name": "CACI, INC. - FEDERAL",
+      "Award Amount": 977668179.13,
+      "Awarding Agency": "General Services Administration",
+      "Awarding Sub Agency": "Federal Acquisition Service",
+      "Start Date": "2024-05-01",
+      "End Date": "2027-04-30",
+      "NAICS": {
+        "code": "541512",
+        "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+      },
+      "PSC": {
+        "code": "DA01",
+        "description": "IT AND TELECOM - BUSINESS APPLICATION/APPLICATION DEVELOPMENT SUPPORT SERVICES (LABOR)"
+      },
+      "Description": "CDM DEFEND GROUP A  BRIDGE TASK ORDER",
+      "recipient_id": "28eee911-76af-7147-f760-4ec5f90bec2d-C",
+      "Last Modified Date": "2026-09-25 15:13:45",
+      "awarding_agency_id": 614,
+      "agency_slug": "general-services-administration",
+      "generated_internal_id": "CONT_AWD_47QFRA24F0005_4732_47QTCK18D0009_4732"
+    },
+    {
+      "internal_id": 281082126,
+      "Award ID": "47QFCA19F0006",
+      "Recipient Name": "CACI, INC. - FEDERAL",
+      "Award Amount": 975282370.96,
+      "Awarding Agency": "General Services Administration",
+      "Awarding Sub Agency": "Federal Acquisition Service",
+      "Start Date": "2019-05-20",
+      "End Date": "2026-11-19",
+      "NAICS": {
+        "code": "541512",
+        "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+      },
+      "PSC": {
+        "code": "D399",
+        "description": "IT AND TELECOM- OTHER IT AND TELECOMMUNICATIONS"
+      },
+      "Description": "IGF::OT::IGF",
+      "recipient_id": "28eee911-76af-7147-f760-4ec5f90bec2d-C",
+      "Last Modified Date": "2026-09-08 08:40:48",
+      "awarding_agency_id": 614,
+      "agency_slug": "general-services-administration",
+      "generated_internal_id": "CONT_AWD_47QFCA19F0006_4732_47QTCK18D0009_4732"
+    },
+    {
+      "internal_id": 292112757,
+      "Award ID": "91003119F0003",
+      "Recipient Name": "ACCENTURE FEDERAL SERVICES LLC",
+      "Award Amount": 942639630.41,
+      "Awarding Agency": "Department of Education",
+      "Awarding Sub Agency": "Department of Education",
+      "Start Date": "2019-02-20",
+      "End Date": "2027-02-19",
+      "NAICS": {
+        "code": "541512",
+        "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+      },
+      "PSC": {
+        "code": "R415",
+        "description": "SUPPORT- PROFESSIONAL: TECHNOLOGY SHARING/UTILIZATION"
+      },
+      "Description": "THIS TASK ORDER IS FOR AN ENTERPRISE-WIDE DIGITAL AND CUSTOMER CARE PLATFORMS AND SERVICES SOLUTION (ENTERPRISE-WIDE DIGITAL AND CUSTOMER CARE SOLUTION, AKA EWDCCPS, AKA DCC) THAT WILL ENABLE AN FSA-BRANDED OMNI-CHANNEL ENGAGEMENT APPROACH LED BY A MOBILE-FIRST, MOBILE-COMPLETE, AND MOBILE-CONTINUOUS DIGITAL PLATFORM SUPPORTING THE COMPLETE LIFECYCLE OF STUDENT FINANCING.",
+      "recipient_id": "d41a6b8a-9d6a-0d28-7e24-989e31731aad-C",
+      "Last Modified Date": "2026-09-21 16:14:08",
+      "awarding_agency_id": 1068,
+      "agency_slug": "department-of-education",
+      "generated_internal_id": "CONT_AWD_91003119F0003_9100_HHSN316201200002W_7529"
+    },
+    {
+      "internal_id": 361850674,
+      "Award ID": "W52P1J20C0005",
+      "Recipient Name": "ACCENTURE FEDERAL SERVICES LLC",
+      "Award Amount": 892231749.5,
+      "Awarding Agency": "Department of Defense",
+      "Awarding Sub Agency": "Department of the Army",
+      "Start Date": "2019-12-10",
+      "End Date": "2027-04-30",
+      "NAICS": {
+        "code": "541512",
+        "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+      },
+      "PSC": {
+        "code": "D399",
+        "description": "IT AND TELECOM- OTHER IT AND TELECOMMUNICATIONS"
+      },
+      "Description": "AWARD FOR UNIFIED ENTERPRISE RESOURCE PLANNING CAPABILITY SUPPORT SERVICES",
+      "recipient_id": "d41a6b8a-9d6a-0d28-7e24-989e31731aad-C",
+      "Last Modified Date": "2026-08-27 10:18:29",
+      "awarding_agency_id": 1173,
+      "agency_slug": "department-of-defense",
+      "generated_internal_id": "CONT_AWD_W52P1J20C0005_9700_-NONE-_-NONE-"
+    }
+  ],
+  "page_metadata": {
+    "page": 2,
+    "hasNext": false,
+    "last_record_unique_id": 361850674,
+    "last_record_sort_value": "892231749.5"
+  },
+  "messages": [
+    "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. "
+  ]
+}

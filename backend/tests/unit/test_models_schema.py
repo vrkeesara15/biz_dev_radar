@@ -1,6 +1,7 @@
 """M0-05: model inventory and tenant-scoping conventions."""
 
 from app.models import (
+    AgencySpendStat,
     AuditLog,
     AwardsEnrichment,
     Base,
@@ -48,6 +49,7 @@ def test_global_tables_have_no_tenant_id() -> None:
         OpportunityDocument,
         DocumentChunk,
         AwardsEnrichment,
+        AgencySpendStat,
     ):
         assert "tenant_id" not in model.__table__.c
 

@@ -25,6 +25,7 @@ RLS_EXEMPT_TABLES = {
     "opportunity_documents",
     "document_chunks",
     "awards_enrichment",
+    "agency_spend_stats",
 }
 
 
