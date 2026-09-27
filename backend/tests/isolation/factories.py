@@ -22,6 +22,7 @@ from typing import Any
 
 from app.core.config import Region
 from app.core.db import Database
+from app.core.notice_types import TeamingRole
 from app.core.profile_fields import CertificationKind, CodeScheme, KeywordKind
 from app.core.roles import Role
 from app.models import (
@@ -32,6 +33,7 @@ from app.models import (
     ProfileCode,
     ProfileKeyword,
     ServiceLine,
+    TeamingPartner,
     UsageLedger,
 )
 
@@ -143,6 +145,12 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         {"name": "Probe line 2"},
     ),
     **child_routes(
+        "teaming-partners",
+        "teaming_partner",
+        {"name": "Probe Partners", "relationship": "sub"},
+        {"relationship": "jv"},
+    ),
+    **child_routes(
         "certifications",
         "certification",
         {"kind": "8a", "cert_number": "PROBE-1"},
@@ -218,7 +226,15 @@ async def build_context(database: Database) -> IsolationContext:
             name="Alpha Cloud Line",
             description="alpha desc",
         )
-        session.add_all([certification, code, keyword, service_line])
+        partner = TeamingPartner(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            name="Alpha Partner Corp",
+            relationship=TeamingRole.SUB,
+            uei="PARTNER12345",
+            pan="ABCDE1234F",
+        )
+        session.add_all([certification, code, keyword, service_line, partner])
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -245,6 +261,10 @@ async def build_context(database: Database) -> IsolationContext:
                 "keyword_term": "alpha secret term",
                 "service_line": str(service_line.id),
                 "service_line_name": "Alpha Cloud Line",
+                "teaming_partner": str(partner.id),
+                "teaming_partner_name": "Alpha Partner Corp",
+                "teaming_partner_uei": "PARTNER12345",
+                "teaming_partner_pan": "ABCDE1234F",
             },
         )
         b = TenantCtx(

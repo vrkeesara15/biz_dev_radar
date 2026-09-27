@@ -22,14 +22,17 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 
+from app.core.notice_types import TeamingRole
 from app.core.profile_fields import CertificationKind, CodeScheme, DeliveryModel, KeywordKind
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.tenancy import _values
+from app.models.types import EncryptedString
 
 CertificationKindEnum = Enum(CertificationKind, name="certification_kind", values_callable=_values)
 CodeSchemeEnum = Enum(CodeScheme, name="code_scheme", values_callable=_values)
 KeywordKindEnum = Enum(KeywordKind, name="keyword_kind", values_callable=_values)
 DeliveryModelEnum = Enum(DeliveryModel, name="delivery_model", values_callable=_values)
+TeamingRoleEnum = Enum(TeamingRole, name="teaming_relationship", values_callable=_values)
 
 
 class ProfileChildMixin:
@@ -109,3 +112,20 @@ class ServiceLine(UUIDPrimaryKeyMixin, TenantMixin, ProfileChildMixin, Timestamp
         ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
     )
     delivery_model: Mapped[DeliveryModel | None] = mapped_column(DeliveryModelEnum)
+
+
+class TeamingPartner(UUIDPrimaryKeyMixin, TenantMixin, ProfileChildMixin, TimestampMixin, Base):
+    """Known partners with their UEI/PAN and capabilities (SPEC 4.4 teaming)."""
+
+    __tablename__ = "teaming_partners"
+
+    name: Mapped[str] = mapped_column(String(300), nullable=False)
+    relationship: Mapped[TeamingRole] = mapped_column(TeamingRoleEnum, nullable=False)
+    uei: Mapped[str | None] = mapped_column(String(12))
+    pan: Mapped[str | None] = mapped_column(EncryptedString)
+    capabilities: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+    )
+    website: Mapped[str | None] = mapped_column(String(500))
+    contact_email: Mapped[str | None] = mapped_column(String(320))
+    notes: Mapped[str | None] = mapped_column(Text)

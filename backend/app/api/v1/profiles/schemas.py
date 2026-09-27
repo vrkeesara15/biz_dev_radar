@@ -9,11 +9,18 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.config import Region
 from app.core.crypto import is_masked, mask_last4
 from app.core.finance import CURRENCIES, FiscalYearRevenue, average_turnover
+from app.core.geo import (
+    normalize_countries,
+    normalize_india_states,
+    normalize_names,
+    normalize_us_states,
+)
+from app.core.notice_types import ContractType, NoticeType, TeamingRole
 from app.core.profile_fields import (
     ENCRYPTED_FIELDS,
     NORMALIZERS,
@@ -106,10 +113,61 @@ class ProfileWrite(BaseModel):
     bonding_capacity_amount: Amount | None = None
     bonding_capacity_currency: Currency | None = None
     mse_ownership: MseOwnership | None = None
+    # 4.4 where and how big
+    target_countries: list[str] | None = None
+    target_us_states: list[str] | None = None
+    target_in_states: list[str] | None = None
+    target_cities: list[str] | None = None
+    remote_ok: bool | None = None
+    target_buyers: list[str] | None = None
+    blocked_buyers: list[str] | None = None
+    value_min_usd: Amount | None = None
+    value_max_usd: Amount | None = None
+    value_min_inr: Amount | None = None
+    value_max_inr: Amount | None = None
+    notice_types_wanted: list[NoticeType] | None = None
+    contract_types_preferred: list[ContractType] | None = None
+    teaming_roles: list[TeamingRole] | None = None
     # bank (encrypted)
     bank_name: Annotated[str | None, Field(max_length=200)] = None
     bank_account_number: Annotated[str | None, Field(max_length=64)] = None
     bank_routing_code: Annotated[str | None, Field(max_length=32)] = None
+
+    @field_validator("target_countries")
+    @classmethod
+    def _target_countries(cls, value: list[str] | None) -> list[str] | None:
+        return None if value is None else normalize_countries(value)
+
+    @field_validator("target_us_states")
+    @classmethod
+    def _us_states(cls, value: list[str] | None) -> list[str] | None:
+        return None if value is None else normalize_us_states(value)
+
+    @field_validator("target_in_states")
+    @classmethod
+    def _in_states(cls, value: list[str] | None) -> list[str] | None:
+        return None if value is None else normalize_india_states(value)
+
+    @field_validator("target_cities", "target_buyers", "blocked_buyers")
+    @classmethod
+    def _names(cls, value: list[str] | None) -> list[str] | None:
+        return None if value is None else normalize_names(value)
+
+    @field_validator("notice_types_wanted", "contract_types_preferred", "teaming_roles")
+    @classmethod
+    def _dedupe_enums(cls, value: list[Any] | None) -> list[Any] | None:
+        if value is None:
+            return None
+        return list(dict.fromkeys(value))
+
+    @model_validator(mode="after")
+    def _value_ranges(self) -> ProfileWrite:
+        for currency in ("usd", "inr"):
+            low = getattr(self, f"value_min_{currency}")
+            high = getattr(self, f"value_max_{currency}")
+            if low is not None and high is not None and low > high:
+                raise ValueError(f"value_min_{currency} must not exceed value_max_{currency}")
+        return self
 
     @field_validator("employees_by_country")
     @classmethod
@@ -174,9 +232,17 @@ class ProfileWrite(BaseModel):
         for name in ENCRYPTED_FIELDS:
             if name in data and is_masked(data[name]):
                 del data[name]
-        # jsonb columns take JSON-native values (Decimal amounts become strings)
+        # jsonb columns take JSON-native values (Decimal amounts become strings); enum lists
+        # are stored as text[]
         as_json = self.model_dump(exclude_unset=True, mode="json")
-        for name in ("addresses", "annual_revenue", "employees_by_country"):
+        for name in (
+            "addresses",
+            "annual_revenue",
+            "employees_by_country",
+            "notice_types_wanted",
+            "contract_types_preferred",
+            "teaming_roles",
+        ):
             if data.get(name) is not None:
                 data[name] = as_json[name]
         return data
@@ -237,6 +303,21 @@ class ProfileOut(BaseModel):
     bonding_capacity_amount: Decimal | None
     bonding_capacity_currency: str | None
     mse_ownership: MseOwnership | None
+    # 4.4
+    target_countries: list[str]
+    target_us_states: list[str]
+    target_in_states: list[str]
+    target_cities: list[str]
+    remote_ok: bool
+    target_buyers: list[str]
+    blocked_buyers: list[str]
+    value_min_usd: Decimal | None
+    value_max_usd: Decimal | None
+    value_min_inr: Decimal | None
+    value_max_inr: Decimal | None
+    notice_types_wanted: list[NoticeType]
+    contract_types_preferred: list[ContractType]
+    teaming_roles: list[TeamingRole]
 
     @classmethod
     def from_row(cls, row: CompanyProfile) -> ProfileOut:

@@ -71,7 +71,11 @@ keyword_kind_t = postgresql.ENUM("include", "exclude", name="keyword_kind", crea
 delivery_model_t = postgresql.ENUM(
     "onsite", "remote", "hybrid", "offshore", name="delivery_model", create_type=False
 )
+teaming_relationship_t = postgresql.ENUM(
+    "prime", "sub", "jv", name="teaming_relationship", create_type=False
+)
 NEW_ENUMS = (
+    teaming_relationship_t,
     code_scheme_t,
     keyword_kind_t,
     delivery_model_t,
@@ -92,6 +96,7 @@ TENANT_TABLES: list[str] = [
     "profile_codes",
     "profile_keywords",
     "service_lines",
+    "teaming_partners",
 ]
 
 
@@ -123,6 +128,12 @@ def _tenant_table(name: str, *columns: sa.schema.SchemaItem) -> None:
     assert name in TENANT_TABLES, f"add {name} to TENANT_TABLES"
     op.create_table(name, _uuid_pk(), _tenant_id(), *columns, _created_at())
     op.create_index(f"ix_{name}_tenant_id", name, ["tenant_id"])
+
+
+def _text_list(name: str) -> sa.Column[object]:
+    return sa.Column(
+        name, postgresql.ARRAY(sa.Text()), nullable=False, server_default=sa.text("'{}'::text[]")
+    )
 
 
 def _encrypted() -> sa.Text:
@@ -243,6 +254,21 @@ def upgrade() -> None:
         sa.Column("bonding_capacity_amount", sa.Numeric(18, 2)),
         sa.Column("bonding_capacity_currency", sa.String(3)),
         sa.Column("mse_ownership", mse_ownership_t),
+        # where and how big (4.4)
+        _text_list("target_countries"),
+        _text_list("target_us_states"),
+        _text_list("target_in_states"),
+        _text_list("target_cities"),
+        sa.Column("remote_ok", sa.Boolean(), nullable=False, server_default=sa.false()),
+        _text_list("target_buyers"),
+        _text_list("blocked_buyers"),
+        sa.Column("value_min_usd", sa.Numeric(18, 2)),
+        sa.Column("value_max_usd", sa.Numeric(18, 2)),
+        sa.Column("value_min_inr", sa.Numeric(18, 2)),
+        sa.Column("value_max_inr", sa.Numeric(18, 2)),
+        _text_list("notice_types_wanted"),
+        _text_list("contract_types_preferred"),
+        _text_list("teaming_roles"),
         # bank details (encrypted)
         sa.Column("bank_name", sa.String(200)),
         sa.Column("bank_account_number", _encrypted()),
@@ -304,6 +330,19 @@ def upgrade() -> None:
             server_default=sa.text("'{}'::text[]"),
         ),
         sa.Column("delivery_model", delivery_model_t),
+    )
+
+    # --- teaming partners (M1-04, SPEC 4.4) -----------------------------------------------
+    _profile_child(
+        "teaming_partners",
+        sa.Column("name", sa.String(300), nullable=False),
+        sa.Column("relationship", teaming_relationship_t, nullable=False),
+        sa.Column("uei", sa.String(12)),
+        sa.Column("pan", _encrypted()),
+        _text_list("capabilities"),
+        sa.Column("website", sa.String(500)),
+        sa.Column("contact_email", sa.String(320)),
+        sa.Column("notes", sa.Text()),
     )
 
     # --- privileges + RLS for every tenant table above --------------------------------------

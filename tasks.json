@@ -342,7 +342,7 @@
       "teaming_partners(name, uei, pan, capabilities, relationship prime|sub|jv)",
       "Round-trip test through the API"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-05",

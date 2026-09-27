@@ -118,6 +118,42 @@ class CompanyProfile(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     bonding_capacity_currency: Mapped[str | None] = mapped_column(String(3))
     mse_ownership: Mapped[MseOwnership | None] = mapped_column(MseOwnershipEnum)
 
+    # --- where and how big (SPEC 4.4)
+    target_countries: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+    )
+    target_us_states: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+    )
+    target_in_states: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+    )
+    target_cities: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+    )
+    remote_ok: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
+    target_buyers: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+    )
+    blocked_buyers: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+    )
+    value_min_usd: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    value_max_usd: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    value_min_inr: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    value_max_inr: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
+    # values from app.core.notice_types (validated by the API, stored as text[])
+    notice_types_wanted: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+    )
+    contract_types_preferred: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+    )
+    # willing to prime / sub / jv
+    teaming_roles: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'::text[]")
+    )
+
     # --- bank details (both regions, encrypted; SPEC 11)
     bank_name: Mapped[str | None] = mapped_column(String(200))
     bank_account_number: Mapped[str | None] = mapped_column(EncryptedString)
