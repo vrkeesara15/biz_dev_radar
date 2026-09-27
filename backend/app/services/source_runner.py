@@ -22,12 +22,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.adapters.base import OpportunityIn, RawRecord, SourceAdapter
 from app.core.watermark import advance_watermark, since_from_watermark
 from app.services import sources as source_svc
+from app.services.events import ADAPTER_FAILING, EventBus, get_event_bus
 
 log = structlog.get_logger(__name__)
 
 Sink = Callable[[AsyncSession, OpportunityIn, RawRecord], Awaitable[Any]]
 
 MAX_ERRORS_KEPT = 50
+# `adapter.failing` is published once the source has failed MORE than this many runs in a
+# row (SPEC 5.1 nightly alerting; the ops channel subscribes in M4/M7).
+FAILING_RUNS_THRESHOLD = 2
 
 
 @dataclass(slots=True)
@@ -71,8 +75,10 @@ async def run_source(
     sink: Sink = default_sink,
     now: datetime | None = None,
     keep_records: bool = False,
+    bus: EventBus | None = None,
 ) -> RunResult:
     now = now or datetime.now(UTC)
+    bus = bus or get_event_bus()
     source = await source_svc.get_source(session, adapter.source_id)
     run = await source_svc.start_run(session, adapter.source_id, now=now)
     since = since_from_watermark(source.watermark_at, now=now)
@@ -127,4 +133,21 @@ async def run_source(
         cursor=result.cursor,
         now=datetime.now(UTC),
     )
+    if status == source_svc.RUN_FAILING and source.consecutive_failures > FAILING_RUNS_THRESHOLD:
+        health = adapter.health()
+        await bus.publish(
+            ADAPTER_FAILING,
+            {
+                "source_id": adapter.source_id,
+                "run_id": str(run.id),
+                "consecutive_failures": source.consecutive_failures,
+                "health": health.status.value,
+                "message": (result.errors[-1]["message"] if result.errors else health.message),
+            },
+        )
+        log.error(
+            "adapter.failing",
+            source=adapter.source_id,
+            consecutive_failures=source.consecutive_failures,
+        )
     return result

@@ -852,7 +852,7 @@
       "POST /api/v1/admin/sources/{id}/run (platform_admin) enqueues a run; GET /api/v1/admin/sources lists health and last runs",
       "A source failing > 2 consecutive runs publishes an 'adapter.failing' event"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-17",

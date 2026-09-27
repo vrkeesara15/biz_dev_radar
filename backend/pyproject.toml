@@ -85,6 +85,7 @@ module = [
   "google.*",
   "pytesseract.*",
   "langfuse.*",
+  "kombu.*",
 ]
 ignore_missing_imports = true
 

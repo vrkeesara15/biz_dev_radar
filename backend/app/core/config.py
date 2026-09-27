@@ -71,6 +71,11 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://bidradar_app:bidradar_app@localhost:5433/bidradar"
     database_url_owner: str = "postgresql+asyncpg://bidradar:bidradar@localhost:5433/bidradar"
     redis_url: str = "redis://localhost:6380/0"
+    # Celery (SPEC 10.1): eager mode runs tasks inline (tests, single-process dev); the
+    # admin "run now" endpoint falls back to inline when the broker is unreachable within
+    # this many seconds.
+    celery_task_always_eager: bool = False
+    celery_broker_connect_timeout: float = 2.0
 
     # files (SPEC sections 10.1, 11): one bucket per data-residency region
     storage_backend: StorageBackend = StorageBackend.LOCAL
