@@ -29,9 +29,11 @@ from app.core.normalize.buyer import normalized_buyer
 from app.core.normalize.reference import normalized_reference
 from app.core.normalize.sam import normalized_solicitation
 from app.core.opportunity import OpportunityStatus
+from app.core.status import DERIVED_STATUSES, derived_status
 from app.models import Opportunity, OpportunityDocument, OpportunityVersion
 from app.services.dedupe import Merge, dedupe
 from app.services.events import OPPORTUNITY_AMENDED, OPPORTUNITY_CREATED, EventBus, get_event_bus
+from app.services.status_job import propagate_terminal_status
 
 log = structlog.get_logger(__name__)
 
@@ -105,7 +107,9 @@ def _row_values(row: Opportunity, documents: list[OpportunityDocument]) -> dict[
     return values
 
 
-def _apply(row: Opportunity, opp: OpportunityIn, settings: Settings, *, new: bool) -> None:
+def _apply(
+    row: Opportunity, opp: OpportunityIn, settings: Settings, *, new: bool, now: datetime
+) -> None:
     for name in DIRECT_FIELDS:
         setattr(row, name, getattr(opp, name))
     row.place_of_performance = (
@@ -124,8 +128,10 @@ def _apply(row: Opportunity, opp: OpportunityIn, settings: Settings, *, new: boo
     row.estimated_value_max_usd = to_usd(opp.estimated_value_max, opp.currency, settings.fx_rates)
     if opp.status is not None:
         row.status = opp.status
-    elif new:
-        row.status = OpportunityStatus.OPEN
+    elif new or OpportunityStatus(row.status) in DERIVED_STATUSES:
+        # No source-stated status: derive it from the deadline (SPEC 5.4). Terminal
+        # statuses (cancelled/awarded) stay until the source says otherwise.
+        row.status = derived_status(opp.response_due_at, now)
 
 
 async def _existing(session: AsyncSession, opp: OpportunityIn) -> Opportunity | None:
@@ -229,7 +235,7 @@ async def ingest(
 
     if row is None:
         row = Opportunity(source_id=opp.source_id, external_id=opp.external_id, version=1)
-        _apply(row, opp, settings, new=True)
+        _apply(row, opp, settings, new=True, now=now)
         row.content_hash = new_hash
         row.raw_ref = raw_ref or opp.extra.get("raw_ref")
         row.last_seen_at = now
@@ -239,6 +245,7 @@ async def ingest(
         row.parent_opportunity_id = await resolve_parent(session, opp, row.id)
         await session.flush()
         merged = await dedupe(session, row)
+        await propagate_terminal_status(session, row, bus=bus)
         await bus.publish(
             OPPORTUNITY_CREATED,
             {
@@ -274,7 +281,7 @@ async def ingest(
         )
 
     before = canonical_payload(_row_values(row, list(row.documents)))
-    _apply(row, opp, settings, new=False)
+    _apply(row, opp, settings, new=False, now=now)
     documents = _sync_documents(session, row, opp, list(row.documents))
     await session.flush()
     after = canonical_payload(_row_values(row, documents))
@@ -293,6 +300,8 @@ async def ingest(
     )
     await session.flush()
     merged = await dedupe(session, row)
+    if "status" in diff:
+        await propagate_terminal_status(session, row, bus=bus)
     await bus.publish(
         OPPORTUNITY_AMENDED,
         {

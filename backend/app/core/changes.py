@@ -69,6 +69,9 @@ class ChangeKind(StrEnum):
     CANCELLED = "cancelled"
     AWARDED = "awarded"
     DESCRIPTION_UPDATED = "description_updated"
+    # open <-> closing_soon <-> closed moves made by the status job (M2-11); cancelled and
+    # awarded keep their own kinds above.
+    STATUS_CHANGED = "status_changed"
     OTHER = "other"
 
 
@@ -184,6 +187,8 @@ def classify_changes(diff: Mapping[str, Mapping[str, Any]]) -> list[str]:
             kinds.append(ChangeKind.CANCELLED)
         elif status.get("new") == "awarded":
             kinds.append(ChangeKind.AWARDED)
+        else:
+            kinds.append(ChangeKind.STATUS_CHANGED)
     if "description_text" in diff:
         kinds.append(ChangeKind.DESCRIPTION_UPDATED)
     if diff and not kinds:

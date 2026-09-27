@@ -750,7 +750,7 @@
       "Status transitions create a version diff and event",
       "Unit tests with frozen time"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-12",
