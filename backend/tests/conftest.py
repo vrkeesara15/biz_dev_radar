@@ -39,6 +39,11 @@ def settings(tmp_path_factory: pytest.TempPathFactory):  # type: ignore[no-untyp
         # deterministic embeddings and inline (eager) background jobs; no network
         embedding_provider="fake",
         celery_task_always_eager=True,
+        # The API rate limiter is off for the shared app fixture: every test would
+        # otherwise share one bucket keyed on the test client's IP and start failing at
+        # request 121. tests/integration/test_rate_limit_api.py builds its own app with
+        # the limiter on and an in-process bucket.
+        rate_limit_enabled=False,
     )
 
 

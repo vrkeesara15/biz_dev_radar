@@ -15,6 +15,7 @@ from app.agents.llm import llm_from_settings
 from app.api import health
 from app.api.audit_middleware import AuditMiddleware
 from app.api.middleware import RequestIdMiddleware
+from app.api.ratelimit_middleware import RateLimitMiddleware
 from app.api.v1 import api_router
 from app.core.config import Settings, get_settings
 from app.core.db import get_database
@@ -27,6 +28,7 @@ from app.services.embeddings import embeddings_from_settings
 from app.services.enrichment import install_enrichment
 from app.services.events import get_event_bus
 from app.services.opportunity_embeddings import install_opportunity_embeddings
+from app.services.ratelimit import limiter_from_settings, policies_from_settings
 from app.services.scanner import scanner_from_settings
 from app.services.sources import sync_sources_on_startup
 from app.services.storage import StorageRouter
@@ -76,8 +78,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.llm = llm_from_settings(settings)
     # billing providers (Stripe for us, Razorpay for in); tests install fakes on app.state
     app.state.billing_providers = providers_from_settings(settings)
+    # API rate limiting per tenant and per IP (SPEC 11, M7-06); the failed-auth limiter
+    # above is separate and stays.
+    app.state.rate_limiter = limiter_from_settings(settings)
+    tenant_policy, ip_policy = policies_from_settings(settings)
     # add_middleware wraps outward: the LAST added is the outermost. Final order:
-    # RequestId (outermost) -> CORS -> Audit -> routes.
+    # RequestId (outermost) -> RateLimit -> CORS -> Audit -> routes. The limiter sits
+    # above CORS and the routers so a flood never reaches a database session, and below
+    # RequestId so a 429 still carries X-Request-ID.
     app.add_middleware(AuditMiddleware, trust_proxy=settings.trust_proxy_headers)
     app.add_middleware(
         CORSMiddleware,
@@ -85,7 +93,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
-        expose_headers=["X-Request-ID"],
+        expose_headers=[
+            "X-Request-ID",
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining",
+            "X-RateLimit-Reset",
+            "Retry-After",
+        ],
+    )
+    app.add_middleware(
+        RateLimitMiddleware,
+        limiter=app.state.rate_limiter,
+        tenant_policy=tenant_policy,
+        ip_policy=ip_policy,
+        auth_secret=settings.auth_secret,
+        exempt_paths=tuple(settings.rate_limit_exempt_paths),
+        trust_proxy=settings.trust_proxy_headers,
     )
     app.add_middleware(RequestIdMiddleware)
     # OTel (FastAPI + SQLAlchemy + httpx) and Sentry; all no-ops with empty settings (M7-05).

@@ -193,3 +193,49 @@ jobs:
             terraform -chdir="${env_dir}" validate -no-color
             echo "::endgroup::"
           done
+
+  # M7-06 (SPEC 11): dependency scanning and secrets scanning on every PR. Dependabot
+  # (.github/dependabot.yml) proposes the upgrades; this job is what fails the build when
+  # a known vulnerability is still in the lockfile.
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans history, not just the tip
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: pip-audit (backend runtime dependencies)
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          uv export --frozen --no-dev --no-emit-project --format requirements-txt \
+            > /tmp/requirements.txt
+          uvx pip-audit --requirement /tmp/requirements.txt --strict --progress-spinner off
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: pnpm audit (frontend dependencies)
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm audit --audit-level=high
+
+      - name: gitleaks (secrets scan)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"

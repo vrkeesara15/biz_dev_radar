@@ -137,6 +137,19 @@ class Settings(BaseSettings):
     # Only enable behind a proxy that overwrites X-Forwarded-For (Cloud Run does).
     trust_proxy_headers: bool = False
 
+    # API rate limiting (SPEC 11, M7-06): a Redis token bucket per tenant AND per client
+    # IP. The tenant limit protects the platform from one noisy tenant; the IP limit
+    # protects it from an unauthenticated flood. Redis being down degrades to per-instance
+    # limits rather than to a 503 (see app/services/ratelimit.py).
+    rate_limit_enabled: bool = True
+    rate_limit_tenant_per_minute: int = 600
+    rate_limit_ip_per_minute: int = 120
+    # Paths the limiter never touches: /healthz is Cloud Run's probe, and the payment
+    # webhooks are signature-verified, idempotent and bursty by nature.
+    rate_limit_exempt_paths: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["/healthz", "/api/v1/webhooks"]
+    )
+
     # contact / compliance
     contact_email: str = "ops@example.com"
 
@@ -223,7 +236,7 @@ class Settings(BaseSettings):
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"
 
-    @field_validator("cors_origins", "sam_awards_naics", mode="before")
+    @field_validator("cors_origins", "sam_awards_naics", "rate_limit_exempt_paths", mode="before")
     @classmethod
     def _split_origins(cls, value: Any) -> Any:
         if isinstance(value, str):

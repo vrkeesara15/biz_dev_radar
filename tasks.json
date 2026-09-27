@@ -2066,7 +2066,7 @@
       "docs/security/asvs-l2.md checklist with status per control",
       "docs/runbooks/restore-drill.md and a script that restores the latest backup to a scratch instance"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-07",

@@ -1,0 +1,101 @@
+# SPEC 11: "dependency scanning (Dependabot, pip-audit, npm audit)". Dependabot proposes
+# the upgrade; ci.yml's security-scan job is what fails the build when a known
+# vulnerability is still present, so the two are not redundant.
+#
+# Weekly, on Monday morning IST so the update lands before either region's working day.
+# Patch-level updates are grouped: a PR per patch bump would drown the review queue and
+# make the ones that matter harder to see.
+
+version: 2
+
+updates:
+  - package-ecosystem: uv
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "backend"]
+    commit-message:
+      prefix: "deps(backend)"
+    groups:
+      backend-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+      backend-dev:
+        dependency-type: development
+        update-types: ["minor", "patch"]
+    ignore:
+      # Pinned by the Dockerfile and by pyproject's requires-python; a major bump is a
+      # deliberate piece of work, not a dependency PR.
+      - dependency-name: pydantic
+        update-types: ["version-update:semver-major"]
+      - dependency-name: sqlalchemy
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "frontend"]
+    commit-message:
+      prefix: "deps(frontend)"
+    groups:
+      frontend-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+      frontend-types:
+        patterns: ["@types/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+    ignore:
+      - dependency-name: next
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Kolkata
+    labels: ["dependencies", "ci"]
+    commit-message:
+      prefix: "deps(actions)"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Base images: python:3.12-slim-bookworm and node:22-alpine carry OS packages, and a
+  # CVE in one of those is as real as a CVE in a library.
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Kolkata
+    labels: ["dependencies", "docker"]
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: terraform
+    directory: /infra/terraform
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Kolkata
+    labels: ["dependencies", "infra"]
+    commit-message:
+      prefix: "deps(terraform)"
