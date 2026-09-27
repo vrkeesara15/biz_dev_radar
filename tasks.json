@@ -222,7 +222,7 @@
       "New routes are covered automatically; routes needing custom payloads register a factory in tests/isolation/factories.py and the test fails if a route has no factory",
       "Suite runs in CI as its own step"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-12",
