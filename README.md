@@ -302,6 +302,8 @@ credential-looking field is added without listing it, and
 | `APP_BASE_URL` | Public web app URL; every notification deep link is built from it. | `http://localhost:3000` | yes | - |
 | `API_BASE_URL` | Public API URL; signed one-click action links point here. | `http://localhost:8000` | yes | - |
 | `NOTIFY_MAX_ATTEMPTS` | Attempts per channel before a notification falls back to email. | `3` | - | - |
+| `OPS_SLACK_WEBHOOK_URL` | Slack incoming webhook for operator alerts (`adapter.failing` after > 2 consecutive runs, nightly smoke failures). Empty disables the channel. | _(empty)_ | yes | **yes** |
+| `OPS_EMAIL` | Operator mailbox that receives the same ops alerts by email. Empty disables it. | _(empty)_ | yes | - |
 | `NOTIFY_BACKOFF_SECONDS` | Backoff ladder between those attempts, in seconds. | `[1.0,2.0,4.0]` | - | - |
 | `NOTIFY_ACTION_TTL_SECONDS` | How long a signed Pursue/Watch/Pass/Assign or unsubscribe link stays valid. | `1209600` | - | - |
 | `EMAIL_PROVIDER` | `ses` \| `sendgrid` \| `smtp` \| `memory`. `smtp` points at Mailpit locally; `memory` is for tests. | `smtp` | yes | - |
