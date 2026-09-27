@@ -23,7 +23,7 @@ from typing import Any
 from app.core.config import Region
 from app.core.db import Database
 from app.core.roles import Role
-from app.models import AuditLog, File, UsageLedger
+from app.models import AuditLog, CompanyProfile, File, UsageLedger
 
 from tests.factories import create_tenant_with_owner
 
@@ -85,6 +85,16 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         json={"reason": "isolation probe"},
         owner_expect=frozenset({403}),
     ),
+    # --- profiles (M1-01)
+    ("POST", "/api/v1/profiles"): lambda ctx: RouteCall(
+        json={"region": "us", "legal_name": "Probe LLC"}
+    ),
+    ("GET", "/api/v1/profiles/{profile_id}"): lambda ctx: RouteCall(
+        path_params={"profile_id": ctx.a.ids["profile"]}
+    ),
+    ("PUT", "/api/v1/profiles/{profile_id}"): lambda ctx: RouteCall(
+        path_params={"profile_id": ctx.a.ids["profile"]}, json={"legal_name": "Renamed"}
+    ),
     # --- files (M1-11)
     ("POST", "/api/v1/files"): lambda ctx: RouteCall(
         files={"file": ("probe.txt", b"isolation probe", "text/plain")}
@@ -120,7 +130,14 @@ async def build_context(database: Database) -> IsolationContext:
             key=f"tenants/{ta.id}/files/{file_id}.txt",
             uploaded_by=ua.id,
         )
-        session.add_all([ledger, audit, file])
+        profile = CompanyProfile(
+            tenant_id=ta.id,
+            region=Region.US,
+            legal_name="Alpha Federal LLC",
+            uei="ALPHA1234567",
+            ein="12-3456789",
+        )
+        session.add_all([ledger, audit, file, profile])
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -136,6 +153,10 @@ async def build_context(database: Database) -> IsolationContext:
                 "audit_log": str(audit.id),
                 "file": str(file.id),
                 "file_key": file.key,
+                "profile": str(profile.id),
+                "profile_legal_name": profile.legal_name,
+                "profile_uei": "ALPHA1234567",
+                "profile_ein": "12-3456789",
             },
         )
         b = TenantCtx(

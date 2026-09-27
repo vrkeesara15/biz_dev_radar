@@ -284,7 +284,7 @@
       "UEI validated as 12 alphanumeric chars, CAGE as 5 chars; SAM expiry stored as date",
       "US-only and IN-only fields are rejected with 422 when the profile region does not match"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-02",

@@ -20,10 +20,31 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 region_t = postgresql.ENUM("us", "in", name="region", create_type=False)
+legal_structure_t = postgresql.ENUM(
+    "llc",
+    "corporation",
+    "pvt_ltd",
+    "llp",
+    "partnership",
+    "proprietorship",
+    "other",
+    name="legal_structure",
+    create_type=False,
+)
+sam_status_t = postgresql.ENUM(
+    "active", "inactive", "expired", "pending", name="sam_status", create_type=False
+)
+udyam_category_t = postgresql.ENUM(
+    "micro", "small", "medium", name="udyam_category", create_type=False
+)
+local_supplier_class_t = postgresql.ENUM(
+    "class_1", "class_2", "non_local", name="local_supplier_class", create_type=False
+)
+NEW_ENUMS = (legal_structure_t, sam_status_t, udyam_category_t, local_supplier_class_t)
 
 # Every tenant-scoped table created here, in creation order (reversed for downgrade).
 # Each gets DML grants for the app role and the standard tenant_isolation RLS policy.
-TENANT_TABLES: list[str] = ["files"]
+TENANT_TABLES: list[str] = ["files", "company_profiles"]
 
 
 def _uuid_pk() -> sa.Column[object]:
@@ -56,7 +77,16 @@ def _tenant_table(name: str, *columns: sa.schema.SchemaItem) -> None:
     op.create_index(f"ix_{name}_tenant_id", name, ["tenant_id"])
 
 
+def _encrypted() -> sa.Text:
+    """AES-GCM token column (app.models.types.EncryptedString stores TEXT)."""
+    return sa.Text()
+
+
 def upgrade() -> None:
+    bind = op.get_bind()
+    for enum in NEW_ENUMS:
+        enum.create(bind, checkfirst=True)
+
     # --- files (M1-11) --------------------------------------------------------------------
     _tenant_table(
         "files",
@@ -79,6 +109,56 @@ def upgrade() -> None:
         sa.UniqueConstraint("key", name="uq_files_key"),
     )
 
+    # --- company_profiles (M1-01 identity + registrations, SPEC 4.1) ----------------------
+    _tenant_table(
+        "company_profiles",
+        sa.Column("region", region_t, nullable=False),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true()),
+        sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1")),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column("legal_name", sa.String(300), nullable=False),
+        sa.Column(
+            "dba_names",
+            postgresql.ARRAY(sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{}'::text[]"),
+        ),
+        sa.Column(
+            "addresses", postgresql.JSONB(), nullable=False, server_default=sa.text("'[]'::jsonb")
+        ),
+        sa.Column("website", sa.String(500)),
+        sa.Column("phone", sa.String(40)),
+        sa.Column("bid_inbox_email", sa.String(320)),
+        sa.Column("year_founded", sa.Integer()),
+        sa.Column("legal_structure", legal_structure_t),
+        # US
+        sa.Column("uei", sa.String(12)),
+        sa.Column("cage_code", sa.String(5)),
+        sa.Column("sam_status", sam_status_t),
+        sa.Column("sam_expires_on", sa.Date()),
+        sa.Column("ein", _encrypted()),
+        # IN
+        sa.Column("pan", _encrypted()),
+        sa.Column("gstin", _encrypted()),
+        sa.Column("tan", _encrypted()),
+        sa.Column("cin_llpin", sa.String(32)),
+        sa.Column("udyam_number", sa.String(32)),
+        sa.Column("udyam_category", udyam_category_t),
+        sa.Column("dpiit_number", sa.String(32)),
+        sa.Column("gem_seller_id", sa.String(64)),
+        sa.Column("local_supplier_class", local_supplier_class_t),
+        sa.Column("local_content_pct", sa.Numeric(5, 2)),
+        # bank details (encrypted)
+        sa.Column("bank_name", sa.String(200)),
+        sa.Column("bank_account_number", _encrypted()),
+        sa.Column("bank_routing_code", _encrypted()),
+        sa.CheckConstraint(
+            "year_founded BETWEEN 1800 AND 2100", name="ck_company_profiles_year_founded_range"
+        ),
+    )
+
     # --- privileges + RLS for every tenant table above --------------------------------------
     for table in TENANT_TABLES:
         grant_app(op, table)
@@ -88,3 +168,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     for table in reversed(TENANT_TABLES):
         op.drop_table(table)
+    bind = op.get_bind()
+    for enum in reversed(NEW_ENUMS):
+        enum.drop(bind, checkfirst=True)
