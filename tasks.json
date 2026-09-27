@@ -1946,7 +1946,7 @@
       "Countdown helper returns humanized remaining time",
       "Unit tests over DST boundaries"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-01",
