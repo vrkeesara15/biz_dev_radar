@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.db import TEST_DATABASE_URL, TEST_DATABASE_URL_OWNER, alembic
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = REPO_ROOT / "backend"
 
@@ -28,7 +30,47 @@ def backend_root() -> Path:
 def settings():  # type: ignore[no-untyped-def]
     from app.core.config import Settings
 
-    return Settings(_env_file=None)  # type: ignore[call-arg]
+    return Settings(  # type: ignore[call-arg]
+        _env_file=None,
+        database_url=TEST_DATABASE_URL,
+        database_url_owner=TEST_DATABASE_URL_OWNER,
+    )
+
+
+# --- database fixtures (real compose Postgres, database bidradar_test) -------------------
+
+
+@pytest.fixture(scope="session")
+def migrated_db() -> None:
+    """Fresh schema per test session: downgrade to base, then upgrade to head."""
+    alembic("downgrade", "base")
+    alembic("upgrade", "head")
+
+
+@pytest.fixture(scope="session")
+async def database(migrated_db, settings):  # type: ignore[no-untyped-def]
+    """Process Database bound to the test URLs (app role + owner role)."""
+    from app.core.db import Database, set_database
+
+    db = Database(settings.database_url, settings.database_url_owner)
+    set_database(db)
+    yield db
+    set_database(None)
+    await db.dispose()
+
+
+@pytest.fixture()
+async def clean_db(database):  # type: ignore[no-untyped-def]
+    """Truncate every application table before a test (owner role, bypasses RLS)."""
+    from app.models.base import Base
+    from sqlalchemy import text
+
+    names = [t.name for t in Base.metadata.sorted_tables]
+    if names:
+        joined = ", ".join(f'"{n}"' for n in names)
+        async with database.owner_engine.begin() as conn:
+            await conn.execute(text(f"TRUNCATE TABLE {joined} RESTART IDENTITY CASCADE"))
+    return database
 
 
 @pytest.fixture()

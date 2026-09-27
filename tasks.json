@@ -80,7 +80,7 @@
       "Session factory sets SET LOCAL app.tenant_id from the request tenant on every transaction",
       "Test database fixtures create a fresh schema per test session and truncate between tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-05",

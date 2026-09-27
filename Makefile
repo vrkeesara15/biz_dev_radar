@@ -19,7 +19,7 @@ format:
 	cd $(BACKEND) && $(UV) run ruff format app tests migrations
 	cd $(BACKEND) && $(UV) run ruff check --fix app tests migrations
 
-test:
+test: migrate
 	cd $(BACKEND) && $(UV) run pytest --cov=app/core --cov-report=term-missing --cov-fail-under=85
 
 eval:
@@ -36,7 +36,7 @@ db-reset:
 	$(COMPOSE) exec -T postgres psql -v ON_ERROR_STOP=1 -U bidradar -d bidradar_test -f /docker-entrypoint-initdb.d/sql/extensions.sql
 
 migrate:
-	@echo "migrate: alembic lands in M0-04"
+	cd $(BACKEND) && $(UV) run alembic upgrade head
 
 seed:
 	@echo "seed: seed script lands in M0-09"
