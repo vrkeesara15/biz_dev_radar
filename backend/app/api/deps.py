@@ -87,9 +87,11 @@ async def get_current_user(
                 headers={"Retry-After": str(int(limiter.window_seconds))},
             ) from exc
         raise _unauthorized(exc.detail) from exc
-    return CurrentUser(
+    user = CurrentUser(
         id=claims.sub, email=claims.email, tenant_id=claims.tenant_id, role=claims.role
     )
+    request.state.user = user  # read by AuditMiddleware after the handler ran
+    return user
 
 
 def require_role(*roles: Role) -> Callable[..., Awaitable[CurrentUser]]:

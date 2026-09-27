@@ -56,3 +56,13 @@ def test_sanitize_request_id() -> None:
     assert sanitize_request_id("nö") is None
     rid = set_request_id(None)
     assert get_request_id() == rid
+
+
+def test_route_template() -> None:
+    from app.api.audit_middleware import route_template
+
+    assert route_template("/api/v1/me", {}) == "/api/v1/me"
+    assert (
+        route_template("/api/v1/admin/tenants/abc-1/support-access", {"tenant_id": "abc-1"})
+        == "/api/v1/admin/tenants/{tenant_id}/support-access"
+    )

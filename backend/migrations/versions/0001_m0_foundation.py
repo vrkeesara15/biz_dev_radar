@@ -11,7 +11,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 from app.core.plan import plan_limit_rows
-from migrations.rls import TENANT_EXPR, enable_rls, enable_rls_expr, grant_app
+from migrations.rls import TENANT_EXPR, enable_rls, enable_rls_expr, grant_app, revoke_app
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0001_m0_foundation"
@@ -156,9 +156,13 @@ def upgrade() -> None:
     # --- privileges for the application role (owner keeps everything) -----------------
     for table in ("tenants", "users", "memberships", "usage_ledger"):
         grant_app(op, table)
+    # The init script's ALTER DEFAULT PRIVILEGES may already have granted full DML, so the
+    # read-only / append-only tables need explicit REVOKEs, not just narrower GRANTs.
     grant_app(op, "plan_limits", "SELECT")
+    revoke_app(op, "plan_limits", "INSERT, UPDATE, DELETE")
     # audit_log is append-only for the application (SPEC section 11).
     grant_app(op, "audit_log", "SELECT, INSERT")
+    revoke_app(op, "audit_log", "UPDATE, DELETE")
 
     # --- row-level security -----------------------------------------------------------
     for table in ("memberships", "usage_ledger", "audit_log"):

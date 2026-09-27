@@ -161,7 +161,7 @@
       "Admin support access to a tenant writes an audit_log row with action support_access",
       "Audit rows are append-only: UPDATE and DELETE are revoked for the application role"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M0-09",

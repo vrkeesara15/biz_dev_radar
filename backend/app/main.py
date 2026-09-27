@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.api import health
+from app.api.audit_middleware import AuditMiddleware
 from app.api.middleware import RequestIdMiddleware
 from app.api.v1 import api_router
 from app.core.config import Settings, get_settings
@@ -38,6 +39,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.auth_limiter = FixedWindowLimiter(
         limit=settings.auth_rate_limit_per_minute, window_seconds=60
     )
+    # add_middleware wraps outward: the LAST added is the outermost. Final order:
+    # RequestId (outermost) -> CORS -> Audit -> routes.
+    app.add_middleware(AuditMiddleware, trust_proxy=settings.trust_proxy_headers)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
