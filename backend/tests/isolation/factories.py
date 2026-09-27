@@ -20,9 +20,10 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.core.config import Region
 from app.core.db import Database
 from app.core.roles import Role
-from app.models import AuditLog, UsageLedger
+from app.models import AuditLog, File, UsageLedger
 
 from tests.factories import create_tenant_with_owner
 
@@ -65,6 +66,8 @@ class RouteCall:
     path_params: dict[str, Any] = field(default_factory=dict)
     json: Any = None
     params: dict[str, Any] | None = None
+    # multipart parts, httpx style: {"file": (filename, bytes, content_type)}
+    files: dict[str, Any] | None = None
     role: Role = Role.TENANT_OWNER
     # Statuses accepted when the same call is made by tenant A's own owner (sanity check
     # that the factory produces a well-formed request). Admin routes expect 403.
@@ -82,6 +85,16 @@ FACTORIES: dict[tuple[str, str], Factory] = {
         json={"reason": "isolation probe"},
         owner_expect=frozenset({403}),
     ),
+    # --- files (M1-11)
+    ("POST", "/api/v1/files"): lambda ctx: RouteCall(
+        files={"file": ("probe.txt", b"isolation probe", "text/plain")}
+    ),
+    ("GET", "/api/v1/files/{file_id}"): lambda ctx: RouteCall(
+        path_params={"file_id": ctx.a.ids["file"]}
+    ),
+    ("GET", "/api/v1/files/{file_id}/url"): lambda ctx: RouteCall(
+        path_params={"file_id": ctx.a.ids["file"]}
+    ),
 }
 
 
@@ -92,7 +105,22 @@ async def build_context(database: Database) -> IsolationContext:
         tb, ub, mb = await create_tenant_with_owner(session, slug=f"iso-b-{uuid.uuid4().hex[:6]}")
         ledger = UsageLedger(tenant_id=ta.id, metric="profiles", quantity=1, period="lifetime")
         audit = AuditLog(tenant_id=ta.id, user_id=ua.id, action="isolation.seed")
-        session.add_all([ledger, audit])
+        file_id = uuid.uuid4()
+        file = File(
+            id=file_id,
+            tenant_id=ta.id,
+            filename="a-capability.txt",
+            extension="txt",
+            kind="text",
+            content_type="text/plain",
+            size_bytes=5,
+            sha256="0" * 64,
+            region=Region.US,
+            bucket="bidradar-us",
+            key=f"tenants/{ta.id}/files/{file_id}.txt",
+            uploaded_by=ua.id,
+        )
+        session.add_all([ledger, audit, file])
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -106,6 +134,8 @@ async def build_context(database: Database) -> IsolationContext:
                 "membership": str(ma.id),
                 "usage_ledger": str(ledger.id),
                 "audit_log": str(audit.id),
+                "file": str(file.id),
+                "file_key": file.key,
             },
         )
         b = TenantCtx(

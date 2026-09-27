@@ -16,8 +16,12 @@ from app.core.db import get_database
 from app.core.ratelimit import FixedWindowLimiter, client_ip_from_headers
 from app.core.roles import Role
 from app.services.audit import write_audit
+from app.services.scanner import Scanner
+from app.services.storage import StorageRouter
 
 ADMIN_ACCESS_ACTION = "admin_access"
+# Every tenant-scoped role (platform_admin excluded: it has no tenant data access).
+TENANT_ROLES: tuple[Role, ...] = tuple(r for r in Role if r is not Role.PLATFORM_ADMIN)
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +44,16 @@ def get_app_settings(request: Request) -> Settings:
 def get_auth_limiter(request: Request) -> FixedWindowLimiter:
     limiter: FixedWindowLimiter = request.app.state.auth_limiter
     return limiter
+
+
+def get_storage_router(request: Request) -> StorageRouter:
+    router: StorageRouter = request.app.state.storage_router
+    return router
+
+
+def get_scanner(request: Request) -> Scanner:
+    scanner: Scanner = request.app.state.scanner
+    return scanner
 
 
 def client_ip(request: Request, settings: Settings) -> str:
@@ -146,5 +160,8 @@ async def get_admin_session(
 
 
 CurrentUserDep = Annotated[CurrentUser, Depends(get_current_user)]
+SettingsDep = Annotated[Settings, Depends(get_app_settings)]
+StorageRouterDep = Annotated[StorageRouter, Depends(get_storage_router)]
+ScannerDep = Annotated[Scanner, Depends(get_scanner)]
 TenantSessionDep = Annotated[AsyncSession, Depends(get_tenant_session)]
 AdminSessionDep = Annotated[AsyncSession, Depends(get_admin_session)]

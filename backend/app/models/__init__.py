@@ -3,11 +3,13 @@
 from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import PlanLimit, UsageLedger
+from app.models.files import File
 from app.models.tenancy import Membership, Tenant, User
 
 __all__ = [
     "AuditLog",
     "Base",
+    "File",
     "Membership",
     "PlanLimit",
     "Tenant",

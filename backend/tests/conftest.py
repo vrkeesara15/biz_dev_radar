@@ -27,13 +27,15 @@ def backend_root() -> Path:
 
 
 @pytest.fixture(scope="session")
-def settings():  # type: ignore[no-untyped-def]
+def settings(tmp_path_factory: pytest.TempPathFactory):  # type: ignore[no-untyped-def]
     from app.core.config import Settings
 
     return Settings(  # type: ignore[call-arg]
         _env_file=None,
         database_url=TEST_DATABASE_URL,
         database_url_owner=TEST_DATABASE_URL_OWNER,
+        # local object storage under the session tmp dir (never the repo's .storage)
+        local_storage_root=str(tmp_path_factory.mktemp("storage")),
     )
 
 

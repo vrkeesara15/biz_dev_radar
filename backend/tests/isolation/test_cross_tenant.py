@@ -79,7 +79,9 @@ async def test_cross_tenant_call_leaks_nothing(
     as_b = auth_headers(
         user_id=ctx.b.owner_id, tenant_id=ctx.b.id, role=call.role, email=ctx.b.owner_email
     )
-    resp = await api_client.request(method, url, json=call.json, params=call.params, headers=as_b)
+    resp = await api_client.request(
+        method, url, json=call.json, params=call.params, files=call.files, headers=as_b
+    )
     assert resp.status_code < 500, f"{method} {url} -> {resp.status_code}: {resp.text[:300]}"
     if 200 <= resp.status_code < 300:
         leaked = [name for name, value in ctx.a.ids.items() if value in resp.text]
@@ -93,7 +95,9 @@ async def test_cross_tenant_call_leaks_nothing(
     as_a = auth_headers(
         user_id=ctx.a.owner_id, tenant_id=ctx.a.id, role=call.role, email=ctx.a.owner_email
     )
-    resp_a = await api_client.request(method, url, json=call.json, params=call.params, headers=as_a)
+    resp_a = await api_client.request(
+        method, url, json=call.json, params=call.params, files=call.files, headers=as_a
+    )
     assert resp_a.status_code in call.owner_expect, (
         f"{method} {url} as owner of A -> {resp_a.status_code}, expected one of "
         f"{sorted(call.owner_expect)}: {resp_a.text[:300]}"
@@ -105,7 +109,9 @@ async def test_tenant_routes_require_auth(
     method: str, path: str, api_client: httpx.AsyncClient, ctx: IsolationContext
 ) -> None:
     call = FACTORIES[(method, path)](ctx)
-    resp = await api_client.request(method, _url(path, call), json=call.json, params=call.params)
+    resp = await api_client.request(
+        method, _url(path, call), json=call.json, params=call.params, files=call.files
+    )
     assert resp.status_code == 401, f"{method} {path} without a token -> {resp.status_code}"
 
 
