@@ -21,6 +21,7 @@ from app.core.db import get_database
 from app.core.plan import PlanLimitExceeded
 from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
+from app.services.billing import providers_from_settings
 from app.services.embeddings import embeddings_from_settings
 from app.services.enrichment import install_enrichment
 from app.services.events import get_event_bus
@@ -72,6 +73,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.embeddings = embeddings_from_settings(settings)
     # LLM client for request-time agents (autofill); None without ANTHROPIC_API_KEY
     app.state.llm = llm_from_settings(settings)
+    # billing providers (Stripe for us, Razorpay for in); tests install fakes on app.state
+    app.state.billing_providers = providers_from_settings(settings)
     # add_middleware wraps outward: the LAST added is the outermost. Final order:
     # RequestId (outermost) -> CORS -> Audit -> routes.
     app.add_middleware(AuditMiddleware, trust_proxy=settings.trust_proxy_headers)

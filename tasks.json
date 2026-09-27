@@ -2028,7 +2028,7 @@
       "Plan change is enforced immediately by PlanService",
       "Mocked provider tests incl. signature failure -> 400"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-05",

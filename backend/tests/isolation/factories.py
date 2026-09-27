@@ -38,6 +38,8 @@ from app.core.profile_fields import (
 from app.core.roles import Role
 from app.models import (
     AuditLog,
+    BillingCustomer,
+    BillingEventRecord,
     BoilerplateBlock,
     Certification,
     CompanyProfile,
@@ -260,6 +262,17 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/opportunities/{opportunity_id}"): lambda ctx: RouteCall(
         path_params={"opportunity_id": ctx.shared["opportunity"]}
     ),
+    # --- billing (M7-04): GET /billing must never echo A's customer / subscription /
+    # invoice identifiers. The harness installs network-free providers (conftest), so
+    # checkout answers 201 and its body is leak-checked too.
+    ("GET", "/api/v1/billing"): lambda ctx: RouteCall(role=Role.VIEWER),
+    ("POST", "/api/v1/billing/checkout"): lambda ctx: RouteCall(
+        json={
+            "plan": "pro",
+            "success_url": "https://app.example/ok",
+            "cancel_url": "https://app.example/no",
+        }
+    ),
     # --- files (M1-11)
     ("POST", "/api/v1/files"): lambda ctx: RouteCall(
         files={"file": ("probe.txt", b"isolation probe", "text/plain")}
@@ -388,6 +401,23 @@ async def build_context(database: Database) -> IsolationContext:
                 rate_currency="USD",
             ),
         }
+        billing_customer = BillingCustomer(
+            tenant_id=ta.id,
+            provider="stripe",
+            customer_id="cus_ALPHASECRET",
+            subscription_id="sub_ALPHASECRET",
+            status="active",
+            gst_details={"gstin": "29AABCU9603R1ZM"},
+        )
+        billing_event = BillingEventRecord(
+            tenant_id=ta.id,
+            provider="stripe",
+            event_id="evt_ALPHASECRET",
+            kind="invoice_paid",
+            amount=9900,
+            currency="USD",
+            payload={"_external_ids": {"invoice_number": "BR-ALPHA-0001"}},
+        )
         prefs = UserNotificationPrefs(
             tenant_id=ta.id,
             user_id=ua.id,
@@ -395,7 +425,17 @@ async def build_context(database: Database) -> IsolationContext:
             tz="Asia/Kolkata",
         )
         session.add_all(
-            [certification, code, keyword, service_line, partner, prefs, *proof.values()]
+            [
+                certification,
+                code,
+                keyword,
+                service_line,
+                partner,
+                prefs,
+                billing_customer,
+                billing_event,
+                *proof.values(),
+            ]
         )
         await session.flush()
         a = TenantCtx(
@@ -434,6 +474,11 @@ async def build_context(database: Database) -> IsolationContext:
                 "boilerplate_title": "Alpha Overview",
                 "rate_card_category": "Alpha Architect",
                 "notification_prefs": str(prefs.id),
+                "billing_customer": str(billing_customer.id),
+                "billing_customer_id": "cus_ALPHASECRET",
+                "billing_subscription_id": "sub_ALPHASECRET",
+                "billing_event": str(billing_event.id),
+                "billing_invoice_number": "BR-ALPHA-0001",
             },
         )
         b = TenantCtx(

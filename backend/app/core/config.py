@@ -157,6 +157,22 @@ class Settings(BaseSettings):
         default_factory=lambda: {"USD": 1.0, "INR": 0.012}
     )
 
+    # billing (SPEC 10.1): Stripe for us tenants (USD), Razorpay for in tenants (INR + GST).
+    # *_PRICE_IDS / *_PLAN_IDS are JSON maps plan -> provider price/plan id, e.g.
+    # {"pro": "price_123", "enterprise": "price_456"}.
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_api_url: str = "https://api.stripe.com/v1"
+    stripe_price_ids: Annotated[dict[str, str], NoDecode] = Field(default_factory=dict)
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
+    razorpay_api_url: str = "https://api.razorpay.com/v1"
+    razorpay_plan_ids: Annotated[dict[str, str], NoDecode] = Field(default_factory=dict)
+    # our GSTIN (supplier) and the GST rate applied to SaaS subscriptions (SAC 998314)
+    billing_gstin: str = ""
+    billing_gst_rate_pct: int = 18
+
     # seed
     seed_admin_email: str = "admin@example.com"
 
@@ -176,11 +192,18 @@ class Settings(BaseSettings):
             return [part.strip() for part in stripped.split(",") if part.strip()]
         return value
 
-    @field_validator("fx_rates", "http_rate_limits", "llm_prices", mode="before")
+    @field_validator(
+        "fx_rates",
+        "http_rate_limits",
+        "llm_prices",
+        "stripe_price_ids",
+        "razorpay_plan_ids",
+        mode="before",
+    )
     @classmethod
     def _parse_json_map(cls, value: Any) -> Any:
         if isinstance(value, str):
-            return json.loads(value)
+            return json.loads(value) if value.strip() else {}
         return value
 
     @field_validator("embedding_dim")

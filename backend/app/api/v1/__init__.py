@@ -4,7 +4,17 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import admin, files, me, notification_prefs, opportunities, profiles, system
+from app.api.v1 import (
+    admin,
+    billing,
+    files,
+    me,
+    notification_prefs,
+    opportunities,
+    profiles,
+    system,
+    webhooks,
+)
 
 API_PREFIX = "/api/v1"
 
@@ -16,3 +26,5 @@ api_router.include_router(admin.router)
 api_router.include_router(files.router)
 api_router.include_router(profiles.router)
 api_router.include_router(opportunities.router)
+api_router.include_router(billing.router)
+api_router.include_router(webhooks.router)

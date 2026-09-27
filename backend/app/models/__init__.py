@@ -3,7 +3,7 @@
 from app.models.agents import AgentRun, AgentStep
 from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
-from app.models.billing import PlanLimit, UsageLedger
+from app.models.billing import BillingCustomer, BillingEventRecord, PlanLimit, UsageLedger
 from app.models.files import File
 from app.models.knowledge import KBChunk
 from app.models.notify import UserNotificationPrefs
@@ -43,6 +43,8 @@ __all__ = [
     "AuditLog",
     "AwardsEnrichment",
     "Base",
+    "BillingCustomer",
+    "BillingEventRecord",
     "BoilerplateBlock",
     "Certification",
     "CompanyProfile",
