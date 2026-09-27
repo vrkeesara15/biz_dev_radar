@@ -4,6 +4,7 @@ read them; every record carries source attribution and the portal disclaimer (SP
 
     GET /api/v1/opportunities?q=&region=&type=&naics=&due_before=&min_score=&status=&page=
     GET /api/v1/opportunities/{opportunity_id}
+    POST /api/v1/opportunities/{opportunity_id}/feedback     (M4-07 learning loop)
 """
 
 from __future__ import annotations
@@ -11,9 +12,9 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import ColumnClause, Select, String, cast, func, literal_column, select
 from sqlalchemy.dialects.postgresql import ARRAY, array
@@ -24,8 +25,11 @@ from app.core.attribution import portal_url, source_name
 from app.core.config import Region
 from app.core.disclaimers import VERIFY_ON_PORTAL, attribution_text, record_footer
 from app.core.opportunity import NoticeType, OpportunityStatus
-from app.models import Opportunity, OpportunityDocument, OpportunityVersion
+from app.models import Match, Opportunity, OpportunityDocument, OpportunityVersion
 from app.models.opportunities import FTS_EXPR
+from app.services.audit import AuditHint
+from app.services.matching.learning import latest_match, record_feedback
+from app.services.matching.read import best_matches, match_out, with_min_score
 
 router = APIRouter(prefix="/opportunities", tags=["opportunities"])
 ReaderDep = Annotated[CurrentUser, Depends(require_role(*TENANT_ROLES))]
@@ -79,7 +83,8 @@ class OpportunityItem(BaseModel):
     version: int
     parent_opportunity_id: uuid.UUID | None
     duplicate_of: uuid.UUID | None
-    # the active profile's match score arrives with M4 (matches table); null until then
+    # the caller tenant's best match for this notice (M4-06); null when it never scored
+    # it. Shape: app.services.matching.read.match_out.
     match: dict[str, Any] | None = None
     attribution: Attribution
     disclaimer: str = VERIFY_ON_PORTAL
@@ -152,16 +157,16 @@ ITEM_FIELDS = tuple(
 )
 
 
-def item_out(row: Opportunity) -> OpportunityItem:
+def item_out(row: Opportunity, match: Match | None = None) -> OpportunityItem:
     return OpportunityItem(
         **{name: getattr(row, name) for name in ITEM_FIELDS},
-        match=None,
+        match=None if match is None else match_out(match),
         attribution=_attribution(row),
     )
 
 
-def detail_out(row: Opportunity) -> OpportunityDetail:
-    base = item_out(row).model_dump()
+def detail_out(row: Opportunity, match: Match | None = None) -> OpportunityDetail:
+    base = item_out(row, match).model_dump()
     extra_fields = (
         "description_text",
         "buyer_hierarchy",
@@ -290,7 +295,8 @@ async def search_opportunities(
     naics: Annotated[str | None, Query(description="NAICS codes, comma-separated")] = None,
     due_before: datetime | None = None,
     min_score: Annotated[
-        int | None, Query(ge=0, le=100, description="accepted now, applied once matches exist (M4)")
+        int | None,
+        Query(ge=0, le=100, description="only notices this tenant scored at least this high"),
     ] = None,
     status: Annotated[str | None, Query(description="statuses, comma-separated")] = None,
     include_duplicates: bool = False,
@@ -311,20 +317,26 @@ async def search_opportunities(
     }
     total = (
         await session.execute(
-            apply_filters(select(func.count()).select_from(Opportunity), **filters)
+            with_min_score(
+                apply_filters(select(func.count()).select_from(Opportunity), **filters),
+                min_score,
+            )
         )
     ).scalar_one()
     rows = (
         (
             await session.execute(
-                search_statement(**filters).offset((page - 1) * page_size).limit(page_size)
+                with_min_score(search_statement(**filters), min_score)
+                .offset((page - 1) * page_size)
+                .limit(page_size)
             )
         )
         .scalars()
         .all()
     )
+    matches = await best_matches(session, [r.id for r in rows])
     return OpportunityPage(
-        items=[item_out(r) for r in rows],
+        items=[item_out(r, matches.get(r.id)) for r in rows],
         total=total,
         page=page,
         page_size=page_size,
@@ -345,7 +357,69 @@ async def get_opportunity(
     ).scalar_one_or_none()
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="opportunity not found")
-    return detail_out(row)
+    matches = await best_matches(session, [row.id])
+    return detail_out(row, matches.get(row.id))
+
+
+class FeedbackIn(BaseModel):
+    """SPEC 6: thumbs up/down and "not relevant because..." on an alert."""
+
+    thumb: Literal["up", "down"]
+    reason: str | None = Field(default=None, max_length=2000)
+    # which profile's match this is about; the newest match of the tenant when omitted
+    profile_id: uuid.UUID | None = None
+
+
+class FeedbackOut(BaseModel):
+    id: uuid.UUID
+    match_id: uuid.UUID
+    opportunity_id: uuid.UUID
+    profile_id: uuid.UUID
+    thumb: str
+    reason: str | None
+    created_at: datetime
+
+
+@router.post(
+    "/{opportunity_id}/feedback",
+    response_model=FeedbackOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def post_feedback(
+    opportunity_id: uuid.UUID,
+    body: FeedbackIn,
+    session: TenantSessionDep,
+    user: ReaderDep,
+    request: Request,
+) -> FeedbackOut:
+    """Record a thumb on the tenant's match for this notice (M4-07).
+
+    Feedback is about a MATCH, not about the global notice, so a tenant that has never
+    scored the notice gets 404 - there is nothing of theirs to rate.
+    """
+    match = await latest_match(session, opportunity_id, profile_id=body.profile_id)
+    if match is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, detail="no match for this opportunity and profile"
+        )
+    row = await record_feedback(
+        session, match=match, user_id=user.id, thumb=body.thumb, reason=body.reason
+    )
+    request.state.audit = AuditHint(
+        action="opportunity.feedback",
+        object_type="match_feedback",
+        object_id=str(row.id),
+        meta={"opportunity_id": str(opportunity_id), "thumb": row.thumb},
+    )
+    return FeedbackOut(
+        id=row.id,
+        match_id=match.id,
+        opportunity_id=opportunity_id,
+        profile_id=match.profile_id,
+        thumb=row.thumb,
+        reason=row.reason,
+        created_at=row.created_at,
+    )
 
 
 __all__ = ["OpportunityDocument", "OpportunityVersion", "router", "search_statement"]

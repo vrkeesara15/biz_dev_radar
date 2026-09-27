@@ -1153,7 +1153,7 @@
       "Past-performance signal = best cosine vs past_performance embeddings",
       "Integration test with FakeEmbeddings verifies ordering"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-04",
@@ -1194,7 +1194,7 @@
       "Invalid JSON retried up to 2x then rationale=null with flag",
       "Cached by (opportunity version, profile version); FakeLLM test asserts one call for two scorings"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-06",
@@ -1216,7 +1216,7 @@
       "Batch job scores 200 profiles x 50k opportunities in < 10 min in the load script (hard filters in SQL, stage 2 vectorized)",
       "Emits match.high / match.medium events with band and score"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-07",
@@ -1235,7 +1235,7 @@
       "Suggestions are never auto-applied; owner approves via PUT /profiles/{id}/keyword-suggestions/{id}",
       "Unit test on the lift computation"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-08",
@@ -1255,7 +1255,7 @@
       "New matches are evaluated against every alert rule of the tenant and produce notification events",
       "Isolation factories registered"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-09",
@@ -1370,7 +1370,7 @@
       "Amendment notifications include the field-level diff rendered",
       "Table-driven unit tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-15",
@@ -1389,7 +1389,7 @@
       "Asserts an email in Mailpit and a Slack webhook call (mock) within the fake 5-minute window",
       "Asserts no second delivery on re-ingest of the unchanged record (idempotency)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-16",

@@ -30,6 +30,7 @@ from app.models import (
     ServiceLine,
     UserNotificationPrefs,
 )
+from app.services.events import PROFILE_CHANGED, EventBus, get_event_bus
 
 
 async def count_profiles(session: AsyncSession, tenant_id: uuid.UUID) -> int:
@@ -203,4 +204,29 @@ async def load_eligibility_snapshot(
         gem_seller_id=profile.gem_seller_id,
         certifications=[(str(kind.value), expires_on) for kind, expires_on in certs],
         registrations=[(str(kind.value), ident, expires_on) for kind, ident, expires_on in regs],
+    )
+
+
+async def publish_profile_changed(
+    session: AsyncSession,
+    profile: CompanyProfile,
+    *,
+    fields: list[str] | None = None,
+    bus: EventBus | None = None,
+) -> None:
+    """Tell the bus a profile's matching inputs changed (M4-06).
+
+    Every profile write bumps `version`, which is half the match cache key, so the
+    tenant's matches are stale by definition. The subscriber schedules the re-score for
+    after this session commits; the event carries no row, only ids.
+    """
+    await (bus or get_event_bus()).publish(
+        PROFILE_CHANGED,
+        {
+            "tenant_id": str(profile.tenant_id),
+            "profile_id": str(profile.id),
+            "version": int(profile.version or 1),
+            "fields": list(fields or []),
+        },
+        context={"session": session},
     )

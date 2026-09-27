@@ -78,25 +78,26 @@ class Signals:
     def with_precomputed(
         self,
         *,
-        semantic: Decimal | float | None = None,
-        keyword: Decimal | float | None = None,
-        past_performance: Decimal | float | None = None,
+        semantic: SignalValue | Decimal | float | None = None,
+        keyword: SignalValue | Decimal | float | None = None,
+        past_performance: SignalValue | Decimal | float | None = None,
         eligibility: SignalValue | Decimal | float | None = None,
     ) -> Signals:
-        """Attach the signals computed elsewhere (embeddings, BM25, eligibility rules)."""
+        """Attach the signals computed elsewhere (embeddings, ts_rank_cd, eligibility rules).
+
+        A bare number gets the default note; services.matching.signals passes a whole
+        SignalValue so the breakdown keeps which service line or keyword matched.
+        """
         updates: dict[str, SignalValue] = {}
-        if semantic is not None:
-            updates["semantic_similarity"] = SignalValue.of(semantic, "max cosine vs service lines")
-        if keyword is not None:
-            updates["keyword_match"] = SignalValue.of(keyword, "weighted include keywords")
-        if past_performance is not None:
-            updates["past_performance_relevance"] = SignalValue.of(
-                past_performance, "best cosine vs past performance"
-            )
-        if eligibility is not None:
-            updates["eligibility"] = (
-                eligibility if isinstance(eligibility, SignalValue) else SignalValue.of(eligibility)
-            )
+        for name, value, note in (
+            ("semantic_similarity", semantic, "max cosine vs service lines"),
+            ("keyword_match", keyword, "weighted include keywords"),
+            ("past_performance_relevance", past_performance, "best cosine vs past performance"),
+            ("eligibility", eligibility, None),
+        ):
+            if value is None:
+                continue
+            updates[name] = value if isinstance(value, SignalValue) else SignalValue.of(value, note)
         return replace(self, **updates)
 
 

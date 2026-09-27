@@ -22,12 +22,14 @@ from app.core.db import get_database
 from app.core.plan import PlanLimitExceeded
 from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
+from app.notify.router import install_notification_router
 from app.observability import configure_observability
 from app.services.billing import providers_from_settings
 from app.services.embeddings import embeddings_from_settings
 from app.services.enrichment import install_enrichment
 from app.services.events import get_event_bus
 from app.services.gem_extraction import install_gem_extraction
+from app.services.matching.triggers import install_match_scoring
 from app.services.opportunity_embeddings import install_opportunity_embeddings
 from app.services.ratelimit import limiter_from_settings, policies_from_settings
 from app.services.scanner import scanner_from_settings
@@ -48,6 +50,22 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     install_enrichment(settings, get_database(), app.state.storage_router, get_event_bus())
     # opportunities.embedding on the same events, after the summary (M1-12 / M4)
     install_opportunity_embeddings(settings, get_event_bus(), embeddings=app.state.embeddings)
+    # match scoring on opportunity.created/amended and profile.changed (M4-06); it is
+    # LAST so the notice already carries its summary and embedding, and the run itself
+    # is scheduled for after the publisher's transaction commits
+    app.state.match_trigger = install_match_scoring(
+        settings,
+        get_database(),
+        get_event_bus(),
+        embeddings=app.state.embeddings,
+        storage=app.state.storage_router,
+        llm=app.state.llm,
+    )
+    # SPEC 7 routing table: match.high/medium, amendments on tracked notices, agent
+    # hand-offs, expiring registrations and failing adapters -> channels (M4-14)
+    app.state.notification_router = install_notification_router(
+        settings, get_database(), get_event_bus()
+    )
     yield
 
 

@@ -19,6 +19,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 from app.core.config import Region
@@ -38,6 +39,7 @@ from app.core.profile_fields import (
 )
 from app.core.roles import Role
 from app.models import (
+    AlertRule,
     AuditLog,
     BillingCustomer,
     BillingEventRecord,
@@ -49,6 +51,9 @@ from app.models import (
     File,
     Insurance,
     Integration,
+    KeywordSuggestion,
+    Match,
+    MatchFeedback,
     Membership,
     Notification,
     Opportunity,
@@ -61,6 +66,7 @@ from app.models import (
     PushSubscription,
     RateCardEntry,
     Registration,
+    SavedSearch,
     ServiceLine,
     TeamingPartner,
     UsageLedger,
@@ -341,6 +347,25 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/opportunities/{opportunity_id}"): lambda ctx: RouteCall(
         path_params={"opportunity_id": ctx.shared["opportunity"]}
     ),
+    # --- learning loop (M4-07): feedback is about the CALLER's match, so B posting on the
+    # same (global) notice must never touch A's match row; B has none, so it gets 404.
+    ("POST", "/api/v1/opportunities/{opportunity_id}/feedback"): lambda ctx: RouteCall(
+        path_params={"opportunity_id": ctx.shared["opportunity"]},
+        json={"thumb": "down", "reason": "isolation probe"},
+        owner_expect=frozenset({201}),
+    ),
+    ("GET", "/api/v1/profiles/{profile_id}/keyword-suggestions"): lambda ctx: RouteCall(
+        path_params={"profile_id": ctx.a.ids["profile"]}
+    ),
+    ("PUT", "/api/v1/profiles/{profile_id}/keyword-suggestions/{id}"): (
+        lambda ctx: RouteCall(
+            path_params={
+                "profile_id": ctx.a.ids["profile"],
+                "id": ctx.a.ids["keyword_suggestion"],
+            },
+            json={"status": "rejected"},
+        )
+    ),
     # --- integrations (M4-11): tenant owners only; B probes with its own body because the
     # row is addressed by (tenant, kind), so a 200 must still never show A's connection
     ("GET", "/api/v1/integrations"): lambda ctx: RouteCall(),
@@ -350,6 +375,19 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("PUT", "/api/v1/integrations/{kind}"): lambda ctx: RouteCall(
         path_params={"kind": "slack"},
         json={"enabled": True, "config": {"channel": "#probe"}},
+    ),
+    # --- saved searches and alert rules (M4-08): tenant-scoped; B must see none of A's
+    ("GET", "/api/v1/saved-searches"): lambda ctx: RouteCall(role=Role.VIEWER),
+    ("POST", "/api/v1/saved-searches"): lambda ctx: RouteCall(
+        json={"name": f"Probe search {uuid.uuid4().hex[:6]}", "filters": {"region": "us"}},
+        role=Role.VIEWER,
+    ),
+    ("GET", "/api/v1/alert-rules"): lambda ctx: RouteCall(),
+    ("POST", "/api/v1/alert-rules"): lambda ctx: RouteCall(
+        json={"name": f"Probe rule {uuid.uuid4().hex[:6]}", "min_score": 80}
+    ),
+    ("PATCH", "/api/v1/alert-rules/{rule_id}"): lambda ctx: RouteCall(
+        path_params={"rule_id": ctx.a.ids["alert_rule"]}, json={"enabled": False}
     ),
     # --- pursuits (M5-02): tenant-scoped; B posting A's profile id gets 404 (RLS hides it)
     ("POST", "/api/v1/pursuits"): lambda ctx: RouteCall(
@@ -617,6 +655,48 @@ async def build_context(database: Database) -> IsolationContext:
         )
         session.add(opportunity)
         await session.flush()
+        # M4-01/M4-07: A's own match on the shared notice, plus a pending re-tune proposal
+        match = Match(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            opportunity_id=opportunity.id,
+            opportunity_version=1,
+            profile_version=profile.version or 1,
+            score=Decimal("81.00"),
+            band="high",
+            breakdown={"signals": {}},
+        )
+        keyword_suggestion = KeywordSuggestion(
+            tenant_id=ta.id,
+            profile_id=profile.id,
+            term="alpha suggested term",
+            kind="include",
+            delta_weight=Decimal("0.4"),
+            evidence={"support": 4, "lift": 0.3},
+        )
+        saved_search = SavedSearch(
+            tenant_id=ta.id,
+            user_id=ua.id,
+            name="Alpha saved search",
+            filters={"q": "alpha secret term", "region": "us"},
+        )
+        session.add_all([match, keyword_suggestion, saved_search])
+        await session.flush()
+        alert_rule = AlertRule(
+            tenant_id=ta.id,
+            saved_search_id=saved_search.id,
+            profile_id=profile.id,
+            user_id=ua.id,
+            name="Alpha alert rule",
+            min_score=70,
+            channels=["in_app", "email"],
+        )
+        session.add(alert_rule)
+        await session.flush()
+        feedback = MatchFeedback(
+            tenant_id=ta.id, match_id=match.id, user_id=ua.id, thumb="up", reason="alpha reason"
+        )
+        session.add(feedback)
         pursuit = Pursuit(
             tenant_id=ta.id,
             profile_id=profile.id,
@@ -670,6 +750,14 @@ async def build_context(database: Database) -> IsolationContext:
                 "rate_card_category": "Alpha Architect",
                 "notification_prefs": str(prefs.id),
                 "pursuit": str(pursuit.id),
+                "match": str(match.id),
+                "match_feedback": str(feedback.id),
+                "keyword_suggestion": str(keyword_suggestion.id),
+                "keyword_suggestion_term": "alpha suggested term",
+                "saved_search": str(saved_search.id),
+                "saved_search_name": "Alpha saved search",
+                "alert_rule": str(alert_rule.id),
+                "alert_rule_name": "Alpha alert rule",
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",

@@ -20,6 +20,7 @@ from app.services.profiles import (
     apply_changes,
     naics_codes_for,
     profile_completeness,
+    publish_profile_changed,
 )
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
@@ -125,6 +126,8 @@ async def update_profile(
     written = apply_changes(row, changes)
     await session.flush()
     await session.refresh(row)
+    if written:  # the version bumped: M4-06 re-scores the open corpus after this commit
+        await publish_profile_changed(session, row, fields=written)
     request.state.audit = AuditHint(
         action="profile.update",
         object_type="company_profile",

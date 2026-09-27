@@ -24,6 +24,10 @@ depends_on: str | Sequence[str] | None = None
 
 TENANT_TABLES = (
     "matches",
+    "match_feedback",
+    "keyword_suggestions",
+    "saved_searches",
+    "alert_rules",
     "notifications",
     "notification_deliveries",
     "integrations",
@@ -105,6 +109,86 @@ def upgrade() -> None:
     op.create_index(
         "ix_matches_tenant_band_created", "matches", ["tenant_id", "band", "created_at"]
     )
+
+    # --- learning loop (M4-07): thumbs and the weekly keyword re-tune proposals -----------------
+    op.create_table(
+        "match_feedback",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("match_id", "matches.id"),
+        _fk("user_id", "users.id"),
+        sa.Column("thumb", sa.String(8), nullable=False),
+        sa.Column("reason", sa.Text()),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("match_id", "user_id", name="uq_match_feedback_match_user"),
+    )
+    for col in ("tenant_id", "match_id", "user_id"):
+        op.create_index(f"ix_match_feedback_{col}", "match_feedback", [col])
+
+    op.create_table(
+        "keyword_suggestions",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("profile_id", "company_profiles.id"),
+        sa.Column("term", sa.String(100), nullable=False),
+        sa.Column("kind", sa.String(16), nullable=False),
+        sa.Column("delta_weight", sa.Numeric(3, 1), nullable=False, server_default="0.0"),
+        _jsonb("evidence"),
+        sa.Column("status", sa.String(16), nullable=False, server_default="pending"),
+        _ts("decided_at"),
+        sa.Column(
+            "decided_by",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="SET NULL"),
+        ),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint(
+            "profile_id", "kind", "term", name="uq_keyword_suggestions_profile_kind_term"
+        ),
+    )
+    for col in ("tenant_id", "profile_id"):
+        op.create_index(f"ix_keyword_suggestions_{col}", "keyword_suggestions", [col])
+    op.create_index(
+        "ix_keyword_suggestions_tenant_status", "keyword_suggestions", ["tenant_id", "status"]
+    )
+
+    # --- saved searches and alert rules (M4-08) ------------------------------------------------
+    op.create_table(
+        "saved_searches",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("user_id", "users.id"),
+        sa.Column("name", sa.String(120), nullable=False),
+        _jsonb("filters"),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("tenant_id", "user_id", "name", name="uq_saved_searches_user_name"),
+    )
+    for col in ("tenant_id", "user_id"):
+        op.create_index(f"ix_saved_searches_{col}", "saved_searches", [col])
+
+    op.create_table(
+        "alert_rules",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("saved_search_id", "saved_searches.id", nullable=True),
+        _fk("profile_id", "company_profiles.id", nullable=True),
+        _fk("user_id", "users.id", nullable=True),
+        sa.Column("name", sa.String(120), nullable=False),
+        sa.Column("min_score", sa.Integer(), nullable=False, server_default="70"),
+        sa.Column(
+            "channels",
+            postgresql.ARRAY(sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{}'::text[]"),
+        ),
+        sa.Column("mode", sa.String(16), nullable=False, server_default="instant"),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("tenant_id", "name", name="uq_alert_rules_tenant_name"),
+    )
+    for col in ("tenant_id", "saved_search_id", "profile_id", "user_id"):
+        op.create_index(f"ix_alert_rules_{col}", "alert_rules", [col])
+    op.create_index("ix_alert_rules_tenant_enabled", "alert_rules", ["tenant_id", "enabled"])
 
     # --- notifications + deliveries (M4-09) -----------------------------------------------------
     op.create_table(

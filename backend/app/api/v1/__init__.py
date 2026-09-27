@@ -6,6 +6,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     admin,
+    alerts,
     billing,
     files,
     integrations,
@@ -36,6 +37,8 @@ api_router.include_router(integrations.router)
 api_router.include_router(members.router)
 api_router.include_router(profiles.router)
 api_router.include_router(opportunities.router)
+api_router.include_router(alerts.searches_router)
+api_router.include_router(alerts.rules_router)
 api_router.include_router(pursuits.router)
 api_router.include_router(billing.router)
 api_router.include_router(webhooks.router)

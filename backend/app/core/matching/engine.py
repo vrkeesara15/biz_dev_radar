@@ -75,9 +75,9 @@ def evaluate(
     opp: MatchOpportunity,
     now: datetime,
     *,
-    semantic: Decimal | float | None = None,
-    keyword: Decimal | float | None = None,
-    past_performance: Decimal | float | None = None,
+    semantic: SignalValue | Decimal | float | None = None,
+    keyword: SignalValue | Decimal | float | None = None,
+    past_performance: SignalValue | Decimal | float | None = None,
     eligibility: SignalValue | Decimal | float | None = None,
 ) -> MatchOutcome:
     filters = hard_filters(profile, opp, now)
