@@ -1890,7 +1890,7 @@
       "[NEEDS INPUT] placeholders create tasks automatically",
       "CRUD endpoints with role checks and isolation factories"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-08",

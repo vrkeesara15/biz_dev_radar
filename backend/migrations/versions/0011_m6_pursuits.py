@@ -8,13 +8,24 @@ number follows merge order, so the orchestrator may renumber it when the paralle
 worktrees land.
 
 M6-01 extends `pursuits` (stage CHECK, watch, pass_reason, submitted_at, decided_by /
-decided_at). M6-02 adds `pursuit_dates`.
+decided_at). M6-02 adds `pursuit_dates`; M6-07 adds `pursuit_tasks` and
+`pursuit_comments`.
 """
 
 from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
+from app.core.collab import (
+    SOURCE_USER as TASK_SOURCE_USER,
+)
+from app.core.collab import (
+    TARGET_PURSUIT,
+    TARGET_TYPES,
+    TASK_OPEN,
+    TASK_SOURCES,
+    TASK_STATUSES,
+)
 from app.core.key_dates import KIND_CUSTOM, KINDS, SOURCE_AUTO, SOURCES
 from app.core.pursuit_stages import STAGES
 from migrations.rls import enable_rls, grant_app
@@ -29,7 +40,11 @@ STAGE_LIST = ", ".join(f"'{stage}'" for stage in STAGES)
 KIND_LIST = ", ".join(f"'{kind}'" for kind in KINDS)
 SOURCE_LIST = ", ".join(f"'{source}'" for source in SOURCES)
 
-TENANT_TABLES = ("pursuit_dates",)
+TASK_STATUS_LIST = ", ".join(f"'{value}'" for value in TASK_STATUSES)
+TASK_SOURCE_LIST = ", ".join(f"'{value}'" for value in TASK_SOURCES)
+TARGET_TYPE_LIST = ", ".join(f"'{value}'" for value in TARGET_TYPES)
+
+TENANT_TABLES = ("pursuit_dates", "pursuit_tasks", "pursuit_comments")
 
 
 def _ts(name: str, *, nullable: bool = True, default_now: bool = False) -> sa.Column[object]:
@@ -42,6 +57,7 @@ def _ts(name: str, *, nullable: bool = True, default_now: bool = False) -> sa.Co
 def upgrade() -> None:
     _upgrade_pursuits()
     _upgrade_pursuit_dates()
+    _upgrade_collab()
     for table in TENANT_TABLES:
         grant_app(op, table)
         enable_rls(op, table)
@@ -139,4 +155,105 @@ def _upgrade_pursuit_dates() -> None:
         ["pursuit_id", "kind"],
         unique=True,
         postgresql_where=sa.text(f"kind <> '{KIND_CUSTOM}'::text"),
+    )
+
+
+# --- M6-07 tasks and comments on a pursuit --------------------------------------------------
+
+
+def _uuid_pk() -> sa.Column[object]:
+    return sa.Column(
+        "id",
+        postgresql.UUID(as_uuid=True),
+        primary_key=True,
+        server_default=sa.text("gen_random_uuid()"),
+    )
+
+
+def _tenant_id() -> sa.Column[object]:
+    return sa.Column(
+        "tenant_id",
+        postgresql.UUID(as_uuid=True),
+        sa.ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+
+def _pursuit_id() -> sa.Column[object]:
+    return sa.Column(
+        "pursuit_id",
+        postgresql.UUID(as_uuid=True),
+        sa.ForeignKey("pursuits.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+
+def _user_fk(name: str) -> sa.Column[object]:
+    return sa.Column(
+        name, postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="SET NULL")
+    )
+
+
+def _upgrade_collab() -> None:
+    op.create_table(
+        "pursuit_tasks",
+        _uuid_pk(),
+        _tenant_id(),
+        _pursuit_id(),
+        sa.Column("title", sa.String(300), nullable=False),
+        sa.Column("detail", sa.Text()),
+        _user_fk("assignee_user_id"),
+        _ts("due_at"),
+        sa.Column(
+            "status", sa.String(16), nullable=False, server_default=sa.text(f"'{TASK_OPEN}'")
+        ),
+        sa.Column(
+            "source",
+            sa.String(8),
+            nullable=False,
+            server_default=sa.text(f"'{TASK_SOURCE_USER}'"),
+        ),
+        sa.Column("ref", postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")),
+        _user_fk("created_by"),
+        _ts("completed_at"),
+        _user_fk("completed_by"),
+        _ts("created_at", nullable=False, default_now=True),
+        _ts("updated_at", nullable=False, default_now=True),
+        sa.CheckConstraint(f"status IN ({TASK_STATUS_LIST})", name="ck_pursuit_tasks_status"),
+        sa.CheckConstraint(f"source IN ({TASK_SOURCE_LIST})", name="ck_pursuit_tasks_source"),
+    )
+    op.create_index("ix_pursuit_tasks_tenant_id", "pursuit_tasks", ["tenant_id"])
+    op.create_index("ix_pursuit_tasks_pursuit_id", "pursuit_tasks", ["pursuit_id"])
+    op.create_index(
+        "ix_pursuit_tasks_assignee", "pursuit_tasks", ["tenant_id", "assignee_user_id", "status"]
+    )
+
+    op.create_table(
+        "pursuit_comments",
+        _uuid_pk(),
+        _tenant_id(),
+        _pursuit_id(),
+        sa.Column(
+            "target_type",
+            sa.String(32),
+            nullable=False,
+            server_default=sa.text(f"'{TARGET_PURSUIT}'"),
+        ),
+        sa.Column("target_id", postgresql.UUID(as_uuid=True)),
+        sa.Column("body", sa.Text(), nullable=False),
+        _user_fk("author_user_id"),
+        _ts("resolved_at"),
+        _user_fk("resolved_by"),
+        _ts("created_at", nullable=False, default_now=True),
+        _ts("updated_at", nullable=False, default_now=True),
+        sa.CheckConstraint(
+            f"target_type IN ({TARGET_TYPE_LIST})", name="ck_pursuit_comments_target_type"
+        ),
+    )
+    op.create_index("ix_pursuit_comments_tenant_id", "pursuit_comments", ["tenant_id"])
+    op.create_index("ix_pursuit_comments_pursuit_id", "pursuit_comments", ["pursuit_id"])
+    op.create_index(
+        "ix_pursuit_comments_target",
+        "pursuit_comments",
+        ["pursuit_id", "target_type", "target_id"],
     )

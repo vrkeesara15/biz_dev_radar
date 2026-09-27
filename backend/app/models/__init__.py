@@ -4,6 +4,7 @@ from app.models.agents import AgentRun, AgentStep
 from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import BillingCustomer, BillingEventRecord, PlanLimit, UsageLedger
+from app.models.collab import PursuitComment, PursuitTask
 from app.models.compliance import ComplianceItem, PursuitArtifact
 from app.models.files import File
 from app.models.integrations import Integration, IntegrationKind
@@ -90,7 +91,9 @@ __all__ = [
     "ProfileKeyword",
     "Pursuit",
     "PursuitArtifact",
+    "PursuitComment",
     "PursuitDate",
+    "PursuitTask",
     "PushSubscription",
     "RateCardEntry",
     "Registration",

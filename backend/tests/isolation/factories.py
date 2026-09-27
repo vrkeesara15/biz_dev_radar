@@ -57,7 +57,9 @@ from app.models import (
     ProfileFile,
     ProfileKeyword,
     Pursuit,
+    PursuitComment,
     PursuitDate,
+    PursuitTask,
     PushSubscription,
     RateCardEntry,
     Registration,
@@ -379,6 +381,45 @@ FACTORIES: dict[tuple[str, str], Factory] = {
             "date_id": ctx.a.ids["pursuit_date"],
         }
     ),
+    # --- tasks and comments (M6-07)
+    ("GET", "/api/v1/pursuits/{pursuit_id}/tasks"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/tasks"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"title": "isolation probe"}
+    ),
+    ("PATCH", "/api/v1/pursuits/{pursuit_id}/tasks/{task_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "task_id": ctx.a.ids["pursuit_task"],
+        },
+        json={"status": "done"},
+    ),
+    ("DELETE", "/api/v1/pursuits/{pursuit_id}/tasks/{task_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "task_id": ctx.a.ids["pursuit_task"],
+        }
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/comments"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/comments"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"body": "isolation probe"}
+    ),
+    ("PATCH", "/api/v1/pursuits/{pursuit_id}/comments/{comment_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "comment_id": ctx.a.ids["pursuit_comment"],
+        },
+        json={"resolved": True},
+    ),
+    ("DELETE", "/api/v1/pursuits/{pursuit_id}/comments/{comment_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "comment_id": ctx.a.ids["pursuit_comment"],
+        }
+    ),
     ("PATCH", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"stage": "qualifying"}
     ),
@@ -654,7 +695,21 @@ async def build_context(database: Database) -> IsolationContext:
             source="auto",
             label="Alpha submission due",
         )
-        session.add(pursuit_date)
+        pursuit_task = PursuitTask(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            title="Alpha secret task",
+            assignee_user_id=ua.id,
+            created_by=ua.id,
+        )
+        pursuit_comment = PursuitComment(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            target_type="pursuit",
+            body="alpha secret comment",
+            author_user_id=ua.id,
+        )
+        session.add_all([pursuit_date, pursuit_task, pursuit_comment])
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -699,6 +754,10 @@ async def build_context(database: Database) -> IsolationContext:
                 "pursuit": str(pursuit.id),
                 "pursuit_date": str(pursuit_date.id),
                 "pursuit_date_label": "Alpha submission due",
+                "pursuit_task": str(pursuit_task.id),
+                "pursuit_task_title": "Alpha secret task",
+                "pursuit_comment": str(pursuit_comment.id),
+                "pursuit_comment_body": "alpha secret comment",
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",
