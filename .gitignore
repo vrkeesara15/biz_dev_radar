@@ -1,0 +1,31 @@
+# secrets and local env
+.env
+.env.*
+!.env.example
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage*
+# node
+node_modules/
+.next/
+out/
+coverage/
+# loop logs
+logs/*.jsonl
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+# os / editors
+.DS_Store
+.idea/
+.vscode/
+# local data
+infra/.data/
+backend/.storage/
