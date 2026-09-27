@@ -1294,7 +1294,7 @@
       "Per-category unsubscribe link with signed token; unsubscribed categories are skipped",
       "Integration test sends through Mailpit and asserts the message via its API"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M4-11",

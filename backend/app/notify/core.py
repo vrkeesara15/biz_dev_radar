@@ -17,7 +17,8 @@ Rules
   attempts (clock and sleep are injectable); when it still fails the delivery is `failed` and
   an email fallback delivery is created and sent (unless the failing channel was email, the
   recipient has no address, or email is already one of their channels). A channel that is
-  not configured is `skipped`.
+  not configured is `skipped`; so is a channel that declines on purpose (SendResult.skip:
+  an unsubscribed category, a recipient with no address).
 - A delivery whose `scheduled_for` lies in the future (quiet hours / digest, M4-13) stays
   `queued`; `flush_due` sends what is due.
 
@@ -41,6 +42,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings, get_settings
 from app.models import DeliveryStatus, Notification, NotificationDelivery
 from app.notify.actions import action_links, deep_link
+from app.notify.unsubscribe import load_unsubscribed
 
 log = structlog.get_logger(__name__)
 
@@ -83,6 +85,8 @@ class Recipient:
     locale: str = "en"
     # per-user delivery instant (quiet hours / digest); None = now
     scheduled_for: datetime | None = None
+    # CAN-SPAM opt-outs (app.notify.unsubscribe): the email channel skips these categories
+    unsubscribed: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +94,8 @@ class SendResult:
     ok: bool
     error: str | None = None
     provider_ref: str | None = None
+    # the channel declined on purpose (unsubscribed, no address): no retry, no fallback
+    skipped: bool = False
 
     @classmethod
     def sent(cls, provider_ref: str | None = None) -> SendResult:
@@ -98,6 +104,10 @@ class SendResult:
     @classmethod
     def failed(cls, error: str) -> SendResult:
         return cls(False, error, None)
+
+    @classmethod
+    def skip(cls, reason: str) -> SendResult:
+        return cls(False, reason, None, True)
 
 
 class Channel(Protocol):
@@ -198,7 +208,7 @@ class Dispatcher:
         channel = self.channels[delivery.channel]
         error = await self._attempt(channel, delivery, notification, recipient)
         if error is None:
-            return None
+            return None  # sent, or the channel skipped it on purpose
         delivery.status = DeliveryStatus.FAILED.value
         delivery.last_error = error
         log.warning(
@@ -343,6 +353,10 @@ class Dispatcher:
                 delivery.last_error = None
                 delivery.provider_ref = outcome.provider_ref
                 return None
+            if outcome.skipped:  # a deliberate decline is not a failure: no retry, no fallback
+                delivery.status = DeliveryStatus.SKIPPED.value
+                delivery.last_error = outcome.error or "skipped"
+                return None
             error = outcome.error or "send failed"
             delivery.last_error = error
             if attempt < self.max_attempts:
@@ -401,12 +415,14 @@ async def recipient_for(
 ) -> Recipient:
     """Rebuild a Recipient from the stored payload (deferred deliveries in another process)."""
     stored = notification.payload.get("recipient") or {}
+    unsubscribed = await load_unsubscribed(session, notification.user_id)
     return Recipient(
         user_id=notification.user_id,
         channels=channels,
         email=stored.get("email"),
         name=stored.get("name"),
         tz=stored.get("tz") or "UTC",
+        unsubscribed=unsubscribed,
     )
 
 

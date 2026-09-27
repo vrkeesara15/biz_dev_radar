@@ -1,4 +1,9 @@
-"""Notification one-click actions (SPEC 7): GET /api/v1/notifications/actions/{token}.
+"""Notification one-click actions and unsubscribe (SPEC 7).
+
+    GET  /api/v1/notifications/actions/{token}        Pursue / Watch / Pass / Assign
+    GET  /api/v1/notifications/unsubscribe/{token}    CAN-SPAM link in the email footer
+    POST /api/v1/notifications/unsubscribe/{token}    RFC 8058 List-Unsubscribe=One-Click
+
 
 The link is clicked from an email / Slack / Teams message, so there is no bearer token: the
 signed action token (app.notify.actions) authenticates the click and scopes the tenant, user
@@ -23,11 +28,17 @@ from app.notify.actions import (
     record_action,
     verify_action_token,
 )
+from app.notify.unsubscribe import (
+    UnsubscribeTokenError,
+    apply_unsubscribe,
+    verify_unsubscribe_token,
+)
 from app.services.audit import write_audit
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 ACTION_AUDIT = "notification.action"
+UNSUBSCRIBE_AUDIT = "notification.unsubscribe"
 
 
 class ActionOut(BaseModel):
@@ -76,3 +87,47 @@ async def take_action(
         recorded=True,
         redirect=deep_link(settings, claims.opportunity_id, claims.pursuit_id),
     )
+
+
+class UnsubscribeOut(BaseModel):
+    category: str
+    unsubscribed_categories: list[str]
+    redirect: str
+
+
+async def _unsubscribe(token: str, request: Request, settings: SettingsDep) -> UnsubscribeOut:
+    try:
+        claims = verify_unsubscribe_token(token, settings.auth_secret)
+    except UnsubscribeTokenError as exc:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail=exc.detail) from exc
+    async with get_database().session(claims.tenant_id) as session:
+        categories = await apply_unsubscribe(session, claims)
+        await write_audit(
+            session,
+            tenant_id=claims.tenant_id,
+            user_id=claims.user_id,
+            action=UNSUBSCRIBE_AUDIT,
+            object_type="user_notification_prefs",
+            object_id=claims.user_id,
+            ip=client_ip(request, settings),
+            meta={"category": claims.category},
+        )
+    return UnsubscribeOut(
+        category=claims.category,
+        unsubscribed_categories=list(categories),
+        redirect=settings.app_base_url.rstrip("/") + "/app/settings/notifications",
+    )
+
+
+@router.get("/unsubscribe/{token}", response_model=UnsubscribeOut)
+async def unsubscribe(token: str, request: Request, settings: SettingsDep) -> UnsubscribeOut:
+    """CAN-SPAM per-category opt-out clicked from the email footer."""
+    return await _unsubscribe(token, request, settings)
+
+
+@router.post("/unsubscribe/{token}", response_model=UnsubscribeOut)
+async def unsubscribe_one_click(
+    token: str, request: Request, settings: SettingsDep
+) -> UnsubscribeOut:
+    """RFC 8058 one-click target named by the List-Unsubscribe-Post header."""
+    return await _unsubscribe(token, request, settings)

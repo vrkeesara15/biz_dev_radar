@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block lead %}An opportunity you track was amended{% endblock %}
+{% block extra %}
+<tr><td style="padding-bottom:16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.6;"><tr><td style="color:#6b7280;padding-bottom:4px;">What changed</td></tr>{% for change in diff %}<tr><td style="padding:4px 0;border-top:1px solid #e5e7eb;"><strong>{{ change.field }}</strong>: <span style="text-decoration:line-through;color:#6b7280;">{{ change.before }}</span> &rarr; {{ change.after }}</td></tr>{% endfor %}</table></td></tr>
+{% endblock %}

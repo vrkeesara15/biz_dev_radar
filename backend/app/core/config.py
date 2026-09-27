@@ -36,6 +36,13 @@ class ScannerBackend(StrEnum):
     NOOP = "noop"
 
 
+class EmailProviderName(StrEnum):
+    SES = "ses"
+    SENDGRID = "sendgrid"
+    SMTP = "smtp"
+    MEMORY = "memory"
+
+
 # The only place a Claude model id literal may appear (tests enforce this).
 DEFAULT_OPUS_CLASS = "claude-opus-5"
 DEFAULT_SONNET_CLASS = "claude-sonnet-5"
@@ -124,6 +131,26 @@ class Settings(BaseSettings):
     )
     # signed action links (Pursue / Watch / Pass / Assign, unsubscribe) stay valid this long
     notify_action_ttl_seconds: int = 60 * 60 * 24 * 14
+
+    # email channel (SPEC 7): SES for production (Indian tenants via ap-south-1 so mail
+    # never leaves the residency region), SendGrid as the alternative, SMTP -> Mailpit
+    # locally, memory in tests.
+    email_provider: EmailProviderName = EmailProviderName.SMTP
+    email_from: str = "alerts@bidradar.example"
+    email_from_name: str = "BidRadar"
+    email_reply_to: str = ""
+    # CAN-SPAM requires a physical postal address in every commercial message.
+    email_postal_address: str = "BidRadar, 1 Example Street, Wilmington, DE 19801, USA"
+    ses_region_us: str = "us-east-1"
+    ses_region_in: str = "ap-south-1"
+    sendgrid_api_key: str = ""
+    sendgrid_base_url: str = "https://api.sendgrid.com"
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_starttls: bool = False
+    smtp_timeout_seconds: float = 10.0
 
     # third-party keys (never committed)
     sam_api_key: str = ""

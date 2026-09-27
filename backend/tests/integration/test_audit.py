@@ -7,6 +7,7 @@ import pytest
 from app.core.db import Database
 from app.core.roles import Role
 from app.models import AuditLog, UsageLedger
+from app.notify.unsubscribe import sign_unsubscribe_token
 from app.services.audit import SUPPORT_ACCESS_ACTION, audit
 from sqlalchemy import select, text
 from sqlalchemy.exc import ProgrammingError
@@ -84,12 +85,16 @@ async def test_failed_mutation_by_authenticated_user_is_audited(
 async def test_every_mutating_route_under_api_v1_is_audited(
     app,
     api_client: httpx.AsyncClient,
-    database: Database,  # type: ignore[no-untyped-def]
+    database: Database,
+    settings,  # type: ignore[no-untyped-def]
 ) -> None:
     """Drive every POST/PUT/PATCH/DELETE route with an empty body as an authenticated
     user; each must leave exactly one audit row whatever its status code."""
     tid, uid = await _tenant(database, is_internal=True)
     headers = auth_headers(user_id=uid, tenant_id=tid, role=Role.PLATFORM_ADMIN)
+    # M4-10: routes that authenticate by signed link instead of a bearer token get a real
+    # token, so the probe exercises the handler rather than the 401 branch.
+    token = sign_unsubscribe_token(settings, tenant_id=tid, user_id=uid, category="digest")
     spec = app.openapi()
     mutating = [
         (method.upper(), path)
@@ -99,13 +104,24 @@ async def test_every_mutating_route_under_api_v1_is_audited(
     ]
     assert mutating, "expected mutating routes"
     for method, path in mutating:
-        concrete = path.replace("{tenant_id}", str(tid)).replace("{id}", str(uuid.uuid4()))
+        concrete = (
+            path.replace("{tenant_id}", str(tid))
+            .replace("{id}", str(uuid.uuid4()))
+            .replace("{token}", token)
+        )
         before = len(await _audit_rows(database))
         r = await api_client.request(method, concrete, json={}, headers=headers)
         assert r.status_code != 401, (method, path)
         after = await _audit_rows(database)
         assert len(after) == before + 1, f"{method} {path} -> {r.status_code} left no audit row"
-        assert after[-1].meta["status"] == r.status_code
+        row = after[-1]
+        if "status" in row.meta:
+            assert row.meta["status"] == r.status_code
+        else:
+            # A signed-link route (M4-10 unsubscribe) authenticates by token, so the
+            # middleware sees no CurrentUser and the handler writes the row itself.
+            assert row.action == "notification.unsubscribe" and r.status_code == 200
+            assert row.tenant_id == tid and row.user_id == uid
 
 
 async def test_support_access_route(api_client: httpx.AsyncClient, database: Database) -> None:

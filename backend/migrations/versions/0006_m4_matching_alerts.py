@@ -155,11 +155,23 @@ def upgrade() -> None:
         ["status", "scheduled_for"],
     )
 
+    # --- per-category unsubscribe (M4-10, CAN-SPAM): event types the user opted out of ----------
+    op.add_column(
+        "user_notification_prefs",
+        sa.Column(
+            "unsubscribed_categories",
+            postgresql.ARRAY(sa.Text()),
+            nullable=False,
+            server_default=sa.text("'{}'::text[]"),
+        ),
+    )
+
     for table in TENANT_TABLES:
         grant_app(op, table)
         enable_rls(op, table)
 
 
 def downgrade() -> None:
+    op.drop_column("user_notification_prefs", "unsubscribed_categories")
     for table in reversed(TENANT_TABLES):
         op.drop_table(table)

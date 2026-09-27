@@ -1,0 +1,1 @@
+[ops] {{ source_id|default('an adapter') }} has failed {{ failures|default(3) }} runs

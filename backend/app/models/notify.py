@@ -5,8 +5,8 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint, text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint, text
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.preferences import (
@@ -41,4 +41,9 @@ class UserNotificationPrefs(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Ba
     )
     min_score_digest: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default=text(str(DEFAULT_MIN_SCORE_DIGEST))
+    )
+    # CAN-SPAM per-category unsubscribe (M4-10): NotificationEvent values the user opted
+    # out of, or ["all"]. Email is skipped for these; the in-app bell still records them.
+    unsubscribed_categories: Mapped[list[str]] = mapped_column(
+        ARRAY(Text()), nullable=False, server_default=text("'{}'::text[]")
     )

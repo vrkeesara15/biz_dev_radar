@@ -71,6 +71,12 @@ PUBLIC_ROUTES: list[tuple[str, str]] = [
     # AUTH_SECRET) that names the tenant, user and notification; there is no bearer session.
     # tests/integration/test_notify_core.py proves a foreign or tampered token is 401.
     ("GET", "/api/v1/notifications/actions/*"),
+    # M4-10: the CAN-SPAM unsubscribe link in every email footer. Same signed-token scheme
+    # (tenant + user + category); GET is the footer link, POST the RFC 8058 one-click
+    # target named by List-Unsubscribe-Post. tests/integration/test_notify_email.py proves
+    # a tampered token is 401 and that the opt-out lands on the right tenant's prefs row.
+    ("GET", "/api/v1/notifications/unsubscribe/*"),
+    ("POST", "/api/v1/notifications/unsubscribe/*"),
 ]
 
 OK_STATUSES = frozenset({200, 201, 202, 204})

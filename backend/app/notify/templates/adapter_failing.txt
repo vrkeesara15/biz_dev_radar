@@ -1,0 +1,5 @@
+{% extends "base.txt" %}
+{% block lead %}Source {{ source_id|default('unknown') }} is failing{% endblock %}
+{% block extra %}
+{{ error|default("see the run log") }}
+{% endblock %}

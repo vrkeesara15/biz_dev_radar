@@ -1,0 +1,2 @@
+{% extends "base.txt" %}
+{% block lead %}Deadline reminder: due {{ countdown }}{% endblock %}
