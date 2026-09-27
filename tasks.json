@@ -931,7 +931,7 @@
       "Rate limit 1 req/s; robots.txt respected; fixtures include a layout-change page",
       "Schedule every 3h"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-03",

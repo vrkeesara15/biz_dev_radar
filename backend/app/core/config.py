@@ -97,6 +97,8 @@ class Settings(BaseSettings):
     # OCR for scanned PDF pages (SPEC 10.1: Tesseract eng+hin); none = skip pages without text
     ocr_backend: str = "none"
     ocr_languages: str = "eng+hin"
+    # Tesseract language set for documents of IN-region notices (SPEC 12: OCR hin)
+    ocr_languages_in: str = "eng+hin"
     tesseract_cmd: str = ""
 
     # tenancy / residency
@@ -129,6 +131,19 @@ class Settings(BaseSettings):
     http_max_attempts: int = 5
     http_timeout_seconds: float = 30.0
     anthropic_api_key: str = ""
+
+    # Indian portals (SPEC 2 rows 7-9, M3): captcha-free listing pages only. The CPPP
+    # "tenders by organisation" page is best-effort (its layout was not verifiable at build
+    # time, PROGRESS.m3.md OQ-60); organisation listings followed per run are bounded.
+    cppp_by_org_url: str = "https://eprocure.gov.in/cppp/tendersbyorganisation"
+    cppp_max_orgs_per_run: int = 25
+    gepnic_max_orgs_per_run: int = 200
+    # GeM public bid listing (JS-driven page backed by this JSON endpoint; OQ-14/OQ-61) and
+    # the seller-registration link surfaced on every GeM record
+    gem_bids_url: str = "https://bidplus.gem.gov.in/all-bids-data"
+    gem_bid_page_url: str = "https://bidplus.gem.gov.in/showbidDocument/{bid_id}"
+    gem_seller_registration_url: str = "https://gem.gov.in/register/seller/signup"
+    gem_max_pages: int = 20
 
     # LLM model classes (SPEC section 8); ids live here only
     llm_model_opus_class: str = DEFAULT_OPUS_CLASS
