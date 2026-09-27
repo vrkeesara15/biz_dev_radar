@@ -37,6 +37,7 @@ import respx
 from app.adapters import registry
 from app.adapters.base import AdapterStatus, OpportunityIn, RawRecord, SourceAdapter
 from app.adapters.cppp import CpppAdapter
+from app.adapters.gem import GemAdapter
 from app.adapters.grants_gov import SEARCH_URL as GRANTS_SEARCH_URL
 from app.adapters.grants_gov import GrantsGovAdapter
 from app.adapters.http import MemoryArchiver, PoliteClient
@@ -135,6 +136,15 @@ SPECS: dict[str, ContractSpec] = {
         url=SETTINGS.sam_awards_api_url,
         normal_file="page1.json",
         layout_key="layout change",
+    ),
+    "gem": ContractSpec(
+        build=lambda: GemAdapter(
+            client=polite_client(), settings=SETTINGS, now=lambda: NOW, download_documents=False
+        ),
+        method="POST",
+        url=SETTINGS.gem_bids_url,
+        normal_file="all_bids_page1.json",
+        layout_key="docs",
     ),
     "cppp": ContractSpec(
         build=lambda: CpppAdapter(client=polite_client(), settings=SETTINGS, now=lambda: NOW),

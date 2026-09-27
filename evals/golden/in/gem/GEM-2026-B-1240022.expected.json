@@ -1,0 +1,15 @@
+{
+ "bid_number": "GEM/2026/B/1240022",
+ "item_or_service": "Facility Management Services - LumpSum Based - Hospital; Housekeeping",
+ "quantity": 1,
+ "estimated_value_inr": null,
+ "emd_amount_inr": "500000",
+ "min_avg_turnover_inr": "25000000",
+ "min_experience_years": 5,
+ "mse_exemption_allowed": false,
+ "startup_exemption_allowed": true,
+ "bid_end_at": "2026-10-22T09:30:00+00:00",
+ "consignee_locations": [
+  "Bhopal, Madhya Pradesh"
+ ]
+}

@@ -952,7 +952,7 @@
       "fetch_documents downloads the bid PDF and hashes it",
       "Schedule every 3h; GeM seller registration link surfaced in source_url"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M3-04",

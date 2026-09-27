@@ -1,0 +1,15 @@
+{
+ "bid_number": "GEM/2026/B/1261144",
+ "item_or_service": "Manpower Outsourcing Services - Minimum wage - Semi-skilled; Data Entry Operator",
+ "quantity": 25,
+ "estimated_value_inr": "6600000",
+ "emd_amount_inr": "132000",
+ "min_avg_turnover_inr": "2000000",
+ "min_experience_years": 3,
+ "mse_exemption_allowed": true,
+ "startup_exemption_allowed": false,
+ "bid_end_at": "2026-10-29T12:30:00+00:00",
+ "consignee_locations": [
+  "Hyderabad, Telangana"
+ ]
+}
