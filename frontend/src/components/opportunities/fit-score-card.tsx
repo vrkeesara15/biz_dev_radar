@@ -1,3 +1,4 @@
+import { MatchFeedback } from "@/components/opportunities/match-feedback";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Match, MatchSignal } from "@/lib/opportunities/api";
@@ -40,7 +41,18 @@ function SignalRow({ signal, placeholder }: { signal: MatchSignal; placeholder?:
   );
 }
 
-export function FitScoreCard({ match, className }: { match: Match | null; className?: string }) {
+export function FitScoreCard({
+  match,
+  className,
+  opportunityId,
+  title,
+}: {
+  match: Match | null;
+  className?: string;
+  /** When given, the card carries the SPEC 6 thumbs up/down and reason dialog. */
+  opportunityId?: string;
+  title?: string;
+}) {
   const scored = match !== null && match.score !== null;
   const signals: MatchSignal[] =
     match && match.breakdown.length
@@ -50,7 +62,10 @@ export function FitScoreCard({ match, className }: { match: Match | null; classN
   return (
     <Card data-testid="fit-score-card" className={className}>
       <CardHeader>
-        <CardTitle>Fit score</CardTitle>
+        <CardTitle className="flex items-center justify-between gap-2">
+          <span>Fit score</span>
+          {opportunityId ? <MatchFeedback opportunityId={opportunityId} title={title} size="sm" /> : null}
+        </CardTitle>
         <CardDescription>
           {scored
             ? "Rules, embeddings and an AI rationale against your active profile."

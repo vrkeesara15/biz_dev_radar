@@ -3,7 +3,8 @@
  * It mirrors the routes the wizard uses (profiles, 13 sub-resources, files,
  * notification prefs, autofill) and recomputes a simplified completeness
  * score on every read so the meter visibly moves as steps are saved. It also
- * serves the opportunities search/detail routes (M2-15) from fixtures with the
+ * serves the M4 bell, push-subscription, action-link and preference routes,
+ * the opportunities search/detail routes (M2-15) from fixtures with the
  * same filter semantics as the API, the platform-admin console routes (M7-08:
  * sources, run history, tenants, usage, health, support access) with in-memory
  * state so "Run now" and a plan edit really change what the next read returns,
@@ -60,8 +61,27 @@ export type MockOptions = {
   region?: "us" | "in";
   /** When true, GET/POST /saved-searches work in memory (M4-08 contract); default 404. */
   savedSearches?: boolean;
+  /** When true, GET/POST/PATCH /alert-rules work in memory (M4-08 contract); default 404. */
+  alertRules?: boolean;
+  /** When true, POST /opportunities/{id}/feedback answers 201 (M4-08 contract); default 404. */
+  feedback?: boolean;
+  /** When true, GET /dashboard serves e2e/fixtures/dashboard.json (M6 contract); default 404. */
+  dashboard?: boolean;
+  /**
+   * When true the opportunity fixtures carry a match, and `min_score` filters on
+   * it the way the scored API will. Off by default so the M2 specs keep seeing
+   * "Not scored yet".
+   */
+  matches?: boolean;
   /** When true, POST /opportunities/{id}/pursue|watch|pass answer 201 (M6-01 contract); default 404. */
   pipelineActions?: boolean;
+};
+
+/** Scores attached to the three opportunity fixtures when `matches` is on. */
+const FIXTURE_SCORES: Record<string, number> = {
+  "7c1d2e3f-0000-4000-8000-000000000001": 82,
+  "7c1d2e3f-0000-4000-8000-000000000002": 74,
+  "7c1d2e3f-0000-4000-8000-000000000003": 41,
 };
 
 export class MockApi {
@@ -73,13 +93,30 @@ export class MockApi {
   opportunities: Json[] = fixture<Json[]>("opportunities.json");
   opportunityDetail: Json = fixture<Json>("opportunity-detail.json");
   savedSearches: Json[] = [];
+  alertRules: Json[] = [];
+  notifications: Json[] = fixture<Json[]>("notifications.json");
+  pushSubscriptions: Json[] = [];
+  feedback: Json[] = [];
+  dashboard: Json = fixture<Json>("dashboard.json");
+  actionsTaken: { action: string; token: string; reason: string | null }[] = [];
   admin: AdminFixture = fixture<AdminFixture>("admin.json");
   adminSources: Json[] = this.admin.sources;
   adminTenants: Json[] = this.admin.tenants;
   adminGrants: Json[] = [];
   private seq = 0;
 
-  constructor(private readonly options: MockOptions = {}) {}
+  constructor(private readonly options: MockOptions = {}) {
+    if (options.matches) {
+      this.opportunities = this.opportunities.map((row) => ({
+        ...row,
+        match: {
+          score: FIXTURE_SCORES[String(row.id)] ?? null,
+          band: (FIXTURE_SCORES[String(row.id)] ?? 0) >= 70 ? "high" : "low",
+          breakdown: [],
+        },
+      }));
+    }
+  }
 
   private nextId(prefix: string) {
     this.seq += 1;
@@ -216,6 +253,63 @@ export class MockApi {
       const [, opportunityId] = opportunityMatch;
       if (this.opportunityDetail.id === opportunityId) return json(200, this.opportunityDetail);
       return json(404, { detail: "opportunity not found" });
+    }
+    const notificationsHandled = this.handleNotifications(pathname, method, body, url.searchParams, json, route);
+    if (notificationsHandled) return notificationsHandled;
+    if (pathname === "/api/v1/dashboard" && method === "GET") {
+      if (!this.options.dashboard) return json(404, { detail: "Not Found" });
+      return json(200, this.dashboard);
+    }
+    const feedbackMatch = pathname.match(/^\/api\/v1\/opportunities\/([^/]+)\/feedback$/);
+    if (feedbackMatch && method === "POST") {
+      if (!this.options.feedback) return json(404, { detail: "Not Found" });
+      const [, opportunityId] = feedbackMatch;
+      const item = { id: this.nextId("feedback"), opportunity_id: opportunityId, ...(body as Json) };
+      this.feedback.push(item);
+      return json(201, item);
+    }
+    if (pathname === "/api/v1/alert-rules") {
+      if (!this.options.alertRules) return json(404, { detail: "Not Found" });
+      if (method === "GET") return json(200, this.alertRules);
+      if (method === "POST") {
+        const item = {
+          id: this.nextId("rule"),
+          saved_search_id: null,
+          profile_id: null,
+          min_score: 70,
+          channels: ["email"],
+          mode: "digest",
+          enabled: true,
+          ...(body as Json),
+        };
+        this.alertRules.push(item);
+        return json(201, item);
+      }
+    }
+    const ruleMatch = pathname.match(/^\/api\/v1\/alert-rules\/([^/]+)$/);
+    if (ruleMatch && method === "PATCH") {
+      if (!this.options.alertRules) return json(404, { detail: "Not Found" });
+      const [, ruleId] = ruleMatch;
+      const index = this.alertRules.findIndex((rule) => rule.id === ruleId);
+      if (index === -1) return json(404, { detail: "alert rule not found" });
+      this.alertRules[index] = { ...this.alertRules[index], ...(body as Json) };
+      return json(200, this.alertRules[index]);
+    }
+    const savedMatch = pathname.match(/^\/api\/v1\/saved-searches\/([^/]+)$/);
+    if (savedMatch) {
+      if (!this.options.savedSearches) return json(404, { detail: "Not Found" });
+      const [, savedId] = savedMatch;
+      const index = this.savedSearches.findIndex((item) => item.id === savedId);
+      if (index === -1) return json(404, { detail: "saved search not found" });
+      if (method === "PATCH") {
+        this.savedSearches[index] = { ...this.savedSearches[index], ...(body as Json) };
+        return json(200, this.savedSearches[index]);
+      }
+      if (method === "DELETE") {
+        this.savedSearches.splice(index, 1);
+        this.alertRules = this.alertRules.filter((rule) => rule.saved_search_id !== savedId);
+        return route.fulfill({ status: 204, body: "" });
+      }
     }
     if (pathname === "/api/v1/saved-searches") {
       if (!this.options.savedSearches) return json(404, { detail: "Not Found" });
@@ -455,6 +549,76 @@ export class MockApi {
     return null;
   }
 
+  /** The M4 bell, push-subscription and one-click action routes. */
+  private handleNotifications(
+    pathname: string,
+    method: string,
+    body: unknown,
+    params: URLSearchParams,
+    json: (status: number, payload: unknown) => Promise<void>,
+    route: Route,
+  ): Promise<void> | null {
+    if (pathname === "/api/v1/me/notifications" && method === "GET") {
+      const unreadOnly = ["1", "true"].includes((params.get("unread") ?? "").toLowerCase());
+      const limit = Math.max(1, Number(params.get("limit") ?? 50));
+      const rows = this.notifications
+        .filter((row) => !unreadOnly || row.read_at === null)
+        .sort((a, b) => Date.parse(String(b.created_at)) - Date.parse(String(a.created_at)));
+      return json(200, {
+        items: rows.slice(0, limit),
+        unread: this.notifications.filter((row) => row.read_at === null).length,
+      });
+    }
+    if (pathname === "/api/v1/me/notifications/read-all" && method === "POST") {
+      const readAt = new Date().toISOString();
+      let marked = 0;
+      for (const row of this.notifications) {
+        if (row.read_at === null) {
+          row.read_at = readAt;
+          marked += 1;
+        }
+      }
+      return json(200, { marked });
+    }
+    const readMatch = pathname.match(/^\/api\/v1\/me\/notifications\/([^/]+)\/read$/);
+    if (readMatch && method === "POST") {
+      const [, notificationId] = readMatch;
+      const row = this.notifications.find((item) => item.id === notificationId);
+      if (!row) return json(404, { detail: "notification not found" });
+      row.read_at = row.read_at ?? new Date().toISOString();
+      return json(200, { id: row.id, read_at: row.read_at });
+    }
+    if (pathname === "/api/v1/me/push-subscriptions") {
+      if (method === "POST") {
+        const item = { id: this.nextId("push"), created: true, ...(body as Json) };
+        this.pushSubscriptions.push(item);
+        return json(201, item);
+      }
+      if (method === "DELETE") {
+        const endpoint = String((body as Json)?.endpoint ?? "");
+        const before = this.pushSubscriptions.length;
+        this.pushSubscriptions = this.pushSubscriptions.filter((item) => item.endpoint !== endpoint);
+        if (this.pushSubscriptions.length === before) return json(404, { detail: "subscription not found" });
+        return route.fulfill({ status: 204, body: "" });
+      }
+    }
+    const actionMatch = pathname.match(/^\/api\/v1\/notifications\/actions\/([^/]+)$/);
+    if (actionMatch && method === "GET") {
+      const [, token] = actionMatch;
+      const action = token.replace(/^tok-/, "");
+      this.actionsTaken.push({ action, token, reason: params.get("reason") });
+      return json(202, {
+        action,
+        notification_id: this.notifications[0]?.id ?? null,
+        opportunity_id: null,
+        pursuit_id: null,
+        recorded: true,
+        redirect: "https://app.bidradar.test/app",
+      });
+    }
+    return null;
+  }
+
   /** GET /opportunities with the API's filter semantics over the fixture rows. */
   private searchOpportunities(params: URLSearchParams): Json {
     const csv = (key: string) => (params.get(key) ?? "").split(",").map((v) => v.trim()).filter(Boolean);
@@ -464,6 +628,8 @@ export class MockApi {
     const statuses = csv("status");
     const naics = csv("naics");
     const dueBefore = params.get("due_before") ? Date.parse(params.get("due_before")!) : null;
+    // Only meaningful once the rows carry a match; the unscored fixtures ignore it.
+    const minScore = this.options.matches && params.get("min_score") ? Number(params.get("min_score")) : null;
     const rows = this.opportunities.filter((row) => {
       const text = `${row.title ?? ""} ${row.summary_ai ?? ""}`.toLowerCase();
       if (q && !q.split(/\s+/).every((term) => text.includes(term))) return false;
@@ -471,6 +637,10 @@ export class MockApi {
       if (types.length && !types.includes(String(row.notice_type))) return false;
       if (statuses.length && !statuses.includes(String(row.status))) return false;
       if (naics.length && !(row.naics as string[]).some((code) => naics.includes(code))) return false;
+      if (minScore !== null) {
+        const score = Number((row.match as Json | null)?.score ?? NaN);
+        if (!Number.isFinite(score) || score < minScore) return false;
+      }
       if (dueBefore !== null) {
         const due = row.response_due_at ? Date.parse(String(row.response_due_at)) : null;
         if (due === null || due > dueBefore) return false;

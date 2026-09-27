@@ -1,0 +1,30 @@
+{
+  "open_by_stage": { "identified": 5, "reviewing": 3, "drafting": 2, "submitted": 1 },
+  "due_next_7_days": [
+    {
+      "id": "d1",
+      "title": "Questions due — Cloud migration and managed services",
+      "due_at": "2026-10-01T18:00:00Z",
+      "kind": "questions_due",
+      "buyer": "Department of Veterans Affairs",
+      "opportunity_id": "7c1d2e3f-0000-4000-8000-000000000001",
+      "pursuit_id": null
+    },
+    {
+      "id": "d2",
+      "title": "Proposal due — Supply of laptops",
+      "due_at": "2026-10-03T09:30:00Z",
+      "kind": "response_due",
+      "buyer": "Ministry of Electronics and IT",
+      "opportunity_id": "7c1d2e3f-0000-4000-8000-000000000002",
+      "pursuit_id": null
+    }
+  ],
+  "pipeline_value_by_stage": {
+    "identified": { "USD": 2500000, "INR": 207500000 },
+    "drafting": { "USD": 1500000, "INR": 124500000 }
+  },
+  "win_rate": 0.32,
+  "avg_hours_saved_per_package": 11.5,
+  "alert_precision": 0.74
+}

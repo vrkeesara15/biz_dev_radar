@@ -224,7 +224,10 @@ test("home links High-fit today to the search with min_score=70 and the nav is l
   await signInAs(context, baseURL!);
 
   await page.goto("/app");
-  await expect(page.getByRole("link", { name: "High-fit today" })).toHaveAttribute("href", "/app/opportunities?min_score=70");
+  await expect(page.getByRole("link", { name: "High-fit today" })).toHaveAttribute(
+    "href",
+    "/app/opportunities?status=open%2Cclosing_soon&min_score=70",
+  );
   await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Opportunities" }).click();
   await expect(page).toHaveURL(/\/app\/opportunities$/);
   await expect(page.getByRole("link", { name: "Opportunities" }).first()).toHaveAttribute("aria-current", "page");

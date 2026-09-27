@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { auth, signOut } from "@/auth";
 import { AppNav } from "@/components/app-nav";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getRegion } from "@/lib/region";
@@ -33,6 +34,7 @@ export default async function AppLayout({
             {region}
           </Badge>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <span className="text-sm text-muted-foreground">
               {session.user.email}
             </span>

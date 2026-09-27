@@ -126,6 +126,8 @@ const LIST_RESOURCES: Record<string, Resource> = {
   vehicles: "vehicles",
   insurance: "insurance",
   rate_card: "rate-card",
+  // OQ-54: the autofill route emits the company overview as boilerplate[]
+  boilerplate: "boilerplate",
 };
 
 const SOCIO_ECONOMIC = new Set(

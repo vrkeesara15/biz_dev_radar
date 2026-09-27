@@ -5,6 +5,7 @@ import * as React from "react";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 
 import { NoticeTypeBadge, ScoreBadge } from "@/components/opportunities/badges";
+import { MatchFeedback } from "@/components/opportunities/match-feedback";
 import { SourceLink } from "@/components/opportunities/attribution-footer";
 import { DueTime } from "@/components/opportunities/due-time";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,14 @@ const columns = column.columns([
     cell: (ctx) => {
       const item = ctx.row.original;
       return <SourceLink attribution={item.attribution} url={item.attribution.source_url} className="text-sm" />;
+    },
+  }),
+  column.display({
+    id: "feedback",
+    header: () => <span className="sr-only">Match feedback</span>,
+    cell: (ctx) => {
+      const item = ctx.row.original;
+      return <MatchFeedback opportunityId={item.id} title={item.title} />;
     },
   }),
 ]);

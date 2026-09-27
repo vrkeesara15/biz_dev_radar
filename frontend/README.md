@@ -29,6 +29,7 @@ All are listed with placeholders in `.env.example`; none are committed.
 | `NEXT_PUBLIC_API_URL` | Backend base URL used by the API client (default `http://localhost:8000`) |
 | `API_URL` | Spec source for `pnpm gen:api` when `../backend/openapi.json` is absent |
 | `NEXT_PUBLIC_REGION` | `US` (default) or `IN`; shown as the region badge in the top bar |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | RFC 8292 VAPID public key (the backend's `VAPID_PUBLIC_KEY`); without it the web-push button says push is not configured |
 
 A provider whose env is missing is simply not registered, so `pnpm build` and
 local dev work without any OAuth or SMTP credentials; the sign-in page shows
@@ -117,6 +118,36 @@ is not installed (`pnpm exec playwright install chromium`).
 - E2E: `e2e/opportunities.spec.ts` runs against `e2e/mock-api.ts`, which
   serves `e2e/fixtures/opportunities.json` / `opportunity-detail.json` with
   the API's filter semantics (Chromium pinned to Asia/Kolkata).
+
+## Home, alerts and notification settings (M4-16)
+
+- `/app` — the dashboard: High-fit today (`GET /opportunities?min_score=70&status=open,closing_soon`),
+  Due this week and Pipeline value by stage in USD and INR from
+  `GET /dashboard` (the M6 aggregate; a 404 renders an empty state), and the
+  alerts inbox of unread notifications with mark-read and deep links.
+- Top bar bell — `src/components/notifications/notification-bell.tsx`: unread
+  count polled every 60 s, the latest ten notifications, per-item and
+  mark-all-read, the payload's `deep_link` rewritten onto this origin, and the
+  signed one-click actions (Pursue / Watch / Pass with a reason / Assign).
+- `/app/settings/notifications` — channels per event (8 events x 5 channels),
+  quiet hours, IANA time zone with search, digest time, the instant and digest
+  minimum scores (the backend's ordering rule is enforced in the form), the
+  read-only email opt-out list and the web-push opt-in. The matrix reducer and
+  validation live in `src/lib/notifications/prefs.ts`; the zone list and search
+  in `src/lib/timezones.ts`.
+- Web push: `public/sw.js` is a push-only service worker; the opt-in flow is
+  `src/lib/notifications/push.ts`, and every unavailable state (no key, no
+  browser support, permission denied) explains itself rather than failing.
+- `/app/settings/saved-searches` — list, rename, delete, and per search the
+  alert rule (mode instant/digest, minimum score, channels, enabled) against
+  the M4-08 `/saved-searches` and `/alert-rules` contracts.
+- Match feedback: thumbs up/down with a "Not relevant because…" dialog on the
+  fit-score card and on every search row, posting to
+  `POST /opportunities/{id}/feedback`.
+- E2E: `e2e/dashboard.spec.ts` and `e2e/notifications.spec.ts` against
+  `e2e/mock-api.ts` (`notifications.json`, `dashboard.json` fixtures; the
+  `matches`, `dashboard`, `alertRules` and `feedback` options switch the
+  not-yet-merged routes on).
 
 ## Scripts
 

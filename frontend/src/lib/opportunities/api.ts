@@ -264,3 +264,67 @@ export function normalizeMatch(raw: unknown): Match | null {
     confidence: num(rationale.confidence),
   };
 }
+
+export const updateSavedSearch = (id: string, body: { name?: string; filters?: Record<string, string> }) =>
+  jsonRequest<SavedSearch>(`/api/v1/saved-searches/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+
+export const deleteSavedSearch = (id: string) =>
+  jsonRequest<unknown>(`/api/v1/saved-searches/${encodeURIComponent(id)}`, { method: "DELETE" });
+
+// --- alert rules (M4-08 contract) ---------------------------------------------
+
+/** SPEC 6: "each saved search is also an alert rule". */
+export type AlertRuleMode = "instant" | "digest";
+
+export type AlertRule = {
+  id: string;
+  saved_search_id: string | null;
+  profile_id: string | null;
+  name: string;
+  min_score: number | null;
+  /** Channel values from the notification-preferences enum. */
+  channels: string[];
+  mode: AlertRuleMode;
+  enabled: boolean;
+};
+
+export type AlertRulePatch = Partial<Pick<AlertRule, "name" | "min_score" | "channels" | "mode" | "enabled">>;
+
+export const ALERT_RULES_UNAVAILABLE_MESSAGE = "Alert rules arrive with the matching milestone";
+
+export const listAlertRules = () => jsonRequest<AlertRule[]>("/api/v1/alert-rules");
+
+export const createAlertRule = (body: Partial<AlertRule> & { name: string }) =>
+  jsonRequest<AlertRule>("/api/v1/alert-rules", { method: "POST", body: JSON.stringify(body) });
+
+export const updateAlertRule = (id: string, body: AlertRulePatch) =>
+  jsonRequest<AlertRule>(`/api/v1/alert-rules/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+
+// --- match feedback (M4-08 contract) ------------------------------------------
+
+/** SPEC 6 learning loop: thumbs up/down and "Not relevant because…". */
+export type FeedbackThumb = "up" | "down";
+
+export type MatchFeedback = {
+  id?: string;
+  opportunity_id?: string;
+  thumb: FeedbackThumb;
+  reason?: string | null;
+};
+
+export const FEEDBACK_UNAVAILABLE_MESSAGE = "Match feedback arrives with the matching milestone";
+
+export const sendMatchFeedback = (
+  opportunityId: string,
+  body: { thumb: FeedbackThumb; reason?: string | null },
+) =>
+  jsonRequest<MatchFeedback>(`/api/v1/opportunities/${encodeURIComponent(opportunityId)}/feedback`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });

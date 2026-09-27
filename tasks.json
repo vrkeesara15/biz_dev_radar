@@ -1409,7 +1409,7 @@
       "Settings > Notifications edits channels per event, quiet hours, tz, digest time, min scores",
       "Saved searches list and create from the search page; thumbs up/down with reason on matches"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-01",

@@ -239,7 +239,7 @@ export function DetailScreen({ id }: { id: string }) {
         </div>
 
         <div className="grid content-start gap-6">
-          <FitScoreCard match={match} />
+          <FitScoreCard match={match} opportunityId={record.id} title={record.title} />
 
           <Card data-testid="facts-card">
             <CardHeader>
