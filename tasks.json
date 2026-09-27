@@ -465,7 +465,7 @@
       "Capability PDF path parses text and extracts service lines, certifications, past performance candidates",
       "Tests use FakeLLM and recorded fixtures only"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M1-11",

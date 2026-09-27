@@ -120,6 +120,8 @@ class Settings(BaseSettings):
     # SAM.gov contract awards search (the successor of the retired ATOM feed); endpoint and
     # the NAICS list the daily job asks for are configuration, not code (OQ-40).
     sam_awards_api_url: str = "https://api.sam.gov/contract-awards/v1/search"
+    # SAM.gov Entity Management API (profile autofill by UEI, SPEC 4.1)
+    sam_entity_api_url: str = "https://api.sam.gov/entity-information/v3/entities"
     sam_awards_naics: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
     # polite HTTP client (SPEC 5.1): per-host req/s, backoff attempts, timeout

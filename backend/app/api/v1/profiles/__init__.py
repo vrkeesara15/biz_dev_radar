@@ -7,9 +7,10 @@ back is a no-op. Sub-resource routers are built by subresources.crud_router.
 
 from __future__ import annotations
 
-from app.api.v1.profiles import base, certifications, codes, proof, teaming
+from app.api.v1.profiles import autofill, base, certifications, codes, proof, teaming
 
 router = base.router
+router.include_router(autofill.router)
 router.include_router(codes.codes_router)
 router.include_router(codes.keywords_router)
 router.include_router(codes.service_lines_router)

@@ -183,6 +183,13 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("PUT", "/api/v1/profiles/{profile_id}"): lambda ctx: RouteCall(
         path_params={"profile_id": ctx.a.ids["profile"]}, json={"legal_name": "Renamed"}
     ),
+    # --- autofill (M1-10): read-only suggestions; B probing A's profile gets 404. Without a
+    # SAM key the UEI path answers 200 with a warning and no network call.
+    ("POST", "/api/v1/profiles/{profile_id}/autofill"): lambda ctx: RouteCall(
+        path_params={"profile_id": ctx.a.ids["profile"]},
+        json={"uei": "ALPHA1234567"},
+        role=Role.BID_MANAGER,
+    ),
     # --- profile sub-resources (M1-02..M1-05)
     **child_routes("codes", "code", {"scheme": "psc", "code": "D302"}, {"is_primary": True}),
     **child_routes(

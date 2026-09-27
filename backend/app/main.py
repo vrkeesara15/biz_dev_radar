@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.adapters.registry import load_builtin_adapters
+from app.agents.llm import llm_from_settings
 from app.api import health
 from app.api.audit_middleware import AuditMiddleware
 from app.api.middleware import RequestIdMiddleware
@@ -69,6 +70,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.scanner = scanner_from_settings(settings)
     # embedding provider (Voyage | fake) for the knowledge base and autofill (M1-12)
     app.state.embeddings = embeddings_from_settings(settings)
+    # LLM client for request-time agents (autofill); None without ANTHROPIC_API_KEY
+    app.state.llm = llm_from_settings(settings)
     # add_middleware wraps outward: the LAST added is the outermost. Final order:
     # RequestId (outermost) -> CORS -> Audit -> routes.
     app.add_middleware(AuditMiddleware, trust_proxy=settings.trust_proxy_headers)
