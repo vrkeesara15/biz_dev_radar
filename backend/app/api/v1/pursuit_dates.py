@@ -177,6 +177,7 @@ async def create_date(
         note=body.note,
     )
     session.add(row)
+    pursuit_svc.touch(pursuit)
     await session.flush()
     await reminder_svc.generate_for_date(session, row)
     await calendar_svc.sync_date(session, settings, row)
@@ -213,6 +214,7 @@ async def update_date(
     if body.note is not None:
         row.note = body.note
     row.source = SOURCE_USER
+    pursuit_svc.touch(await pursuit_svc.get_pursuit(session, pursuit_id))
     row.sequence += 1  # RFC 5545: a calendar only accepts a higher SEQUENCE (M6-04)
     await session.flush()
     await session.refresh(row)

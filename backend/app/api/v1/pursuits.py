@@ -103,6 +103,11 @@ class PursuitOut(BaseModel):
     owner_user_id: uuid.UUID | None
     decision: str | None
     internal_due_at: datetime | None
+    watch: bool
+    pass_reason: str | None
+    submitted_at: datetime | None
+    activity_at: datetime
+    matrix_recheck_required: bool
     created_by: uuid.UUID | None
     created_at: datetime
     updated_at: datetime
@@ -226,6 +231,11 @@ def pursuit_out(pursuit: Pursuit, costs: CostSnapshot, run: AgentRun | None) -> 
         owner_user_id=pursuit.owner_user_id,
         decision=pursuit.decision,
         internal_due_at=pursuit.internal_due_at,
+        watch=pursuit.watch,
+        pass_reason=pursuit.pass_reason,
+        submitted_at=pursuit.submitted_at,
+        activity_at=pursuit.activity_at,
+        matrix_recheck_required=pursuit.matrix_recheck_required,
         created_by=pursuit.created_by,
         created_at=pursuit.created_at,
         updated_at=pursuit.updated_at,
@@ -586,6 +596,8 @@ class PursuitListItem(BaseModel):
     pass_reason: str | None
     internal_due_at: TzDateOut | None
     submitted_at: datetime | None
+    activity_at: datetime
+    matrix_recheck_required: bool
     created_at: datetime
     updated_at: datetime
     # the notice behind the card, so the board needs no second round trip
@@ -631,6 +643,8 @@ def list_item_out(
         pass_reason=pursuit.pass_reason,
         internal_due_at=tz_fields_or_none(pursuit.internal_due_at, buyer_tz, user_tz),
         submitted_at=pursuit.submitted_at,
+        activity_at=pursuit.activity_at,
+        matrix_recheck_required=pursuit.matrix_recheck_required,
         created_at=pursuit.created_at,
         updated_at=pursuit.updated_at,
         title=opportunity.title,
@@ -683,12 +697,16 @@ async def open_pursuit(
     user: CurrentUser,
     opportunity_id: uuid.UUID,
     profile_id: uuid.UUID | None,
+    *,
+    require_biddable: bool = False,
 ) -> tuple[Pursuit, Opportunity, bool]:
     """Create or reuse the tenant's pursuit of this notice with the chosen profile."""
     opportunity = await session.get(Opportunity, opportunity_id)
     if opportunity is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="opportunity not found")
     profile = await pursuit_svc.resolve_profile(session, user, profile_id)
+    if require_biddable:  # SPEC 4.1: an expired SAM / DSC blocks bidding (M6-06)
+        pursuit_svc.ensure_not_blocked(profile)
     pursuit, created = await pursuit_svc.get_or_create(session, profile.id, opportunity.id, user)
     if created or pursuit.internal_due_at is None:
         pursuit.internal_due_at = pursuit_svc.internal_due_at(opportunity.response_due_at)
@@ -714,9 +732,10 @@ async def pursue_opportunity(
     watch flag and re-enqueues the pipeline.
     """
     pursuit, opportunity, created = await open_pursuit(
-        session, user, opportunity_id, body.profile_id
+        session, user, opportunity_id, body.profile_id, require_biddable=True
     )
     pursuit.watch = False
+    pursuit_svc.touch(pursuit)
     if stages.is_terminal(pursuit.stage):
         pursuit_svc.move_stage(pursuit, stages.STAGE_QUALIFYING, role=user.role)
         pursuit.pass_reason = None
@@ -756,6 +775,7 @@ async def watch_opportunity(
         session, user, opportunity_id, body.profile_id
     )
     pursuit.watch = True
+    pursuit_svc.touch(pursuit)
     request.state.audit = AuditHint(
         action="pursuit.watched",
         object_type="pursuit",
@@ -901,6 +921,7 @@ async def update_pursuit(
     if body.watch is not None:
         pursuit.watch = body.watch
         meta["watch"] = body.watch
+    pursuit_svc.touch(pursuit)
     if body.stage is not None and pursuit_svc.move_stage(pursuit, body.stage, role=user.role):
         meta["stage"] = {"from": before, "to": pursuit.stage}
     request.state.audit = AuditHint(

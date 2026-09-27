@@ -262,6 +262,7 @@ async def create_task(
         created_by=user.id,
     )
     session.add(row)
+    pursuit_svc.touch(pursuit)
     await session.flush()
     request.state.audit = AuditHint(
         action="pursuit.task_created",
@@ -308,6 +309,8 @@ async def update_task(
         else:
             collab_svc.reopen(row)
         meta["status"] = row.status
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    pursuit_svc.touch(pursuit)
     await session.flush()
     await session.refresh(row)
     request.state.audit = AuditHint(
@@ -390,6 +393,7 @@ async def create_comment(
         author_user_id=user.id,
     )
     session.add(row)
+    pursuit_svc.touch(pursuit)
     await session.flush()
     request.state.audit = AuditHint(
         action="pursuit.comment_created",

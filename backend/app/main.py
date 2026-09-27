@@ -23,6 +23,7 @@ from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
 from app.observability import configure_observability
 from app.services.billing import providers_from_settings
+from app.services.checks import install_matrix_recheck
 from app.services.embeddings import embeddings_from_settings
 from app.services.enrichment import install_enrichment
 from app.services.events import get_event_bus
@@ -49,6 +50,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     install_opportunity_embeddings(settings, get_event_bus(), embeddings=app.state.embeddings)
     # SPEC 9: an amendment that moves the deadline re-dates every pursuit of the notice
     install_key_date_recalc(get_event_bus(), get_database())
+    # SPEC 9: an amendment after drafting started forces a matrix re-check (M6-06)
+    install_matrix_recheck(settings, get_event_bus(), get_database())
     yield
 
 

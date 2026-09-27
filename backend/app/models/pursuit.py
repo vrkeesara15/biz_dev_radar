@@ -77,6 +77,15 @@ class Pursuit(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     # why the tenant passed (POST /opportunities/{id}/pass); feeds match feedback later
     pass_reason: Mapped[str | None] = mapped_column(Text)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # SPEC 9 "stale pursuits": the last time anyone (or any agent) touched this pursuit.
+    # Bumped by app.services.pursuits.touch from every stage move, task, comment and date.
+    activity_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
+    )
+    # SPEC 9: an amendment on a notice whose pursuit is past drafting forces a re-check
+    matrix_recheck_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=false()
+    )
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )

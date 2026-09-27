@@ -30,6 +30,7 @@ from app.core.config import Settings, get_settings
 from app.core.db import Database, get_database
 from app.services import sources as source_svc
 from app.services.awards import run_awards_enrichment
+from app.services.checks import install_matrix_recheck
 from app.services.enrichment import install_enrichment
 from app.services.events import EventBus, get_event_bus
 from app.services.gem_extraction import install_gem_extraction
@@ -113,6 +114,7 @@ async def _run_with_fresh_database(source_id: str, mode: str) -> dict[str, Any]:
         install_enrichment(settings, db, storage, bus)
         install_opportunity_embeddings(settings, bus)
         install_key_date_recalc(bus, db)
+        install_matrix_recheck(settings, bus, db)
         return await run_source_job(source_id, database=db, settings=settings, bus=bus, mode=mode)
     finally:
         await db.dispose()

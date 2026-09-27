@@ -22,6 +22,7 @@ from app.api.deps import CurrentUser
 from app.core import pursuit_stages as stages
 from app.core.compliance import ARTIFACT_KINDS, CREATED_BY_AGENT
 from app.core.cost_guard import raise_cap
+from app.core.expiry import BLOCKING_REGISTRATIONS, blocked_reason
 from app.core.roles import Role
 from app.models import AgentRun, CompanyProfile, Opportunity, Pursuit, PursuitArtifact, Tenant
 from app.services.users import ensure_user_membership
@@ -192,6 +193,24 @@ async def resolve_profile(
     return rows[0]
 
 
+def touch(pursuit: Pursuit, *, now: datetime | None = None) -> None:
+    """Record that somebody worked on this pursuit (SPEC 9 stale-pursuit check, M6-06)."""
+    pursuit.activity_at = now or datetime.now(UTC)
+
+
+def ensure_not_blocked(profile: CompanyProfile) -> None:
+    """SPEC 4.1: an expired SAM registration or DSC blocks bidding on this profile."""
+    if profile.blocked_for_bids:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={
+                "error": "profile_blocked_for_bids",
+                "profile_id": str(profile.id),
+                "reason": blocked_reason(list(BLOCKING_REGISTRATIONS)),
+            },
+        )
+
+
 def stage_conflict(pursuit: Pursuit, target: str, reason: str) -> HTTPException:
     return HTTPException(
         status.HTTP_409_CONFLICT,
@@ -225,6 +244,7 @@ def move_stage(
     if pursuit.stage == target:
         return False
     pursuit.stage = target
+    touch(pursuit, now=moment)
     if target == stages.STAGE_SUBMITTED:
         pursuit.submitted_at = moment
     return True

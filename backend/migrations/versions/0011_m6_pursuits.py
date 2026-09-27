@@ -11,7 +11,9 @@ M6-01 extends `pursuits` (stage CHECK, watch, pass_reason, submitted_at, decided
 decided_at). M6-02 adds `pursuit_dates`; M6-07 adds `pursuit_tasks` and
 `pursuit_comments`; M6-04 adds `calendar_connections`, `calendar_events` and
 `user_notification_prefs.calendar_token`; M6-05 adds `users.phone_e164` /
-`users.phone_verified_at`; M6-03 adds `reminders`.
+`users.phone_verified_at`; M6-03 adds `reminders`; M6-06 adds
+`company_profiles.blocked_for_bids`, `pursuits.activity_at` and
+`pursuits.matrix_recheck_required`.
 """
 
 from collections.abc import Sequence
@@ -76,12 +78,16 @@ def upgrade() -> None:
     _upgrade_calendar()
     _upgrade_whatsapp()
     _upgrade_reminders()
+    _upgrade_recurring_checks()
     for table in TENANT_TABLES:
         grant_app(op, table)
         enable_rls(op, table)
 
 
 def downgrade() -> None:
+    op.drop_column("company_profiles", "blocked_for_bids")
+    op.drop_column("pursuits", "matrix_recheck_required")
+    op.drop_column("pursuits", "activity_at")
     op.drop_column("users", "phone_verified_at")
     op.drop_column("users", "phone_e164")
     op.drop_column("user_notification_prefs", "calendar_token")
@@ -117,6 +123,7 @@ def _upgrade_pursuits() -> None:
 
 
 def _downgrade_pursuits() -> None:
+    # ix_pursuits_activity_at goes with its column in _downgrade_recurring_checks
     op.drop_index("ix_pursuits_owner_user_id", table_name="pursuits")
     op.drop_index("ix_pursuits_stage", table_name="pursuits")
     op.drop_constraint("stage", "pursuits", type_="check")
@@ -387,3 +394,28 @@ def _upgrade_reminders() -> None:
     op.create_index("ix_reminders_tenant_id", "reminders", ["tenant_id"])
     op.create_index("ix_reminders_pursuit_date_id", "reminders", ["pursuit_date_id"])
     op.create_index("ix_reminders_pending", "reminders", ["sent_at", "due_at"])
+
+
+# --- M6-06 recurring checks ------------------------------------------------------------------
+
+
+def _upgrade_recurring_checks() -> None:
+    # SPEC 4.1: an expired SAM registration (US) or DSC (IN) blocks bidding
+    op.add_column(
+        "company_profiles",
+        sa.Column(
+            "blocked_for_bids", sa.Boolean(), nullable=False, server_default=sa.text("false")
+        ),
+    )
+    # SPEC 9: "stale pursuits with no activity for 5 days"
+    op.add_column("pursuits", _ts("activity_at", nullable=False, default_now=True))
+    op.add_column(
+        "pursuits",
+        sa.Column(
+            "matrix_recheck_required",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.text("false"),
+        ),
+    )
+    op.create_index("ix_pursuits_activity_at", "pursuits", ["activity_at"])
