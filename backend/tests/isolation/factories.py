@@ -43,9 +43,12 @@ from app.models import (
     BillingEventRecord,
     BoilerplateBlock,
     Certification,
+    Comment,
     CompanyProfile,
     Consent,
     DataRequest,
+    Draft,
+    DraftVersion,
     File,
     Insurance,
     Integration,
@@ -61,6 +64,7 @@ from app.models import (
     RateCardEntry,
     Registration,
     ServiceLine,
+    Task,
     TeamingPartner,
     UsageLedger,
     UserNotificationPrefs,
@@ -350,6 +354,47 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/pursuits/{pursuit_id}/packet"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
     ),
+    # --- pursuit workspace (M5-16): drafts, approvals and comments
+    ("GET", "/api/v1/pursuits/{pursuit_id}/drafts"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "section_id": ctx.a.ids["draft_section"],
+        }
+    ),
+    ("PUT", "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "section_id": ctx.a.ids["draft_section"],
+        },
+        json={"body_html": "<p>isolation probe</p>", "base_version": 1},
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}/approve"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "section_id": ctx.a.ids["draft_section"],
+        }
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/comments"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/comments"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={
+            "target_type": "draft",
+            "target_id": ctx.a.ids["draft"],
+            "body": "isolation probe",
+        },
+        owner_expect=frozenset({201}),
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/comments/{comment_id}/resolve"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "comment_id": ctx.a.ids["comment"],
+        }
+    ),
     # inline so no broker is needed; B's call must 404 before any run row is created
     ("POST", "/api/v1/pursuits/{pursuit_id}/agents/run"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]},
@@ -604,6 +649,42 @@ async def build_context(database: Database) -> IsolationContext:
         )
         session.add(pursuit)
         await session.flush()
+        draft = Draft(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            section_id="technical-approach",
+            title="Alpha technical approach",
+            volume="Volume I - Technical",
+        )
+        session.add(draft)
+        await session.flush()
+        draft_version = DraftVersion(
+            tenant_id=ta.id,
+            draft_id=draft.id,
+            version=1,
+            body_html="<p>alpha draft body</p>",
+            body_text="alpha draft body",
+            author="agent",
+        )
+        session.add(draft_version)
+        await session.flush()
+        draft.current_version_id = draft_version.id
+        comment = Comment(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            target_type="draft",
+            target_id=draft.id,
+            body="alpha secret comment",
+            author_user_id=ua.id,
+        )
+        task = Task(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            title="Alpha secret task",
+            ref={"kind": "needs_input", "section_id": "technical-approach"},
+        )
+        session.add_all([comment, task])
+        await session.flush()
         a = TenantCtx(
             id=ta.id,
             owner_id=ua.id,
@@ -645,6 +726,13 @@ async def build_context(database: Database) -> IsolationContext:
                 "rate_card_category": "Alpha Architect",
                 "notification_prefs": str(prefs.id),
                 "pursuit": str(pursuit.id),
+                "draft": str(draft.id),
+                "draft_section": draft.section_id,
+                "draft_version": str(draft_version.id),
+                "draft_body": "alpha draft body",
+                "comment": str(comment.id),
+                "comment_body": "alpha secret comment",
+                "task": str(task.id),
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",

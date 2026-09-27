@@ -31,6 +31,7 @@ TENANT_TABLES = (
     "drafts",
     "draft_versions",
     "tasks",
+    "comments",
 )
 # plan_limits rows added by this milestone (0001 seeds PLAN_DEFAULTS on a fresh database,
 # so the insert is idempotent for databases migrated before this revision existed).
@@ -258,6 +259,22 @@ def upgrade() -> None:
     )
     for col in ("tenant_id", "pursuit_id"):
         op.create_index(f"ix_tasks_{col}", "tasks", [col])
+
+    # --- review comments (M5-16) ------------------------------------------------------
+    op.create_table(
+        "comments",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        sa.Column("target_type", sa.String(16), nullable=False),
+        sa.Column("target_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("body", sa.Text(), nullable=False),
+        _fk("author_user_id", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("resolved_at"),
+        _ts("created_at", nullable=False, default_now=True),
+    )
+    for col in ("tenant_id", "pursuit_id", "target_id"):
+        op.create_index(f"ix_comments_{col}", "comments", [col])
 
     for table in TENANT_TABLES:
         grant_app(op, table)

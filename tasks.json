@@ -1716,7 +1716,7 @@
       "Comments on drafts and compliance items; reviewer role can comment and approve only",
       "Draft reads written to audit_log; isolation factories registered"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-17",

@@ -140,3 +140,31 @@ class Task(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     ref: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
+
+
+COMMENT_DRAFT = "draft"
+COMMENT_COMPLIANCE_ITEM = "compliance_item"
+COMMENT_SCORECARD = "scorecard"
+COMMENT_TARGETS: tuple[str, ...] = (COMMENT_DRAFT, COMMENT_COMPLIANCE_ITEM, COMMENT_SCORECARD)
+
+
+class Comment(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
+    """A review comment on a draft section, a compliance item or the scorecard (SPEC 3:
+    a reviewer may comment and approve, nothing else; SPEC 10.2 `comments`)."""
+
+    __tablename__ = "comments"
+
+    pursuit_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("pursuits.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # draft | compliance_item | scorecard
+    target_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    target_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    author_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
