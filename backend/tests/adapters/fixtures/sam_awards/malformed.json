@@ -1,0 +1,66 @@
+{
+ "totalRecords": null,
+ "limit": 100,
+ "offset": 0,
+ "awardsData": [
+  {
+   "awardId": "W911NF20C0007-0",
+   "piid": "W911NF20C0007",
+   "modificationNumber": "0",
+   "solicitationNumber": "W911NF-26-R-0007",
+   "awardType": "Definitive Contract",
+   "signedDate": "2020-09-28",
+   "effectiveDate": "2020-10-01",
+   "currentCompletionDate": "2027-06-30",
+   "ultimateCompletionDate": "2027-06-30",
+   "obligatedAmount": "18450000.00",
+   "baseAndAllOptionsValue": "24900000.00",
+   "numberOfOffersReceived": "5",
+   "extentCompeted": "Full and Open Competition",
+   "typeOfSetAside": "SBA",
+   "naicsCode": "541512",
+   "productOrServiceCode": "DA01",
+   "agencyName": "DEPT OF THE ARMY",
+   "departmentName": "DEPT OF DEFENSE",
+   "contractingOfficeName": "ACC-APG RTP DIV",
+   "fundingAgencyName": "DEPT OF THE ARMY",
+   "vendor": {
+    "legalBusinessName": "Northwind Federal Systems LLC",
+    "ueiSAM": "ZQ1N8FAKEUEI",
+    "cageCode": "7ABC1",
+    "location": {
+     "city": "Reston",
+     "state": "VA",
+     "zip": "20190",
+     "country": "USA"
+    }
+   },
+   "descriptionOfRequirement": "ENTERPRISE CLOUD MIGRATION AND MANAGED SERVICES",
+   "placeOfPerformance": {
+    "city": "Durham",
+    "state": "NC",
+    "zip": "27703",
+    "country": "USA"
+   },
+   "uiLink": "https://sam.gov/awards/W911NF20C0007/view"
+  },
+  {
+   "piid": null,
+   "awardId": null,
+   "vendor": "not-an-object"
+  },
+  "junk",
+  {
+   "awardId": "BAD-AWARD",
+   "signedDate": "someday",
+   "obligatedAmount": "lots",
+   "ultimateCompletionDate": 20270630,
+   "naicsCode": [
+    "541512"
+   ],
+   "vendor": {
+    "legalBusinessName": 7
+   }
+  }
+ ]
+}

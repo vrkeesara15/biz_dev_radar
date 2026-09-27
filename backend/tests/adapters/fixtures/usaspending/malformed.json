@@ -1,0 +1,52 @@
+{
+ "spending_level": "awards",
+ "limit": 100,
+ "page_metadata": {
+  "page": 1,
+  "hasNext": false
+ },
+ "results": [
+  {
+   "internal_id": 279969760,
+   "Award ID": "36C10B22N0051EHRM",
+   "Recipient Name": "ORACLE HEALTH GOVERNMENT SERVICES, INC.",
+   "Award Amount": 2120623737.86,
+   "Awarding Agency": "Department of Veterans Affairs",
+   "Awarding Sub Agency": "Department of Veterans Affairs",
+   "Start Date": "2022-09-28",
+   "End Date": "2027-03-31",
+   "NAICS": {
+    "code": "541512",
+    "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+   },
+   "PSC": {
+    "code": "DA01",
+    "description": "IT AND TELECOM - BUSINESS APPLICATION/APPLICATION DEVELOPMENT SUPPORT SERVICES (LABOR)"
+   },
+   "Description": "EHRM WAVES K, L, M (VISN 23) AND N, O (VISN 15) DEPLOYMENTS",
+   "recipient_id": "9232b26d-789d-bdd2-5a6d-28714f1dfa2c-C",
+   "Last Modified Date": "2026-09-24 07:14:33",
+   "awarding_agency_id": 561,
+   "agency_slug": "department-of-veterans-affairs",
+   "generated_internal_id": "CONT_AWD_36C10B22N0051EHRM_3600_36C10B18D5000_3600"
+  },
+  {
+   "Award ID": null,
+   "generated_internal_id": null
+  },
+  "x",
+  {
+   "Award ID": "BAD-1",
+   "generated_internal_id": "CONT_AWD_BAD",
+   "Award Amount": "abc",
+   "Start Date": "not a date",
+   "End Date": 42,
+   "NAICS": "541512",
+   "PSC": [
+    "D302"
+   ],
+   "Awarding Agency": null
+  }
+ ],
+ "messages": []
+}

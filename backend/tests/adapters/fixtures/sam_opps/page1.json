@@ -1,0 +1,339 @@
+{
+  "totalRecords": 6,
+  "limit": 5,
+  "offset": 0,
+  "opportunitiesData": [
+    {
+      "noticeId": "3f9c1a2b7e8d4c5a9b0e1f2a3b4c5d6e",
+      "title": "Enterprise Cloud Migration and Managed Services",
+      "solicitationNumber": "W911NF-26-R-0007",
+      "fullParentPathName": "DEPT OF DEFENSE.DEPT OF THE ARMY.AMC.ACC.ACC-APG.ACC-APG RTP DIV",
+      "fullParentPathCode": "097.2100.W6QK.W911NF",
+      "postedDate": "2026-09-20",
+      "type": "Presolicitation",
+      "baseType": "Presolicitation",
+      "archiveType": "auto15",
+      "archiveDate": "2026-11-04",
+      "typeOfSetAsideDescription": "Total Small Business Set-Aside (FAR 19.5)",
+      "typeOfSetAside": "SBA",
+      "responseDeadLine": "2026-10-20T14:00:00-04:00",
+      "naicsCode": "541512",
+      "naicsCodes": ["541512"],
+      "classificationCode": "DA01",
+      "active": "Yes",
+      "award": null,
+      "pointOfContact": [
+        {
+          "fax": null,
+          "type": "primary",
+          "email": "contracting.officer@army.mil",
+          "phone": "9195491234",
+          "title": "Contracting Officer",
+          "fullName": "Alex Contracting"
+        },
+        {
+          "fax": null,
+          "type": "secondary",
+          "email": "specialist@army.mil",
+          "phone": null,
+          "title": "Contract Specialist",
+          "fullName": "Sam Specialist"
+        }
+      ],
+      "description": "https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=3f9c1a2b7e8d4c5a9b0e1f2a3b4c5d6e",
+      "organizationType": "OFFICE",
+      "officeAddress": {
+        "zipcode": "27709",
+        "city": "RESEARCH TRIANGLE PARK",
+        "countryCode": "USA",
+        "state": "NC"
+      },
+      "placeOfPerformance": {
+        "streetAddress": "4300 S Miami Blvd",
+        "city": { "code": "19260", "name": "Durham" },
+        "state": { "code": "NC", "name": "North Carolina" },
+        "zip": "27703",
+        "country": { "code": "USA", "name": "UNITED STATES" }
+      },
+      "additionalInfoLink": null,
+      "uiLink": "https://sam.gov/opp/3f9c1a2b7e8d4c5a9b0e1f2a3b4c5d6e/view",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://api.sam.gov/prod/opportunities/v2/search?noticeid=3f9c1a2b7e8d4c5a9b0e1f2a3b4c5d6e&limit=1",
+          "hreflang": null,
+          "media": null,
+          "title": null,
+          "type": null,
+          "deprecation": null
+        }
+      ],
+      "resourceLinks": [
+        "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/0a1b2c3d4e5f60718293a4b5c6d7e8f9/download?&token=",
+        "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/1b2c3d4e5f60718293a4b5c6d7e8f9a0/download?&token="
+      ]
+    },
+    {
+      "noticeId": "4a0d2b3c8f9e5d6b0c1f2a3b4c5d6e7f",
+      "title": "Enterprise Cloud Migration and Managed Services",
+      "solicitationNumber": "W911NF-26-R-0007",
+      "fullParentPathName": "DEPT OF DEFENSE.DEPT OF THE ARMY.AMC.ACC.ACC-APG.ACC-APG RTP DIV",
+      "fullParentPathCode": "097.2100.W6QK.W911NF",
+      "postedDate": "2026-09-24",
+      "type": "Solicitation",
+      "baseType": "Presolicitation",
+      "archiveType": "auto15",
+      "archiveDate": "2026-11-11",
+      "typeOfSetAsideDescription": "Total Small Business Set-Aside (FAR 19.5)",
+      "typeOfSetAside": "SBA",
+      "responseDeadLine": "2026-10-27T14:00:00-04:00",
+      "naicsCode": "541512",
+      "naicsCodes": ["541512", "541519"],
+      "classificationCode": "DA01",
+      "active": "Yes",
+      "award": null,
+      "pointOfContact": [
+        {
+          "fax": null,
+          "type": "primary",
+          "email": "contracting.officer@army.mil",
+          "phone": "9195491234",
+          "title": "Contracting Officer",
+          "fullName": "Alex Contracting"
+        }
+      ],
+      "description": "https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=4a0d2b3c8f9e5d6b0c1f2a3b4c5d6e7f",
+      "organizationType": "OFFICE",
+      "officeAddress": {
+        "zipcode": "27709",
+        "city": "RESEARCH TRIANGLE PARK",
+        "countryCode": "USA",
+        "state": "NC"
+      },
+      "placeOfPerformance": {
+        "city": { "code": "19260", "name": "Durham" },
+        "state": { "code": "NC", "name": "North Carolina" },
+        "zip": "27703",
+        "country": { "code": "USA", "name": "UNITED STATES" }
+      },
+      "additionalInfoLink": null,
+      "uiLink": "https://sam.gov/opp/4a0d2b3c8f9e5d6b0c1f2a3b4c5d6e7f/view",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://api.sam.gov/prod/opportunities/v2/search?noticeid=4a0d2b3c8f9e5d6b0c1f2a3b4c5d6e7f&limit=1",
+          "hreflang": null,
+          "media": null,
+          "title": null,
+          "type": null,
+          "deprecation": null
+        }
+      ],
+      "resourceLinks": [
+        "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/0a1b2c3d4e5f60718293a4b5c6d7e8f9/download?&token=",
+        "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/1b2c3d4e5f60718293a4b5c6d7e8f9a0/download?&token=",
+        "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/2c3d4e5f60718293a4b5c6d7e8f9a0b1/download?&token="
+      ]
+    },
+    {
+      "noticeId": "5b1e3c4d9a0f6e7c1d2a3b4c5d6e7f80",
+      "title": "IT Help Desk Support Services - Combined Synopsis/Solicitation",
+      "solicitationNumber": "47QFCA26Q0042",
+      "fullParentPathName": "GENERAL SERVICES ADMINISTRATION.FEDERAL ACQUISITION SERVICE.GSA/FAS CENTER FOR IT SCHEDULE PROG",
+      "fullParentPathCode": "047.4732.47QTCA",
+      "postedDate": "2026-09-22",
+      "type": "Combined Synopsis/Solicitation",
+      "baseType": "Combined Synopsis/Solicitation",
+      "archiveType": "autocustom",
+      "archiveDate": "2026-10-30",
+      "typeOfSetAsideDescription": null,
+      "typeOfSetAside": null,
+      "responseDeadLine": "2026-10-06T17:00:00-04:00",
+      "naicsCode": "541519",
+      "naicsCodes": ["541519"],
+      "classificationCode": "DJ01",
+      "active": "Yes",
+      "award": null,
+      "pointOfContact": [
+        {
+          "fax": null,
+          "type": "primary",
+          "email": "buyer@gsa.gov",
+          "phone": "2025551212",
+          "title": "Contract Specialist",
+          "fullName": "Jordan Buyer"
+        }
+      ],
+      "description": "https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=5b1e3c4d9a0f6e7c1d2a3b4c5d6e7f80",
+      "organizationType": "OFFICE",
+      "officeAddress": {
+        "zipcode": "20405",
+        "city": "WASHINGTON",
+        "countryCode": "USA",
+        "state": "DC"
+      },
+      "placeOfPerformance": {
+        "city": { "code": "50000", "name": "Washington" },
+        "state": { "code": "DC", "name": "District of Columbia" },
+        "zip": "20405",
+        "country": { "code": "USA", "name": "UNITED STATES" }
+      },
+      "additionalInfoLink": null,
+      "uiLink": "https://sam.gov/opp/5b1e3c4d9a0f6e7c1d2a3b4c5d6e7f80/view",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://api.sam.gov/prod/opportunities/v2/search?noticeid=5b1e3c4d9a0f6e7c1d2a3b4c5d6e7f80&limit=1",
+          "hreflang": null,
+          "media": null,
+          "title": null,
+          "type": null,
+          "deprecation": null
+        }
+      ],
+      "resourceLinks": [
+        "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/3d4e5f60718293a4b5c6d7e8f9a0b1c2/download?&token="
+      ]
+    },
+    {
+      "noticeId": "6c2f4d5e0b1a7f8d2e3b4c5d6e7f8091",
+      "title": "Sources Sought: Data Analytics Platform Modernization",
+      "solicitationNumber": "36C10B26Q0311",
+      "fullParentPathName": "VETERANS AFFAIRS, DEPARTMENT OF.VETERANS AFFAIRS, DEPARTMENT OF.TECHNOLOGY ACQUISITION CENTER NJ (36C10B)",
+      "fullParentPathCode": "036.3600.36C10B",
+      "postedDate": "2026-09-23 09:15:00",
+      "type": "Sources Sought",
+      "baseType": "Sources Sought",
+      "archiveType": "auto15",
+      "archiveDate": "2026-10-23",
+      "typeOfSetAsideDescription": "Service-Disabled Veteran-Owned Small Business (SDVOSB) Set-Aside (FAR 19.14)",
+      "typeOfSetAside": "SDVOSBC",
+      "responseDeadLine": "2026-10-08T12:00:00-04:00",
+      "naicsCode": "541511",
+      "naicsCodes": ["541511"],
+      "classificationCode": "DA10",
+      "active": "Yes",
+      "award": null,
+      "pointOfContact": [
+        {
+          "fax": null,
+          "type": "primary",
+          "email": "tac.buyer@va.gov",
+          "phone": null,
+          "title": null,
+          "fullName": "Taylor Buyer"
+        }
+      ],
+      "description": "https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=6c2f4d5e0b1a7f8d2e3b4c5d6e7f8091",
+      "organizationType": "OFFICE",
+      "officeAddress": {
+        "zipcode": "07724",
+        "city": "EATONTOWN",
+        "countryCode": "USA",
+        "state": "NJ"
+      },
+      "placeOfPerformance": {
+        "country": { "code": "USA", "name": "UNITED STATES" }
+      },
+      "additionalInfoLink": null,
+      "uiLink": "https://sam.gov/opp/6c2f4d5e0b1a7f8d2e3b4c5d6e7f8091/view",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://api.sam.gov/prod/opportunities/v2/search?noticeid=6c2f4d5e0b1a7f8d2e3b4c5d6e7f8091&limit=1",
+          "hreflang": null,
+          "media": null,
+          "title": null,
+          "type": null,
+          "deprecation": null
+        }
+      ],
+      "resourceLinks": null
+    },
+    {
+      "noticeId": "7d3a5e6f1c2b8a9e3f4c5d6e7f8091a2",
+      "title": "Historic Office Renovation",
+      "solicitationNumber": " 47PF0018R0023 ",
+      "fullParentPathName": "GENERAL SERVICES ADMINISTRATION.PUBLIC BUILDINGS SERVICE.PBS R5",
+      "fullParentPathCode": "047.4740.47PF00",
+      "postedDate": "2026-09-19",
+      "type": "Award Notice",
+      "baseType": "Combined Synopsis/Solicitation",
+      "archiveType": "manual",
+      "archiveDate": null,
+      "typeOfSetAsideDescription": null,
+      "typeOfSetAside": null,
+      "responseDeadLine": null,
+      "naicsCode": "236220",
+      "naicsCodes": ["236220"],
+      "classificationCode": "Z",
+      "active": "Yes",
+      "award": {
+        "date": "2026-09-19",
+        "number": "47PF0026C0066",
+        "amount": "800620",
+        "awardee": {
+          "name": "D.G. Beyer, Inc.",
+          "location": {
+            "streetAddress": "3080 S Calhoun Rd.",
+            "city": { "code": "56375", "name": "New Berlin" },
+            "state": { "code": "WI" },
+            "zip": "53151",
+            "country": { "code": "USA" }
+          },
+          "ueiSAM": "025114695AST"
+        }
+      },
+      "pointOfContact": [
+        {
+          "fax": null,
+          "type": "primary",
+          "email": "jesse.jones@gsa.gov",
+          "phone": "2174941263",
+          "title": "Contracting Officer ",
+          "fullName": "Jesse L. Jones"
+        }
+      ],
+      "description": "https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=7d3a5e6f1c2b8a9e3f4c5d6e7f8091a2",
+      "organizationType": "OFFICE",
+      "officeAddress": {
+        "zipcode": "60604",
+        "city": "CHICAGO",
+        "countryCode": "USA",
+        "state": "IL"
+      },
+      "placeOfPerformance": {
+        "streetAddress": "517 E Wisconsin Ave",
+        "city": { "code": "53000", "name": "Milwaukee" },
+        "state": { "code": "WI" },
+        "zip": "53202",
+        "country": { "code": "USA" }
+      },
+      "additionalInfoLink": null,
+      "uiLink": "https://sam.gov/opp/7d3a5e6f1c2b8a9e3f4c5d6e7f8091a2/view",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://api.sam.gov/prod/opportunities/v2/search?noticeid=7d3a5e6f1c2b8a9e3f4c5d6e7f8091a2&limit=1",
+          "hreflang": null,
+          "media": null,
+          "title": null,
+          "type": null,
+          "deprecation": null
+        }
+      ],
+      "resourceLinks": null
+    }
+  ],
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://api.sam.gov/prod/opportunities/v2/search?limit=5&offset=0&postedFrom=08/27/2026&postedTo=09/26/2026",
+      "hreflang": null,
+      "media": null,
+      "title": null,
+      "type": null,
+      "deprecation": null
+    }
+  ]
+}

@@ -105,3 +105,11 @@ async def api_client(app, clean_db):  # type: ignore[no-untyped-def]
         base_url="http://test",
     ) as ac:
         yield ac
+
+
+@pytest.fixture()
+def fake_llm():  # type: ignore[no-untyped-def]
+    """Queued-response LLM double (tests/llm_fake.py); never touches the network."""
+    from tests.llm_fake import FakeLLM
+
+    return FakeLLM()

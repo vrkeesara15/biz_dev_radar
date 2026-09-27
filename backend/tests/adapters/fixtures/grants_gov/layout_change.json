@@ -1,0 +1,23 @@
+{
+ "errorcode": 0,
+ "msg": "ok",
+ "data": {
+  "total": 1,
+  "results": [
+   {
+    "id": "332894",
+    "number": "W911NF21S0009",
+    "title": "LPS Qubit Collaboratory (LQC)",
+    "agencyCode": "DOD-AMC",
+    "agency": "Dept of the Army -- Materiel Command",
+    "openDate": "04/16/2021",
+    "closeDate": "04/30/2027",
+    "oppStatus": "posted",
+    "docType": "synopsis",
+    "cfdaList": [
+     "12.431"
+    ]
+   }
+  ]
+ }
+}

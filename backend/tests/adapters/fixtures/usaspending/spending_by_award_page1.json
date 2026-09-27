@@ -1,0 +1,159 @@
+{
+  "spending_level": "awards",
+  "limit": 6,
+  "results": [
+    {
+      "internal_id": 279969760,
+      "Award ID": "36C10B22N0051EHRM",
+      "Recipient Name": "ORACLE HEALTH GOVERNMENT SERVICES, INC.",
+      "Award Amount": 2120623737.86,
+      "Awarding Agency": "Department of Veterans Affairs",
+      "Awarding Sub Agency": "Department of Veterans Affairs",
+      "Start Date": "2022-09-28",
+      "End Date": "2027-03-31",
+      "NAICS": {
+        "code": "541512",
+        "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+      },
+      "PSC": {
+        "code": "DA01",
+        "description": "IT AND TELECOM - BUSINESS APPLICATION/APPLICATION DEVELOPMENT SUPPORT SERVICES (LABOR)"
+      },
+      "Description": "EHRM WAVES K, L, M (VISN 23) AND N, O (VISN 15) DEPLOYMENTS",
+      "recipient_id": "9232b26d-789d-bdd2-5a6d-28714f1dfa2c-C",
+      "Last Modified Date": "2026-09-24 07:14:33",
+      "awarding_agency_id": 561,
+      "agency_slug": "department-of-veterans-affairs",
+      "generated_internal_id": "CONT_AWD_36C10B22N0051EHRM_3600_36C10B18D5000_3600"
+    },
+    {
+      "internal_id": 296763037,
+      "Award ID": "DOCDG133E09CN0094",
+      "Recipient Name": "L3HARRIS TECHNOLOGIES, INC.",
+      "Award Amount": 1826088581.86,
+      "Awarding Agency": "Department of Commerce",
+      "Awarding Sub Agency": "National Oceanic and Atmospheric Administration",
+      "Start Date": "2009-05-27",
+      "End Date": "2024-01-31",
+      "NAICS": {
+        "code": "541512",
+        "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+      },
+      "PSC": {
+        "code": "D302",
+        "description": "IT AND TELECOM- SYSTEMS DEVELOPMENT"
+      },
+      "Description": "THE PURPOSE OF THIS CONTRACT IS TO DEVELOP THE GROUND SYSTEM THAT WILL SUPPORT NOAA S NEXT GENERATION GEOSTATIONARY SATELLITE SERIES, GOES-R. THIS NEW SERIES OF SPACECRAFT, SET TO BEGIN LAUNCHING IN 2015, IS EXPECTED TO DOUBLE THE CLARITY OF TODAY S SATELLITE IMAGERY AND PROVIDE AT LEAST 20 TIMES MORE ATMOSPHERIC OBSERVATIONS FROM SPACE. THE CONTRACTOR IS TO DESIGN, DEVELOP, TEST AND IMPLEMENT THE GOES-R GROUND SYSTEM. THE GROUND SYSTEM WILL CAPTURE DATA FROM THE GOES-R SATELLITES, AND PROCESS AND DISTRIBUTE THE INFORMATION TO OPERATIONAL USERS.",
+      "recipient_id": "8cdf9a30-6987-41a0-fdc4-f48e1b88b1bf-C",
+      "Last Modified Date": "2026-04-10 06:55:00",
+      "awarding_agency_id": 183,
+      "agency_slug": "department-of-commerce",
+      "generated_internal_id": "CONT_AWD_DOCDG133E09CN0094_1330_-NONE-_-NONE-"
+    },
+    {
+      "internal_id": 279967695,
+      "Award ID": "36C10B18N0003",
+      "Recipient Name": "ORACLE HEALTH GOVERNMENT SERVICES, INC.",
+      "Award Amount": 1511268663.21,
+      "Awarding Agency": "Department of Veterans Affairs",
+      "Awarding Sub Agency": "Department of Veterans Affairs",
+      "Start Date": "2018-05-17",
+      "End Date": "2027-08-16",
+      "NAICS": {
+        "code": "541512",
+        "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+      },
+      "PSC": {
+        "code": "D318",
+        "description": "IT AND TELECOM- INTEGRATED HARDWARE/SOFTWARE/SERVICES SOLUTIONS, PREDOMINANTLY SERVICES"
+      },
+      "Description": "IGF::OT::IGF TASK ORDER 36C10B18N0003 UNDER IDIQ CONTRACT 36C10B18D5000 FOR OPERATIONAL MANAGEMENT SERVICES, TO INCLUDE HOSTING, FOR THE EHRM APPLICATIONS, APPLICATION SERVICES, AND ALL SUPPORTING EHRM DATA.",
+      "recipient_id": "9232b26d-789d-bdd2-5a6d-28714f1dfa2c-C",
+      "Last Modified Date": "2026-07-15 12:30:49",
+      "awarding_agency_id": 561,
+      "agency_slug": "department-of-veterans-affairs",
+      "generated_internal_id": "CONT_AWD_36C10B18N0003_3600_36C10B18D5000_3600"
+    },
+    {
+      "internal_id": 279969328,
+      "Award ID": "36C10B21N10070021",
+      "Recipient Name": "BOOZ ALLEN HAMILTON INC",
+      "Award Amount": 1365285599.63,
+      "Awarding Agency": "Department of Veterans Affairs",
+      "Awarding Sub Agency": "Department of Veterans Affairs",
+      "Start Date": "2021-05-17",
+      "End Date": "2026-08-07",
+      "NAICS": {
+        "code": "541512",
+        "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+      },
+      "PSC": {
+        "code": "DA01",
+        "description": "IT AND TELECOM - BUSINESS APPLICATION/APPLICATION DEVELOPMENT SUPPORT SERVICES (LABOR)"
+      },
+      "Description": "TRANSFORMATION TWENTY-ONE TOTAL TECHNOLOGY NEXT GENERATION (T4NG) TASK ORDER - BENEFITS INTEGRATED DELIVERY",
+      "recipient_id": "30b32b62-ffbf-d7e6-5b9d-95a295b95a6d-C",
+      "Last Modified Date": "2026-07-08 11:29:41",
+      "awarding_agency_id": 561,
+      "agency_slug": "department-of-veterans-affairs",
+      "generated_internal_id": "CONT_AWD_36C10B21N10070021_3600_VA11816D1007_3600"
+    },
+    {
+      "internal_id": 281082239,
+      "Award ID": "47QFCA21F0001",
+      "Recipient Name": "SCIENCE APPLICATIONS INTERNATIONAL CORPORATION",
+      "Award Amount": 1205937997.76,
+      "Awarding Agency": "General Services Administration",
+      "Awarding Sub Agency": "Federal Acquisition Service",
+      "Start Date": "2020-11-30",
+      "End Date": "2026-11-27",
+      "NAICS": {
+        "code": "541512",
+        "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+      },
+      "PSC": {
+        "code": "DA01",
+        "description": "IT AND TELECOM - BUSINESS APPLICATION/APPLICATION DEVELOPMENT SUPPORT SERVICES (LABOR)"
+      },
+      "Description": "THE SCOPE OF THE TO IS TO PROVIDE ENTERPRISE IT SERVICES FOR THE USACE.",
+      "recipient_id": "20af0683-f17d-1f8f-38ee-2f11bd124559-C",
+      "Last Modified Date": "2026-09-21 14:03:34",
+      "awarding_agency_id": 614,
+      "agency_slug": "general-services-administration",
+      "generated_internal_id": "CONT_AWD_47QFCA21F0001_4732_47QTCK18D0001_4732"
+    },
+    {
+      "internal_id": 291527677,
+      "Award ID": "75FCMC18F0045",
+      "Recipient Name": "SERCO INC",
+      "Award Amount": 1032865950.58,
+      "Awarding Agency": "Department of Health and Human Services",
+      "Awarding Sub Agency": "Centers for Medicare and Medicaid Services",
+      "Start Date": "2018-07-01",
+      "End Date": "2023-06-30",
+      "NAICS": {
+        "code": "541512",
+        "description": "COMPUTER SYSTEMS DESIGN SERVICES"
+      },
+      "PSC": {
+        "code": "R499",
+        "description": "SUPPORT- PROFESSIONAL: OTHER"
+      },
+      "Description": "ELIGIBILITY SUPPORT",
+      "recipient_id": "89bcff2a-2813-19f6-92a5-47dd33313207-C",
+      "Last Modified Date": "2026-02-20 13:52:22",
+      "awarding_agency_id": 806,
+      "agency_slug": "department-of-health-and-human-services",
+      "generated_internal_id": "CONT_AWD_75FCMC18F0045_7530_GS00Q09BGD0049_4735"
+    }
+  ],
+  "page_metadata": {
+    "page": 1,
+    "hasNext": true,
+    "last_record_unique_id": 291527677,
+    "last_record_sort_value": "1032865950.58"
+  },
+  "messages": [
+    "For searches, time period start and end dates are currently limited to an earliest date of 2007-10-01.  For data going back to 2000-10-01, use either the Custom Award Download feature on the website or one of our download or bulk_download API endpoints as listed on https://api.usaspending.gov/docs/endpoints. "
+  ]
+}

@@ -10,15 +10,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app import __version__
+from app.adapters.registry import load_builtin_adapters
 from app.api import health
 from app.api.audit_middleware import AuditMiddleware
 from app.api.middleware import RequestIdMiddleware
 from app.api.v1 import api_router
 from app.core.config import Settings, get_settings
+from app.core.db import get_database
 from app.core.plan import PlanLimitExceeded
 from app.core.ratelimit import FixedWindowLimiter
 from app.logging import configure_logging
+from app.services.enrichment import install_enrichment
+from app.services.events import get_event_bus
 from app.services.scanner import scanner_from_settings
+from app.services.sources import sync_sources_on_startup
 from app.services.storage import StorageRouter
 
 
@@ -26,6 +31,11 @@ from app.services.storage import StorageRouter
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
     configure_logging(settings.log_level, json_output=settings.is_production)
+    # One `sources` row per registered adapter (SPEC 10.2); best-effort, never fatal.
+    load_builtin_adapters()
+    await sync_sources_on_startup()
+    # summary_ai on opportunity.created/amended, only when an LLM is configured (M2-13)
+    install_enrichment(settings, get_database(), app.state.storage_router, get_event_bus())
     yield
 
 

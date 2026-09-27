@@ -209,3 +209,18 @@ def to_usd(
         raise ValueError(f"invalid USD rate for {code}: {rate}")
     usd = (Decimal(amount) * rate).quantize(CENTS, rounding=ROUND_HALF_UP)
     return Conversion(usd=usd, rate=rate, currency=code)
+
+
+def to_usd_or_none(
+    amount: Decimal | None,
+    currency: str | None,
+    rates: Mapping[str, float | int | str | Decimal] | None = None,
+) -> Decimal | None:
+    """Ingest-safe variant (M2-09): None for a missing amount/currency or an unknown rate
+    instead of raising, so a notice in an unpriced currency still ingests (USD columns NULL)."""
+    if amount is None or not currency:
+        return None
+    try:
+        return to_usd(amount, currency, rates).usd
+    except ValueError:
+        return None

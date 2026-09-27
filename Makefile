@@ -49,8 +49,9 @@ seed: migrate
 isolation:
 	cd $(BACKEND) && $(UV) run pytest tests/isolation -p no:cacheprovider
 
+# Live smoke: >= 1 record per enabled adapter. Skipped (exit 0) unless BIDRADAR_LIVE=1.
 smoke:
-	@echo "smoke: no live adapters yet (M2+); nothing to run"
+	cd $(BACKEND) && $(UV) run python -m app.jobs.smoke
 
 acceptance:
 	@echo "acceptance: placeholder until SPEC section 12 boxes are automated"

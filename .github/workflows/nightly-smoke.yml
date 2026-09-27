@@ -1,0 +1,66 @@
+name: nightly-smoke
+
+# SPEC 5.1 / 12: every adapter fetches >= 1 live record each night; a failure pages the
+# ops channel. Manual runs allowed for debugging a portal change.
+on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-smoke
+  cancel-in-progress: false
+
+env:
+  UV_VERSION: "0.11.14"
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BIDRADAR_LIVE: "1"
+      APP_ENV: smoke
+      SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
+      SAM_AWARDS_NAICS: ${{ vars.SAM_AWARDS_NAICS }}
+      CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+      # smoke never touches a database or object store; raw archives stay in memory
+      STORAGE_BACKEND: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --all-groups --frozen
+        working-directory: backend
+      - name: Live smoke (>= 1 record per adapter)
+        id: smoke
+        run: make smoke | tee smoke-report.json
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report
+          path: smoke-report.json
+          if-no-files-found: ignore
+      - name: Page the ops channel
+        if: failure()
+        env:
+          OPS_SLACK_WEBHOOK_URL: ${{ secrets.OPS_SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$OPS_SLACK_WEBHOOK_URL" ]; then
+            echo "OPS_SLACK_WEBHOOK_URL not set; cannot page" >&2
+            exit 0
+          fi
+          FAILED=$(python3 -c 'import json,sys
+          try:
+              r = json.load(open("smoke-report.json"))
+              print(", ".join(r.get("failed") or []) or r.get("status", "unknown"))
+          except Exception as exc:
+              print(f"no report ({exc})")' 2>/dev/null || echo "no report")
+          payload=$(python3 -c 'import json,sys; print(json.dumps({"text": sys.argv[1]}))' \
+            ":rotating_light: BidRadar nightly adapter smoke FAILED (${FAILED}). Portal layout change or quota? ${RUN_URL}")
+          curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "$OPS_SLACK_WEBHOOK_URL"

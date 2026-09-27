@@ -549,7 +549,7 @@
       "Watermark helper returns since = last_posted_at - 2 days",
       "A minimal FixtureAdapter used by tests proves the pipeline end-to-end"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-02",
@@ -571,7 +571,7 @@
       "Every response archived to raw/{source}/... via the storage service; archive path returned to the caller",
       "Tests use respx/httpx mocks; no network"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-03",
@@ -591,7 +591,7 @@
       "awards_enrichment(opportunity_id, incumbent, prior_award_value, prior_pop_end, num_offers, source_ref)",
       "Opportunities are global (no tenant_id) but documents parsed text is shared; test confirms RLS not applied to opportunities"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-04",
@@ -614,7 +614,7 @@
       "amendment with same solicitationNumber links parent_opportunity_id",
       "429 response triggers backoff and resumes from cursor"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-05",
@@ -632,7 +632,7 @@
       "Buyer hierarchy mapped to buyer_org, buyer_sub_org, buyer_office and buyer_hierarchy[]",
       "Contacts, set_aside, naics/psc, place_of_performance and response deadline (with source tz) mapped; fixture-driven tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-06",
@@ -653,7 +653,7 @@
       "When two records exist for one opportunity only the latest version is kept",
       "notice_type grant or forecast; fixture tests for both"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-07",
@@ -673,7 +673,7 @@
       "Expiring contracts (period_of_performance end in 6-18 months) recorded for recompete watch",
       "Fixture tests; DoD lag note surfaced in AdapterHealth"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-08",
@@ -693,7 +693,7 @@
       "Contracts ending in 6-18 months are flagged recompete_watch = true",
       "Fixture tests for match and no-match cases"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-09",
@@ -714,7 +714,7 @@
       "Change publishes an 'opportunity.amended' event on the internal event bus consumed by matching and notifications",
       "Integration test: ingest fixture twice with a moved deadline -> 1 version diff and 1 event"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-10",
@@ -732,7 +732,7 @@
       "Richness = count of non-null canonical fields + documents; both source links kept on the surviving record",
       "Unit tests for the reference normalizer and integration test for the fuzzy path"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-11",
@@ -750,7 +750,7 @@
       "Status transitions create a version diff and event",
       "Unit tests with frozen time"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-12",
@@ -770,7 +770,7 @@
       "Fixtures include a text PDF, a scanned PDF, a DOCX and an XLSX",
       "Chunker produces overlapping chunks tagged with page for embedding"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-13",
@@ -790,7 +790,7 @@
       "Untrusted-input framing: opportunity text passed as data, system prompt forbids instruction following from it",
       "FakeLLM tests; token usage recorded to usage_ledger"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-14",
@@ -812,7 +812,7 @@
       "Every normalized record validates as OpportunityIn",
       ".github/workflows/nightly-smoke.yml runs `make smoke` (>= 1 live record per adapter) and posts to the ops Slack webhook on failure"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-15",
@@ -832,7 +832,7 @@
       "Every record carries source attribution, source_url and the disclaimer 'Verify every detail on the official portal before submitting.'",
       "Search response p95 < 500 ms on 50k seeded rows in the load test script"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-16",
@@ -852,7 +852,7 @@
       "POST /api/v1/admin/sources/{id}/run (platform_admin) enqueues a run; GET /api/v1/admin/sources lists health and last runs",
       "A source failing > 2 consecutive runs publishes an 'adapter.failing' event"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-17",
@@ -871,7 +871,7 @@
       "docs/adapters.md explains how to implement a new adapter and the compliance rules",
       "Contract tests skip disabled adapters explicitly"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M2-18",
@@ -1431,7 +1431,7 @@
       "Runner resumes a run from the last completed step after a crash (test kills mid-run)",
       "Langfuse hooks and usage_ledger entries per step; FakeLLM in tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-02",

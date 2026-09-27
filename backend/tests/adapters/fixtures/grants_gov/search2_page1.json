@@ -1,0 +1,291 @@
+{
+  "errorcode": 0,
+  "msg": "Webservice Succeeds",
+  "token": "REDACTED",
+  "data": {
+    "searchParams": {
+      "resultType": "json",
+      "searchOnly": false,
+      "oppNum": "",
+      "cfda": "",
+      "sortBy": "",
+      "oppStatuses": "forecasted|posted",
+      "startRecordNum": 0,
+      "eligibilities": "",
+      "fundingInstruments": "",
+      "fundingCategories": "",
+      "agencies": "",
+      "rows": 5,
+      "keyword": "",
+      "keywordEncoded": true
+    },
+    "hitCount": 8,
+    "startRecord": 0,
+    "oppHits": [
+      {
+        "id": "332894",
+        "number": "W911NF21S0009",
+        "title": "LPS Qubit Collaboratory (LQC)",
+        "agencyCode": "DOD-AMC",
+        "agency": "Dept of the Army -- Materiel Command",
+        "openDate": "04/16/2021",
+        "closeDate": "04/30/2027",
+        "oppStatus": "posted",
+        "docType": "synopsis",
+        "cfdaList": [
+          "12.431"
+        ]
+      },
+      {
+        "id": "334905",
+        "number": "RANDENDEPSTEMFY22RFI",
+        "title": "National Defense Education Program (NDEP) Science, Technology, Engineering, and Mathematics (STEM) Consortia Request for Information (RFI) for the Office of the Under Secretary of Defense (Research &amp; Engineering)",
+        "agencyCode": "DOD",
+        "agency": "Department of Defense",
+        "openDate": "07/27/2021",
+        "closeDate": "",
+        "oppStatus": "forecasted",
+        "docType": "forecast",
+        "cfdaList": [
+          "12.006"
+        ]
+      },
+      {
+        "id": "355196",
+        "number": "24-586",
+        "title": "NSF National Quantum Virtual Laboratory - Quantum Testbeds",
+        "agencyCode": "NSF",
+        "agency": "U.S. National Science Foundation",
+        "openDate": "06/28/2024",
+        "closeDate": "04/06/2027",
+        "oppStatus": "posted",
+        "docType": "synopsis",
+        "cfdaList": [
+          "47.076",
+          "47.041",
+          "47.049",
+          "47.070",
+          "47.074",
+          "47.084"
+        ]
+      },
+      {
+        "id": "336962",
+        "number": "FA8651-22-S0021",
+        "title": "Partnership Intermediary Agreement (PIA)",
+        "agencyCode": "DOD-AFRL-RW",
+        "agency": "Munitions Directorate",
+        "openDate": "12/14/2021",
+        "closeDate": "",
+        "oppStatus": "forecasted",
+        "docType": "forecast",
+        "cfdaList": [
+          "12.630"
+        ]
+      },
+      {
+        "id": "352741",
+        "number": "N00173-24-S-BA01",
+        "title": "NRL Long Range Broad Agency Announcement (BAA) for Basic and Applied Research",
+        "agencyCode": "DOD-ONR-NRL",
+        "agency": "Naval Research Laboratory",
+        "openDate": "03/01/2024",
+        "closeDate": "09/30/2026",
+        "oppStatus": "posted",
+        "docType": "synopsis",
+        "cfdaList": [
+          "12.300"
+        ]
+      }
+    ],
+    "oppStatusOptions": [
+      {
+        "label": "posted",
+        "value": "posted",
+        "count": 576
+      },
+      {
+        "label": "closed",
+        "value": "closed",
+        "count": 6353
+      },
+      {
+        "label": "archived",
+        "value": "archived",
+        "count": 50762
+      },
+      {
+        "label": "forecasted",
+        "value": "forecasted",
+        "count": 216
+      }
+    ],
+    "dateRangeOptions": [
+      {
+        "label": "Posted Date - Last 3 Days",
+        "value": "3",
+        "count": 12
+      },
+      {
+        "label": "Posted Date - Last 1 Week",
+        "value": "7",
+        "count": 29
+      },
+      {
+        "label": "Posted Date - Last 2 Weeks",
+        "value": "14",
+        "count": 40
+      },
+      {
+        "label": "Posted Date - Last 3 Weeks",
+        "value": "21",
+        "count": 56
+      },
+      {
+        "label": "Posted Date - Last 4 Weeks",
+        "value": "28",
+        "count": 114
+      },
+      {
+        "label": "Posted Date - Last 5 Weeks",
+        "value": "35",
+        "count": 132
+      },
+      {
+        "label": "Posted Date - Last 6 Weeks",
+        "value": "42",
+        "count": 149
+      },
+      {
+        "label": "Posted Date - Last 7 Weeks",
+        "value": "49",
+        "count": 162
+      },
+      {
+        "label": "Posted Date - Last 8 Weeks",
+        "value": "56",
+        "count": 189
+      }
+    ],
+    "suggestion": "",
+    "eligibilities": [
+      {
+        "label": "City or township governments",
+        "value": "02",
+        "count": 332
+      },
+      {
+        "label": "County governments",
+        "value": "01",
+        "count": 353
+      }
+    ],
+    "fundingCategories": [
+      {
+        "label": "Agriculture",
+        "value": "AG",
+        "count": 29
+      },
+      {
+        "label": "Arts",
+        "value": "AR",
+        "count": 21
+      }
+    ],
+    "fundingInstruments": [
+      {
+        "label": "Cooperative Agreement",
+        "value": "CA",
+        "count": 313
+      },
+      {
+        "label": "Grant",
+        "value": "G",
+        "count": 533
+      }
+    ],
+    "agencies": [
+      {
+        "subAgencyOptions": [
+          {
+            "label": "Agricultural Marketing Service",
+            "value": "USDA-AMS",
+            "count": 3
+          },
+          {
+            "label": "Animal and Plant Health Inspection Service",
+            "value": "USDA-APHIS",
+            "count": 1
+          },
+          {
+            "label": "Foreign Agricultural Service",
+            "value": "USDA-FAS",
+            "count": 2
+          },
+          {
+            "label": "Forest Service",
+            "value": "USDA-FS",
+            "count": 4
+          },
+          {
+            "label": "National Institute of Food and Agriculture",
+            "value": "USDA-NIFA",
+            "count": 11
+          },
+          {
+            "label": "Natural Resources Conservation Service",
+            "value": "USDA-NRCS",
+            "count": 1
+          },
+          {
+            "label": "Rural Business-Cooperative Service ",
+            "value": "USDA-RBCS",
+            "count": 3
+          },
+          {
+            "label": "Rural Utilities Service",
+            "value": "USDA-RUS",
+            "count": 3
+          }
+        ],
+        "label": "Department of Agriculture",
+        "value": "USDA",
+        "count": 28
+      },
+      {
+        "subAgencyOptions": [
+          {
+            "label": "Department of Commerce",
+            "value": "DOC",
+            "count": 8
+          },
+          {
+            "label": "DOC NIST ERA",
+            "value": "DOC-DOCNISTERA",
+            "count": 2
+          },
+          {
+            "label": "DOC NOAA - ERA Production",
+            "value": "DOC-DOCNOAAERA",
+            "count": 12
+          },
+          {
+            "label": "Economic Development Administration",
+            "value": "DOC-EDA",
+            "count": 3
+          },
+          {
+            "label": "National Institute of Standards and Technology",
+            "value": "DOC-NIST",
+            "count": 1
+          }
+        ],
+        "label": "Department of Commerce",
+        "value": "DOC",
+        "count": 26
+      }
+    ],
+    "accessKey": "",
+    "errorMsgs": []
+  }
+}

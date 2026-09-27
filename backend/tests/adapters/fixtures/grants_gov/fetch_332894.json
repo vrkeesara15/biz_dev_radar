@@ -1,0 +1,392 @@
+{
+  "errorcode": 0,
+  "msg": "Webservice Succeeds",
+  "token": "REDACTED",
+  "data": {
+    "id": 332894,
+    "revision": 5,
+    "opportunityNumber": "W911NF21S0009",
+    "opportunityTitle": "LPS Qubit Collaboratory (LQC)",
+    "owningAgencyCode": "DOD-AMC",
+    "listed": "L",
+    "publisherUid": "publisher.user",
+    "flag2006": "N",
+    "opportunityCategory": {
+      "category": "D",
+      "description": "Discretionary"
+    },
+    "synopsis": {
+      "opportunityId": 332894,
+      "version": 11,
+      "agencyCode": "DOD-AMC",
+      "agencyName": "Grants Officer\nGrants/Agreements Officer",
+      "agencyPhone": "919-549-4267",
+      "agencyAddressDesc": "usarmy.rtp.devcom-arl.mesg.qcbox@army.mil",
+      "agencyDetails": {
+        "code": "AMC",
+        "seed": "DOD-AMC",
+        "agencyName": "Dept of the Army -- Materiel Command",
+        "agencyCode": "DOD-AMC",
+        "topAgencyCode": "DOD"
+      },
+      "topAgencyDetails": {
+        "code": "DOD",
+        "seed": "DOD",
+        "agencyName": "Department of Defense",
+        "agencyCode": "DOD",
+        "topAgencyCode": "DOD"
+      },
+      "agencyContactPhone": "919-549-4267",
+      "agencyContactName": "Grants Officer\nGrants/Agreements Officer",
+      "agencyContactDesc": "Technical Program Point of Contact (ARO):\r\nDr. T.R. Govindan\r\nt.r.govindan.civ@army.mil",
+      "agencyContactEmail": "usarmy.rtp.devcom-arl.mesg.qcbox@army.mil",
+      "agencyContactEmailDesc": "usarmy.rtp.devcom-arl.mesg.qcbox@army.mil",
+      "synopsisDesc": "<p>The U.S. Army Research Office (ARO) in partnership with NSA\u2019s Laboratory for Physical Science (LPS) is soliciting Incubator, Collaboration, and Fellowship research proposals for participation in the LPS Qubit Collaboratory (LQC). The mission of the LQC can be captured in three broad goals: 1) pursue disruptive fundamental research and enabling technologies with a focus on qubit development for quantum computing and other applications (such as sensing); 2) grow deep, collaborative partnerships to tackle the most difficult and relevant long-term problems in quantum information science and technology; and 3) build a quantum workforce of tomorrow through research experiences in government at LPS and at LQC partners. The LQC will offer a mechanism for collaborative research between LPS and academia, industry, FFRDCs, and Government Laboratories to advance foundational and transformative re</p>",
+      "responseDate": "Apr 30, 2027 12:00:00 AM EDT",
+      "responseDateDesc": "",
+      "fundingDescLinkUrl": "https://arl.devcom.army.mil/collaborate-with-us/",
+      "fundingDescLinkDesc": "DEVCOM ARO BAA site",
+      "postingDate": "Apr 16, 2021 12:00:00 AM EDT",
+      "archiveDate": "May 30, 2027 12:00:00 AM EDT",
+      "costSharing": false,
+      "awardCeiling": "none",
+      "awardFloor": "none",
+      "applicantEligibilityDesc": "",
+      "sendEmail": "Y",
+      "createTimeStamp": "Mar 18, 2026 03:45:10 PM EDT",
+      "modComments": "Amendment 3: Extending the response date/ submission date to 30 April 2027.",
+      "createdDate": "Apr 16, 2021 12:27:04 PM EDT",
+      "lastUpdatedDate": "Mar 18, 2026 03:44:15 PM EDT",
+      "applicantTypes": [
+        {
+          "id": "12",
+          "description": "Nonprofits having a 501(c)(3) status with the IRS, other than institutions of higher education"
+        },
+        {
+          "id": "20",
+          "description": "Private institutions of higher education"
+        },
+        {
+          "id": "05",
+          "description": "Independent school districts"
+        },
+        {
+          "id": "21",
+          "description": "Individuals"
+        },
+        {
+          "id": "06",
+          "description": "Public and State controlled institutions of higher education"
+        },
+        {
+          "id": "13",
+          "description": "Nonprofits that do not have a 501(c)(3) status with the IRS, other than institutions of higher education"
+        },
+        {
+          "id": "22",
+          "description": "For profit organizations other than small businesses"
+        },
+        {
+          "id": "23",
+          "description": "Small businesses"
+        }
+      ],
+      "fundingInstruments": [
+        {
+          "id": "CA",
+          "description": "Cooperative Agreement"
+        },
+        {
+          "id": "G",
+          "description": "Grant"
+        },
+        {
+          "id": "PC",
+          "description": "Procurement Contract"
+        }
+      ],
+      "fundingActivityCategories": [
+        {
+          "id": "ST",
+          "description": "Science and Technology and other Research and Development"
+        }
+      ],
+      "responseDateStr": "2027-04-30-00-00-00",
+      "postingDateStr": "2021-04-16-00-00-00",
+      "archiveDateStr": "2027-05-30-00-00-00",
+      "createTimeStampStr": "2026-03-18-15-45-10"
+    },
+    "agencyDetails": {
+      "code": "AMC",
+      "seed": "DOD-AMC",
+      "agencyName": "Dept of the Army -- Materiel Command",
+      "agencyCode": "DOD-AMC",
+      "topAgencyCode": "DOD"
+    },
+    "topAgencyDetails": {
+      "code": "DOD",
+      "seed": "DOD",
+      "agencyName": "Department of Defense",
+      "agencyCode": "DOD",
+      "topAgencyCode": "DOD"
+    },
+    "synopsisAttachmentFolders": [
+      {
+        "id": 51124,
+        "opportunityId": 332894,
+        "folderType": "Full Announcement",
+        "folderName": "LPS BAA",
+        "zipLobSize": 800879,
+        "createdDate": "Apr 16, 2021 12:34:21 PM EDT",
+        "lastUpdatedDate": "Apr 16, 2021 12:37:01 PM EDT",
+        "synopsisAttachments": [
+          {
+            "id": 306813,
+            "opportunityId": 332894,
+            "mimeType": "application/pdf",
+            "fileName": "LQC BAA Final W911NF21S0009.pdf",
+            "fileDescription": "LPS LQC BAA",
+            "fileLobSize": 887949,
+            "createdDate": "Apr 16, 2021 12:37:01 PM EDT",
+            "synopsisAttFolderId": 51124
+          }
+        ]
+      },
+      {
+        "id": 78527,
+        "opportunityId": 332894,
+        "folderType": "Full Announcement",
+        "folderName": "W911NF21S0009-SPECIALNOTICE-1",
+        "zipLobSize": 257608,
+        "createdDate": "Sep 22, 2025 09:14:28 AM EDT",
+        "lastUpdatedDate": "Sep 22, 2025 09:15:21 AM EDT",
+        "synopsisAttachments": [
+          {
+            "id": 349464,
+            "opportunityId": 332894,
+            "mimeType": "application/pdf",
+            "fileName": "W911NF21S0009 LPS Qubit Collaboratory Special Notice.pdf",
+            "fileDescription": "W911NF21S0009-SPECIALNOTICE-1",
+            "fileLobSize": 263856,
+            "createdDate": "Sep 22, 2025 09:15:21 AM EDT",
+            "synopsisAttFolderId": 78527
+          }
+        ]
+      }
+    ],
+    "synopsisDocumentURLs": [
+      {
+        "id": 591,
+        "opportunityId": 332894,
+        "docUrl": "https://www.arl.army.mil/business/broad-agency-announcements/",
+        "description": "ARO & ARL BAA SITE",
+        "createdDate": "Apr 16, 2021 12:33:08 PM EDT"
+      }
+    ],
+    "synAttChangeComments": [
+      {
+        "id": {
+          "opportunityId": 332894,
+          "attType": "D",
+          "createdDate": "Sep 22, 2025 09:16:39 AM EDT",
+          "attTypeDesc": "Related Documents",
+          "commentsDate": "Sep 22, 2025"
+        },
+        "changeComments": "W911NF21S0009-SPECIALNOTICE-1\r\nThe U.S. Army Combat Capabilities Development Command (DEVCOM), Army Research Laboratory (ARL)-Army Research Office (ARO) is looking for proposed research and development solutions under the Broad Agency Announcement (BAA) W911NF21S0009-2 for Basic and Applied Scientific Research in Quantum Computing. The title for this Special Notice is \u201cLPS Qubit Collaboratory Special Topics.\u201d Upon receipt, compliant proposals will be reviewed through a technical and programmatic process in accordance with the evaluation criteria referenced in the W911NF21S0009-2 LQC BAA to determine which proposal may be awarded Grant, Cooperative Agreement, or Procurement Contract under this topic. Please read the special notice to apply under the opportunity W911NF21S0009-SPECIALNOTICE-1."
+      }
+    ],
+    "cfdas": [
+      {
+        "id": 390527,
+        "opportunityId": 332894,
+        "cfdaNumber": "12.431",
+        "programTitle": "Basic Scientific Research"
+      }
+    ],
+    "opportunityHistoryDetails": [
+      {
+        "oppHistId": {
+          "opportunityId": 332894,
+          "revision": 0
+        },
+        "opportunityId": 332894,
+        "revision": 0,
+        "opportunityNumber": "W911NF21S0009",
+        "opportunityTitle": "LPS Qubit Collaboratory (LQC)",
+        "owningAgencyCode": "DOD-AMC",
+        "publisherUid": "publisher.user",
+        "listed": "L",
+        "opportunityCategory": {
+          "category": "D",
+          "description": "Discretionary"
+        },
+        "synopsis": {
+          "id": {
+            "opportunityId": 332894,
+            "revision": 0
+          },
+          "opportunityId": 332894,
+          "revision": 0,
+          "version": 6,
+          "agencyCode": "DOD-AMC",
+          "agencyAddressDesc": "usarmy.rtp.devcom-arl.mesg.qcbox@mail.mil",
+          "agencyDetails": {
+            "code": "AMC",
+            "seed": "DOD-AMC",
+            "agencyName": "Dept of the Army -- Materiel Command",
+            "agencyCode": "DOD-AMC",
+            "topAgencyCode": "DOD"
+          },
+          "agencyContactPhone": "919-549-4267",
+          "agencyContactName": "Andrew Day\nGrants/Agreements Officer",
+          "agencyContactDesc": "Technical Program Point of Contact (ARO):\r\nDr. T.R. Govindan\r\nt.r.govindan.civ@mail.mil",
+          "agencyContactEmail": "usarmy.rtp.devcom-arl.mesg.qcbox@mail.mil",
+          "agencyContactEmailDesc": "usarmy.rtp.devcom-arl.mesg.qcbox@mail.mil",
+          "synopsisDesc": "<p>The U.S. Army Research Office (ARO) in partnership with NSA\u2019s Laboratory for Physical Science (LPS) is soliciting Incubator, Collaboration, and Fellowship research proposals for participation in th",
+          "responseDate": "Apr 30, 2026 12:00:00 AM EDT",
+          "fundingDescLinkUrl": "https://www.arl.army.mil/business/broad-agency-announcements/",
+          "fundingDescLinkDesc": "ARO & ARL BAA SITE",
+          "postingDate": "Apr 16, 2021 12:00:00 AM EDT",
+          "archiveDate": "May 30, 2026 12:00:00 AM EDT",
+          "costSharing": false,
+          "awardCeiling": "none",
+          "awardFloor": "none",
+          "createTimeStamp": "Jan 04, 2023 08:37:16 AM EST",
+          "sendEmail": "Y",
+          "actionType": "U",
+          "actionDate": "Jan 04, 2023 08:51:35 AM EST",
+          "createdDate": "Apr 16, 2021 12:27:04 PM EDT",
+          "lastUpdatedDate": "Apr 16, 2021 12:39:37 PM EDT",
+          "applicantTypes": [
+            {
+              "id": "12",
+              "description": "Nonprofits having a 501(c)(3) status with the IRS, other than institutions of higher education"
+            },
+            {
+              "id": "13",
+              "description": "Nonprofits that do not have a 501(c)(3) status with the IRS, other than institutions of higher education"
+            },
+            {
+              "id": "23",
+              "description": "Small businesses"
+            },
+            {
+              "id": "06",
+              "description": "Public and State controlled institutions of higher education"
+            },
+            {
+              "id": "20",
+              "description": "Private institutions of higher education"
+            },
+            {
+              "id": "21",
+              "description": "Individuals"
+            },
+            {
+              "id": "05",
+              "description": "Independent school districts"
+            },
+            {
+              "id": "22",
+              "description": "For profit organizations other than small businesses"
+            }
+          ],
+          "fundingInstruments": [
+            {
+              "id": "CA",
+              "description": "Cooperative Agreement"
+            },
+            {
+              "id": "G",
+              "description": "Grant"
+            },
+            {
+              "id": "PC",
+              "description": "Procurement Contract"
+            }
+          ],
+          "fundingActivityCategories": [
+            {
+              "id": "ST",
+              "description": "Science and Technology and other Research and Development"
+            }
+          ],
+          "responseDateStr": "2026-04-30-00-00-00",
+          "postingDateStr": "2021-04-16-00-00-00",
+          "archiveDateStr": "2026-05-30-00-00-00",
+          "createTimeStampStr": "2023-01-04-08-37-16"
+        },
+        "cfdas": [
+          {
+            "id": 390527,
+            "opportunityId": 332894,
+            "revision": 4,
+            "cfdaNumber": "12.431",
+            "programTitle": "Basic Scientific Research"
+          }
+        ],
+        "synopsisModifiedFields": [],
+        "forecastModifiedFields": []
+      }
+    ],
+    "opportunityPkgs": [
+      {
+        "id": 266592,
+        "topportunityId": 332894,
+        "familyId": 14,
+        "dialect": "XFDL2.2",
+        "opportunityNumber": "W911NF21S0009",
+        "opportunityTitle": "LPS Qubit Collaboratory (LQC)",
+        "cfdaNumber": "12.431",
+        "openingDate": "2021-04-16",
+        "closingDate": "2027-04-30",
+        "owningAgencyCode": "DOD-AMC",
+        "agencyDetails": {
+          "code": "AMC",
+          "seed": "DOD-AMC",
+          "agencyName": "Dept of the Army -- Materiel Command",
+          "agencyCode": "DOD-AMC",
+          "topAgencyCode": "DOD"
+        },
+        "topAgencyDetails": {
+          "code": "DOD",
+          "seed": "DOD",
+          "agencyName": "Department of Defense",
+          "agencyCode": "DOD",
+          "topAgencyCode": "DOD"
+        },
+        "programTitle": "Basic Scientific Research",
+        "contactInfo": "usarmy.rtp.devcom-arl.mesg.qcbox@mail.mil",
+        "electronicRequired": "Y",
+        "expectedApplicationCount": 100,
+        "openToApplicantType": 3,
+        "listed": "L",
+        "isMultiProject": "N",
+        "extension": "pdf",
+        "mimetype": "application/pdf",
+        "lastUpdate": "May 06, 2026 10:18:26 AM EDT",
+        "workspaceCompatibleFlag": "Y",
+        "packageId": "PKG00266592",
+        "openingDateStr": "2021-04-16-00-00-00",
+        "closingDateStr": "2027-04-30-00-00-00"
+      }
+    ],
+    "closedOpportunityPkgs": [],
+    "originalDueDate": "Apr 30, 2026 12:00:00 AM EDT",
+    "synopsisModifiedFields": [
+      "revision",
+      "version"
+    ],
+    "forecastModifiedFields": [],
+    "errorMessages": [],
+    "synPostDateInPast": true,
+    "docType": "synopsis",
+    "forecastHistCount": 0,
+    "synopsisHistCount": 5,
+    "assistCompatible": false,
+    "assistURL": "",
+    "relatedOpps": [],
+    "draftMode": "N",
+    "ost": "POSTED"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "totalRecords": 6,
+  "limit": 5,
+  "offset": 5,
+  "opportunitiesData": [
+    {
+      "noticeId": "8e4b6f7a2d3c9b0f4a5d6e7f8091a2b3",
+      "title": "Justification and Approval - Sole Source Software Maintenance",
+      "solicitationNumber": "FA8730-26-J-0009",
+      "fullParentPathName": "DEPT OF DEFENSE.DEPT OF THE AIR FORCE.AFMC.AFLCMC.AFLCMC/HB",
+      "fullParentPathCode": "097.5700.FA8730",
+      "postedDate": "2026-09-25",
+      "type": "Justification",
+      "baseType": "Justification",
+      "archiveType": "auto15",
+      "archiveDate": "2026-10-10",
+      "typeOfSetAsideDescription": null,
+      "typeOfSetAside": null,
+      "responseDeadLine": null,
+      "naicsCode": "511210",
+      "naicsCodes": ["511210"],
+      "classificationCode": "7A21",
+      "active": "Yes",
+      "award": {
+        "date": "2026-09-25",
+        "number": "FA873026F0044",
+        "amount": "1250000.00"
+      },
+      "pointOfContact": null,
+      "description": "null",
+      "organizationType": "OFFICE",
+      "officeAddress": {
+        "zipcode": "01731",
+        "city": "HANSCOM AFB",
+        "countryCode": "USA",
+        "state": "MA"
+      },
+      "placeOfPerformance": null,
+      "additionalInfoLink": null,
+      "uiLink": "https://sam.gov/opp/8e4b6f7a2d3c9b0f4a5d6e7f8091a2b3/view",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://api.sam.gov/prod/opportunities/v2/search?noticeid=8e4b6f7a2d3c9b0f4a5d6e7f8091a2b3&limit=1",
+          "hreflang": null,
+          "media": null,
+          "title": null,
+          "type": null,
+          "deprecation": null
+        }
+      ],
+      "resourceLinks": [
+        "https://sam.gov/api/prod/opps/v3/opportunities/resources/files/4e5f60718293a4b5c6d7e8f9a0b1c2d3/download?&token="
+      ]
+    }
+  ],
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://api.sam.gov/prod/opportunities/v2/search?limit=5&offset=5&postedFrom=08/27/2026&postedTo=09/26/2026",
+      "hreflang": null,
+      "media": null,
+      "title": null,
+      "type": null,
+      "deprecation": null
+    }
+  ]
+}
