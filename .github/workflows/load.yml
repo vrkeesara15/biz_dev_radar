@@ -1,0 +1,87 @@
+name: load
+
+# SPEC 12 / M7-10: the load target ("50k opportunities, 200 profiles scored in < 10 min;
+# search p95 < 500 ms"). A GitHub runner is two cores and a container Postgres, so the
+# nightly run is the SCALED smoke (5,000 notices x 20 profiles) — it catches a scoring or
+# search regression without pretending to be the production-shaped measurement. The full
+# 50k x 200 number is measured on a developer machine and recorded in
+# scripts/load/README.md; run this workflow manually with scale 1.0 only on a big runner.
+on:
+  schedule:
+    - cron: "30 3 * * *" # 03:30 UTC, half an hour after the adapter smoke
+  workflow_dispatch:
+    inputs:
+      scale:
+        description: "fraction of the SPEC 12 size (0.1 = 5k x 20)"
+        required: false
+        default: "0.1"
+      workers:
+        description: "scoring pool size"
+        required: false
+        default: "2"
+
+concurrency:
+  group: load
+  cancel-in-progress: false
+
+env:
+  UV_VERSION: "0.11.14"
+
+jobs:
+  load-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: bidradar
+          POSTGRES_PASSWORD: bidradar
+          POSTGRES_DB: bidradar
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U bidradar -d bidradar"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: load
+      REDIS_URL: redis://localhost:6379/0
+      LOAD_DATABASE_URL: postgresql+asyncpg://bidradar_app:bidradar_app@localhost:5432/bidradar_load
+      LOAD_DATABASE_URL_OWNER: postgresql+asyncpg://bidradar:bidradar@localhost:5432/bidradar_load
+      LOAD_SCALE: ${{ github.event.inputs.scale || '0.1' }}
+      LOAD_WORKERS: ${{ github.event.inputs.workers || '2' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --all-groups --frozen
+        working-directory: backend
+      - name: Create roles and the load database (same SQL as the compose init)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          PGHOST=localhost PGPORT=5432 POSTGRES_USER=bidradar POSTGRES_PASSWORD=bidradar \
+            BIDRADAR_APP_PASSWORD=bidradar_app bash infra/postgres/01-init.sh
+          export PGPASSWORD=bidradar
+          psql -h localhost -p 5432 -U bidradar -d postgres -v ON_ERROR_STOP=1 \
+            -c "DROP DATABASE IF EXISTS bidradar_load WITH (FORCE)" \
+            -c "CREATE DATABASE bidradar_load OWNER bidradar"
+          psql -h localhost -p 5432 -U bidradar -d bidradar_load -v ON_ERROR_STOP=1 \
+            -f infra/postgres/sql/extensions.sql
+      # seed -> score -> search; score exits 1 over its budget, search exits 1 over p95
+      - name: make load-smoke
+        run: make load-smoke
+      - name: Upload the load report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-report
+          path: load-report/
+          if-no-files-found: warn

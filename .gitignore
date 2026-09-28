@@ -36,3 +36,5 @@ infra/terraform/**/.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 crash.log
+# load test reports (M7-10)
+load-report*/

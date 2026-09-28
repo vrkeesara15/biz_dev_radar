@@ -2145,7 +2145,7 @@
       "scripts/load/search.py measures search p95 and fails if > 500 ms",
       "Documented in README; runs in a nightly optional workflow"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-11",

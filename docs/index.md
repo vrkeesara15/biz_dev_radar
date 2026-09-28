@@ -25,6 +25,7 @@ matching `app/core/config.py`.
 | [../frontend/README.md](../frontend/README.md) | Frontend environment, Auth.js wiring, the generated API client, the screens built so far |
 | [../infra/terraform/README.md](../infra/terraform/README.md) | The four environments as Terraform, what each module creates, residency enforcement |
 | [../infra/cloudrun/README.md](../infra/cloudrun/README.md) | The generated Cloud Run services and per-adapter jobs, and the one-image/six-modes entrypoint |
+| [../scripts/load/README.md](../scripts/load/README.md) | **The load tests.** The SPEC 12 targets (50k x 200 in under 10 minutes, search p95 under 500 ms), how to run `make load-smoke` / `make load-full`, the measured numbers and the extrapolation |
 
 ## Runbooks
 

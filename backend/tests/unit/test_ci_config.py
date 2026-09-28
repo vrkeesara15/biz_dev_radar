@@ -222,3 +222,37 @@ def test_deploy_runbook_exists(repo_root: Path) -> None:
     text = runbook.read_text()
     for topic in ("rollback", "preview", "migration"):
         assert topic in text.lower(), f"the runbook does not cover {topic}"
+
+
+# --------------------------------------------------------------------------- load (M7-10)
+
+
+def test_load_workflow_is_nightly_and_manual(repo_root: Path) -> None:
+    """SPEC 12's load target runs unattended, so a regression is caught by a red night."""
+    triggers = _triggers(_yaml(repo_root, "load.yml"))
+    assert "workflow_dispatch" in triggers
+    assert triggers["schedule"] == [{"cron": "30 3 * * *"}]
+
+
+def test_load_workflow_runs_the_smoke_against_its_own_database(repo_root: Path) -> None:
+    job = _yaml(repo_root, "load.yml")["jobs"]["load-smoke"]
+    assert job["services"]["postgres"]["image"] == "pgvector/pgvector:pg16"
+    assert job["services"]["redis"]["image"].startswith("redis:7")
+    text = _steps_text(job)
+    assert "make load-smoke" in text
+    assert "01-init.sh" in text and "CREATE DATABASE bidradar_load" in text
+    assert job["env"]["LOAD_DATABASE_URL"].endswith("/bidradar_load")
+    assert job["env"]["LOAD_DATABASE_URL_OWNER"].endswith("/bidradar_load")
+    upload = [s for s in job["steps"] if "upload-artifact" in str(s.get("uses", ""))]
+    assert upload and upload[0]["with"]["path"] == "load-report/"
+
+
+def test_make_load_smoke_runs_all_three_scripts(repo_root: Path) -> None:
+    text = (repo_root / "Makefile").read_text()
+    assert "load-smoke:" in text and "load-db:" in text and "load-full:" in text
+    for script in ("seed.py", "score.py", "search.py"):
+        assert f"$(LOAD_SCRIPTS)/{script}" in text
+    assert "bidradar_load" in text, "a load run must never share bidradar_test"
+    assert "--reset" in text and "--report" in text
+    # the load scripts are linted with the backend's ruff configuration
+    assert "ruff check --config pyproject.toml $(LOAD_SCRIPTS)" in text
