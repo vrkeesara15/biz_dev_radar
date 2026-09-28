@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { errorMessage } from "@/lib/api/browser";
 import {
-  DASHBOARD_UNAVAILABLE_MESSAGE,
+  ALERT_PRECISION_EMPTY,
+  WIN_RATE_EMPTY,
+  formatRate,
   getDashboard,
   stageLabel,
   type Dashboard,
@@ -26,7 +28,6 @@ import {
 } from "@/lib/notifications/api";
 import {
   ApiError,
-  NotAvailableError,
   normalizeMatch,
   searchOpportunities,
   type OpportunityItem,
@@ -40,7 +41,7 @@ const HIGH_FIT = 70;
 const LIVE_STATUSES = ["open", "closing_soon"] as const;
 const LIST_LIMIT = 5;
 
-type Load<T> = { kind: "loading" } | { kind: "ready"; data: T } | { kind: "error"; message: string } | { kind: "unavailable" };
+type Load<T> = { kind: "loading" } | { kind: "ready"; data: T } | { kind: "error"; message: string };
 
 const describe = (caught: unknown, fallback: string) =>
   caught instanceof ApiError ? errorMessage(caught.body, `${fallback} (${caught.status}).`) : fallback;
@@ -133,8 +134,8 @@ function HighFitCard({ now }: { now: Date }) {
   );
 }
 
-function DueThisWeekCard({ dashboard, now }: { dashboard: Load<Dashboard | null>; now: Date }) {
-  const items = dashboard.kind === "ready" && dashboard.data ? dashboard.data.dueNext7Days : [];
+function DueThisWeekCard({ dashboard, now }: { dashboard: Load<Dashboard>; now: Date }) {
+  const items = dashboard.kind === "ready" ? dashboard.data.dueNext7Days : [];
   return (
     <Card data-testid="due-week-card">
       <CardHeader>
@@ -143,37 +144,35 @@ function DueThisWeekCard({ dashboard, now }: { dashboard: Load<Dashboard | null>
       </CardHeader>
       <CardContent className="grid gap-3">
         {dashboard.kind === "loading" ? <CardMessage>Loading…</CardMessage> : null}
-        {dashboard.kind === "unavailable" ? <CardMessage>{DASHBOARD_UNAVAILABLE_MESSAGE}.</CardMessage> : null}
         {dashboard.kind === "error" ? <CardMessage tone="error">{dashboard.message}</CardMessage> : null}
         {dashboard.kind === "ready" && !items.length ? (
           <CardMessage>Nothing due in the next seven days.</CardMessage>
         ) : null}
         {items.length ? (
           <ul className="grid divide-y" data-testid="due-week-list">
-            {items.map((item) => {
-              const href = item.pursuit_id
-                ? `/app/pursuits/${item.pursuit_id}`
-                : item.opportunity_id
-                  ? `/app/opportunities/${item.opportunity_id}`
-                  : null;
-              return (
-                <li key={item.id} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
-                  <div className="min-w-0">
-                    {href ? (
-                      <Link href={href} className="line-clamp-2 text-sm font-medium underline-offset-4 hover:underline">
-                        {item.title}
-                      </Link>
-                    ) : (
-                      <span className="line-clamp-2 text-sm font-medium">{item.title}</span>
-                    )}
-                    <p className="truncate text-xs text-muted-foreground">
-                      {[item.kind, item.buyer].filter(Boolean).join(" · ") || "—"}
-                    </p>
-                  </div>
-                  {item.due_at ? <DueTime value={item.due_at} now={now} showCountdown /> : null}
-                </li>
-              );
-            })}
+            {items.map((item) => (
+              <li
+                key={`${item.pursuit_id}:${item.due_at.utc}`}
+                className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
+              >
+                <div className="min-w-0">
+                  <Link
+                    href={`/app/pursuits/${item.pursuit_id}`}
+                    className="line-clamp-2 text-sm font-medium underline-offset-4 hover:underline"
+                  >
+                    {item.title}
+                  </Link>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {stageLabel(item.stage)}
+                    {" · "}
+                    <span data-testid="due-countdown" className="tabular-nums">
+                      {item.countdown}
+                    </span>
+                  </p>
+                </div>
+                <DueTime value={item.due_at} now={now} showCountdown />
+              </li>
+            ))}
           </ul>
         ) : null}
       </CardContent>
@@ -181,32 +180,30 @@ function DueThisWeekCard({ dashboard, now }: { dashboard: Load<Dashboard | null>
   );
 }
 
-function PipelineValueCard({ dashboard }: { dashboard: Load<Dashboard | null> }) {
+/** SPEC 9's KPI row: pipeline value in both currencies, win rate, hours saved, alert precision. */
+function PipelineValueCard({ dashboard }: { dashboard: Load<Dashboard> }) {
   const data = dashboard.kind === "ready" ? dashboard.data : null;
   const rows = data?.pipelineValueByStage ?? [];
-  const total = data?.pipelineTotal ?? { USD: null, INR: null };
-  const hasTotal = total.USD !== null || total.INR !== null;
+  const total = data?.pipelineTotal ?? { usd: null, inr: null };
+  const hasTotal = total.usd !== null || total.inr !== null;
 
   return (
     <Card data-testid="pipeline-value-card">
       <CardHeader>
         <CardTitle>Pipeline value</CardTitle>
-        <CardDescription>Estimated value of active pursuits, by stage.</CardDescription>
+        <CardDescription>Estimated value of open pursuits, by stage, in USD and INR.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
         {dashboard.kind === "loading" ? <CardMessage>Loading…</CardMessage> : null}
-        {dashboard.kind === "unavailable" ? <CardMessage>{DASHBOARD_UNAVAILABLE_MESSAGE}.</CardMessage> : null}
         {dashboard.kind === "error" ? <CardMessage tone="error">{dashboard.message}</CardMessage> : null}
         {dashboard.kind === "ready" && !hasTotal ? (
-          <CardMessage>No pursuits carry a value yet.</CardMessage>
+          <CardMessage>No open pursuit carries a value yet.</CardMessage>
         ) : null}
         {hasTotal ? (
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1" data-testid="pipeline-total">
-            <span className="text-2xl font-semibold tabular-nums">
-              {formatMoneyCompact(total.USD, "USD")}
-            </span>
+            <span className="text-2xl font-semibold tabular-nums">{formatMoneyCompact(total.usd, "USD")}</span>
             <span className="text-lg tabular-nums text-muted-foreground">
-              {formatMoneyCompact(total.INR, "INR")}
+              {formatMoneyCompact(total.inr, "INR")}
             </span>
           </div>
         ) : null}
@@ -214,38 +211,49 @@ function PipelineValueCard({ dashboard }: { dashboard: Load<Dashboard | null> })
           <ul className="grid gap-1 text-sm" data-testid="pipeline-by-stage">
             {rows.map((row) => (
               <li key={row.stage} className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground">{stageLabel(row.stage)}</span>
+                <span className="text-muted-foreground">{row.label}</span>
                 <span className="tabular-nums">
-                  {formatMoneyCompact(row.value.USD, "USD")}
-                  {row.value.INR !== null ? (
-                    <span className="text-muted-foreground"> · {formatMoneyCompact(row.value.INR, "INR")}</span>
-                  ) : null}
+                  {formatMoneyCompact(row.usd, "USD")}
+                  <span className="text-muted-foreground"> · {formatMoneyCompact(row.inr, "INR")}</span>
                 </span>
               </li>
             ))}
           </ul>
         ) : null}
-        {data?.openByStage.length ? (
-          <p className="text-xs text-muted-foreground">
-            {data.openByStage.map((entry) => `${stageLabel(entry.stage)} ${entry.count}`).join(" · ")}
+        {data ? (
+          <p className="text-xs text-muted-foreground" data-testid="open-by-stage">
+            {data.openByStage.length
+              ? data.openByStage.map((entry) => `${entry.label} ${entry.count}`).join(" · ")
+              : "No open pursuits."}
           </p>
         ) : null}
-        {data && (data.winRate !== null || data.alertPrecision !== null || data.avgHoursSavedPerPackage !== null) ? (
-          <dl className="grid grid-cols-3 gap-2 border-t pt-2 text-xs">
+        {data ? (
+          <dl className="grid grid-cols-3 gap-2 border-t pt-2 text-xs" data-testid="dashboard-kpis">
             <div>
               <dt className="text-muted-foreground">Win rate</dt>
-              <dd className="tabular-nums">{data.winRate !== null ? `${Math.round(data.winRate * 100)}%` : "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Alert precision</dt>
-              <dd className="tabular-nums">
-                {data.alertPrecision !== null ? `${Math.round(data.alertPrecision * 100)}%` : "—"}
+              <dd className="tabular-nums" data-testid="kpi-win-rate">
+                {formatRate(data.winRate, WIN_RATE_EMPTY)}
+              </dd>
+              <dd className="text-muted-foreground">
+                {data.awarded} won · {data.lost} lost
               </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Hours saved</dt>
-              <dd className="tabular-nums">
-                {data.avgHoursSavedPerPackage !== null ? data.avgHoursSavedPerPackage.toFixed(1) : "—"}
+              <dd className="tabular-nums" data-testid="kpi-hours-saved">
+                {data.hoursSavedTotal.toLocaleString()}
+              </dd>
+              <dd className="text-muted-foreground" data-testid="kpi-hours-basis">
+                {data.hoursSavedBasis}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Alert precision</dt>
+              <dd className="tabular-nums" data-testid="kpi-alert-precision">
+                {formatRate(data.alertPrecision, ALERT_PRECISION_EMPTY)}
+              </dd>
+              <dd className="text-muted-foreground">
+                {data.alertFeedbackRated} rated
               </dd>
             </div>
           </dl>
@@ -347,7 +355,7 @@ function AlertsInboxCard({ now }: { now: Date }) {
 /** Home (SPEC 10.4 screen 2). */
 export function HomeScreen() {
   const now = useNow();
-  const [dashboard, setDashboard] = React.useState<Load<Dashboard | null>>({ kind: "loading" });
+  const [dashboard, setDashboard] = React.useState<Load<Dashboard>>({ kind: "loading" });
 
   React.useEffect(() => {
     const controller = new AbortController();
@@ -355,10 +363,6 @@ export function HomeScreen() {
       .then((data) => setDashboard({ kind: "ready", data }))
       .catch((caught: unknown) => {
         if (controller.signal.aborted) return;
-        if (caught instanceof NotAvailableError) {
-          setDashboard({ kind: "unavailable" });
-          return;
-        }
         setDashboard({ kind: "error", message: describe(caught, "The dashboard could not be read") });
       });
     return () => controller.abort();

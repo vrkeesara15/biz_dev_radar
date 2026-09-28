@@ -173,6 +173,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/alert-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Alert Rules */
+        get: operations["list_alert_rules_api_v1_alert_rules_get"];
+        put?: never;
+        /** Post Alert Rule */
+        post: operations["post_alert_rule_api_v1_alert_rules_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/alert-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Alert Rule */
+        patch: operations["patch_alert_rule_api_v1_alert_rules__rule_id__patch"];
+        trace?: never;
+    };
     "/api/v1/billing": {
         parameters: {
             query?: never;
@@ -207,6 +242,43 @@ export interface paths {
          * @description Start a hosted checkout for a paid plan with the region's provider.
          */
         post: operations["create_checkout_api_v1_billing_checkout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Calendar Feed
+         * @description The signed-link iCal feed. Public route: the token IS the credential.
+         */
+        get: operations["calendar_feed_api_v1_calendar_ics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dashboard */
+        get: operations["get_dashboard_api_v1_dashboard_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -351,6 +423,66 @@ export interface paths {
          * @description Update the caller's own profile fields (name, tz, locale).
          */
         patch: operations["update_me_api_v1_me_patch"];
+        trace?: never;
+    };
+    "/api/v1/me/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Calendar
+         * @description The caller's feed link (null until issued) and their connected calendars.
+         */
+        get: operations["my_calendar_api_v1_me_calendar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/calendar-connections/{connection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disconnect Calendar
+         * @description Disconnect one calendar. The events already pushed stay in the user's calendar.
+         */
+        delete: operations["disconnect_calendar_api_v1_me_calendar_connections__connection_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/calendar-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate Calendar Token
+         * @description Issue a feed link, or replace it — every link handed out before stops working.
+         */
+        post: operations["rotate_calendar_token_api_v1_me_calendar_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/me/consents": {
@@ -593,6 +725,93 @@ export interface paths {
         get: operations["get_opportunity_api_v1_opportunities__opportunity_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Feedback
+         * @description Record a thumb on the tenant's match for this notice (M4-07).
+         *
+         *     Feedback is about a MATCH, not about the global notice, so a tenant that has never
+         *     scored the notice gets 404 - there is nothing of theirs to rate.
+         */
+        post: operations["post_feedback_api_v1_opportunities__opportunity_id__feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/pass": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pass Opportunity
+         * @description Drop the notice with a reason: `cancelled` by default, `no_bid` when the pursuit
+         *     is still at qualifying / bid_decision and the caller asks for a formal no-bid.
+         */
+        post: operations["pass_opportunity_api_v1_opportunities__opportunity_id__pass_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/pursue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pursue Opportunity
+         * @description Track this notice and start the agent workflow (SPEC 9).
+         *
+         *     Idempotent per (profile, opportunity): pursuing again reuses the card, clears the
+         *     watch flag and re-enqueues the pipeline.
+         */
+        post: operations["pursue_opportunity_api_v1_opportunities__opportunity_id__pursue_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/opportunities/{opportunity_id}/watch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Watch Opportunity
+         * @description Follow the notice for amendments and reminders without starting any agent work.
+         */
+        post: operations["watch_opportunity_api_v1_opportunities__opportunity_id__watch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -855,6 +1074,40 @@ export interface paths {
         post?: never;
         /** Delete Insurance */
         delete: operations["delete_insurance_api_v1_profiles__profile_id__insurance__item_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profiles/{profile_id}/keyword-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Keyword Suggestions */
+        get: operations["list_keyword_suggestions_api_v1_profiles__profile_id__keyword_suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profiles/{profile_id}/keyword-suggestions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Decide Keyword Suggestion */
+        put: operations["decide_keyword_suggestion_api_v1_profiles__profile_id__keyword_suggestions__id__put"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1163,7 +1416,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Pursuits
+         * @description The pipeline, filtered by owner / stage / due date / region / value (SPEC 9).
+         *
+         *     The board groups by stage in the browser; `by_stage` counts the whole filtered set so
+         *     the column headers do not change with the page.
+         */
+        get: operations["list_pursuits_api_v1_pursuits_get"];
         put?: never;
         /**
          * Create Pursuit
@@ -1190,7 +1450,12 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Pursuit
+         * @description Move the card and reassign it. A refused move answers 409 with
+         *     {error: stage_transition, from, to, reason} — the board shows `reason` on the drop.
+         */
+        patch: operations["update_pursuit_api_v1_pursuits__pursuit_id__patch"];
         trace?: never;
     };
     "/api/v1/pursuits/{pursuit_id}/agents/approve-budget": {
@@ -1236,6 +1501,111 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pursuits/{pursuit_id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Comments */
+        get: operations["list_comments_api_v1_pursuits__pursuit_id__comments_get"];
+        put?: never;
+        /** Create Comment */
+        post: operations["create_comment_api_v1_pursuits__pursuit_id__comments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/comments/{comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Comment */
+        delete: operations["delete_comment_api_v1_pursuits__pursuit_id__comments__comment_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Comment
+         * @description Edit your own comment; anybody who may comment can resolve or reopen a thread.
+         */
+        patch: operations["update_comment_api_v1_pursuits__pursuit_id__comments__comment_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/dates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Dates
+         * @description Every key date on the pursuit, soonest first, in both time zones.
+         */
+        get: operations["list_dates_api_v1_pursuits__pursuit_id__dates_get"];
+        put?: never;
+        /**
+         * Create Date
+         * @description Add a date. A second auto kind on the same pursuit is a 409 (edit the first).
+         */
+        post: operations["create_date_api_v1_pursuits__pursuit_id__dates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/dates/{date_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Date
+         * @description Edit a date. Editing pins it: `source` becomes `user`, so an amendment that moves
+         *     the buyer's deadline will shift the other auto rows but never this one.
+         */
+        put: operations["update_date_api_v1_pursuits__pursuit_id__dates__date_id__put"];
+        post?: never;
+        /** Delete Date */
+        delete: operations["delete_date_api_v1_pursuits__pursuit_id__dates__date_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/dates/{date_id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Acknowledge Date
+         * @description "Seen it." Stops the reminder escalation for this date (SPEC 9).
+         */
+        post: operations["acknowledge_date_api_v1_pursuits__pursuit_id__dates__date_id__acknowledge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pursuits/{pursuit_id}/matrix": {
         parameters: {
             query?: never;
@@ -1275,6 +1645,69 @@ export interface paths {
         get: operations["get_packet_api_v1_pursuits__pursuit_id__packet_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tasks
+         * @description Open tasks first, then by due date (SPEC 10.4 screen 6, Tasks tab).
+         */
+        get: operations["list_tasks_api_v1_pursuits__pursuit_id__tasks_get"];
+        put?: never;
+        /** Create Task */
+        post: operations["create_task_api_v1_pursuits__pursuit_id__tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Task */
+        delete: operations["delete_task_api_v1_pursuits__pursuit_id__tasks__task_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Task
+         * @description Edit or close a task. A reviewer / viewer may only close one assigned to them.
+         */
+        patch: operations["update_task_api_v1_pursuits__pursuit_id__tasks__task_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/saved-searches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Saved Searches
+         * @description The caller's own saved searches, oldest first, each with its alert rule id.
+         */
+        get: operations["list_saved_searches_api_v1_saved_searches_get"];
+        put?: never;
+        /** Post Saved Search */
+        post: operations["post_saved_search_api_v1_saved_searches_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1445,6 +1878,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/webhooks/whatsapp/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Whatsapp Receipt
+         * @description BSP delivery receipts (SPEC 7): move notification_deliveries to sent/opened/failed.
+         *
+         *     Authentication is the BSP's HMAC over the raw body where WHATSAPP_WEBHOOK_SECRET is
+         *     configured; nothing is read from the payload before it verifies. The receipt can only
+         *     ever update a delivery row we created ourselves, addressed by its provider_ref.
+         */
+        post: operations["whatsapp_receipt_api_v1_webhooks_whatsapp__provider__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -1527,6 +1984,94 @@ export interface components {
          * @enum {string}
          */
         AgencyType: "federal" | "state" | "local" | "central_ministry" | "state_government" | "psu" | "commercial" | "international" | "other";
+        /**
+         * AgentsQueuedOut
+         * @description What POST /pursue did with the pipeline. A board action never runs it inline.
+         */
+        AgentsQueuedOut: {
+            /** Enqueued */
+            enqueued: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Run Id */
+            run_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+        };
+        /** AlertRuleIn */
+        AlertRuleIn: {
+            /** Channels */
+            channels?: string[];
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Min Score
+             * @default 70
+             */
+            min_score: number;
+            /**
+             * Mode
+             * @default instant
+             * @enum {string}
+             */
+            mode: "instant" | "digest";
+            /** Name */
+            name: string;
+            /** Profile Id */
+            profile_id?: string | null;
+            /** Saved Search Id */
+            saved_search_id?: string | null;
+            /** User Id */
+            user_id?: string | null;
+        };
+        /** AlertRuleOut */
+        AlertRuleOut: {
+            /** Channels */
+            channels: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Min Score */
+            min_score: number;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "instant" | "digest";
+            /** Name */
+            name: string;
+            /** Profile Id */
+            profile_id: string | null;
+            /** Saved Search Id */
+            saved_search_id: string | null;
+            /** User Id */
+            user_id: string | null;
+        };
+        /** AlertRuleUpdate */
+        AlertRuleUpdate: {
+            /** Channels */
+            channels?: string[] | null;
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Min Score */
+            min_score?: number | null;
+            /** Mode */
+            mode?: ("instant" | "digest") | null;
+            /** Name */
+            name?: string | null;
+        };
         /** ApproveBudgetIn */
         ApproveBudgetIn: {
             /** Additional Usd */
@@ -1734,6 +2279,24 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** CalendarConnectionOut */
+        CalendarConnectionOut: {
+            /** Calendar Id */
+            calendar_id: string;
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Error */
+            last_error: string | null;
+            /** Last Synced At */
+            last_synced_at: string | null;
+            /** Provider */
+            provider: string;
+        };
         /** CertificationIn */
         CertificationIn: {
             /** Cert Number */
@@ -1889,6 +2452,72 @@ export interface components {
             /** Is Primary */
             is_primary?: boolean | null;
         };
+        /** CommentIn */
+        CommentIn: {
+            /** Body */
+            body: string;
+            /** Target Id */
+            target_id?: string | null;
+            /**
+             * Target Type
+             * @default pursuit
+             */
+            target_type: string;
+        };
+        /** CommentListOut */
+        CommentListOut: {
+            /** Items */
+            items: components["schemas"]["CommentOut"][];
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+            /** Unresolved Count */
+            unresolved_count: number;
+        };
+        /** CommentOut */
+        CommentOut: {
+            /** Author User Id */
+            author_user_id: string | null;
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+            /** Resolved At */
+            resolved_at: string | null;
+            /** Resolved By */
+            resolved_by: string | null;
+            /** Target Id */
+            target_id: string | null;
+            /** Target Type */
+            target_type: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** CommentPatchIn */
+        CommentPatchIn: {
+            /** Body */
+            body?: string | null;
+            /** Resolved */
+            resolved?: boolean | null;
+        };
         /** CompletenessOut */
         CompletenessOut: {
             /** Drafting Enabled */
@@ -1946,6 +2575,47 @@ export interface components {
          * @enum {string}
          */
         CparsRating: "exceptional" | "very_good" | "satisfactory" | "marginal" | "unsatisfactory" | "not_rated";
+        /**
+         * DashboardOut
+         * @description SPEC 9: "open pursuits by stage, due in next 7 days, pipeline value by stage (USD
+         *     and INR), win rate, average hours saved per package, alert precision from feedback".
+         */
+        DashboardOut: {
+            /** Alert Feedback Rated */
+            alert_feedback_rated: number;
+            /** Alert Precision */
+            alert_precision: number | null;
+            /** Avg Hours Saved Per Package */
+            avg_hours_saved_per_package: number;
+            /** Awarded */
+            awarded: number;
+            /** Due Next 7 Days */
+            due_next_7_days: components["schemas"]["DueSoonOut"][];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Hours Saved Basis */
+            hours_saved_basis: string;
+            /** Hours Saved Total */
+            hours_saved_total: number;
+            /** Lost */
+            lost: number;
+            /** Open By Stage */
+            open_by_stage: {
+                [key: string]: number;
+            };
+            /** Pipeline Value By Stage */
+            pipeline_value_by_stage: {
+                [key: string]: components["schemas"]["MoneyPairOut"];
+            };
+            pipeline_value_total: components["schemas"]["MoneyPairOut"];
+            /** Submitted */
+            submitted: number;
+            /** Win Rate */
+            win_rate: number | null;
+        };
         /** DataRequestIn */
         DataRequestIn: {
             kind: components["schemas"]["DataRequestKind"];
@@ -2024,6 +2694,75 @@ export interface components {
             status: string;
             /** Url */
             url: string;
+        };
+        /** DueSoonOut */
+        DueSoonOut: {
+            /** Countdown */
+            countdown: string;
+            due_at: components["schemas"]["TzDateOut"];
+            /**
+             * Opportunity Id
+             * Format: uuid
+             */
+            opportunity_id: string;
+            /** Owner User Id */
+            owner_user_id: string | null;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+            /** Stage */
+            stage: string;
+            /** Title */
+            title: string;
+        };
+        /**
+         * FeedbackIn
+         * @description SPEC 6: thumbs up/down and "not relevant because..." on an alert.
+         */
+        FeedbackIn: {
+            /** Profile Id */
+            profile_id?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Thumb
+             * @enum {string}
+             */
+            thumb: "up" | "down";
+        };
+        /** FeedbackOut */
+        FeedbackOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Match Id
+             * Format: uuid
+             */
+            match_id: string;
+            /**
+             * Opportunity Id
+             * Format: uuid
+             */
+            opportunity_id: string;
+            /**
+             * Profile Id
+             * Format: uuid
+             */
+            profile_id: string;
+            /** Reason */
+            reason: string | null;
+            /** Thumb */
+            thumb: string;
         };
         /** FileOut */
         FileOut: {
@@ -2259,6 +2998,78 @@ export interface components {
             /** Url */
             url: string | null;
         };
+        /** KeyDateIn */
+        KeyDateIn: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Kind
+             * @default custom
+             */
+            kind: string;
+            /** Label */
+            label?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /** KeyDateListOut */
+        KeyDateListOut: {
+            /** Items */
+            items: components["schemas"]["KeyDateOut"][];
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+        };
+        /** KeyDateOut */
+        KeyDateOut: {
+            /** Acknowledged At */
+            acknowledged_at: string | null;
+            /** Acknowledged By */
+            acknowledged_by: string | null;
+            at: components["schemas"]["TzDateOut"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Note */
+            note: string | null;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+            /** Source */
+            source: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** KeyDatePatchIn */
+        KeyDatePatchIn: {
+            /** At */
+            at?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Note */
+            note?: string | null;
+        };
         /** KeywordIn */
         KeywordIn: {
             kind: components["schemas"]["KeywordKind"];
@@ -2386,6 +3197,13 @@ export interface components {
             /** Volume */
             volume: string | null;
         };
+        /** MeCalendarOut */
+        MeCalendarOut: {
+            /** Connections */
+            connections: components["schemas"]["CalendarConnectionOut"][];
+            /** Feed Url */
+            feed_url: string | null;
+        };
         /** MemberInviteIn */
         MemberInviteIn: {
             /** Email */
@@ -2454,6 +3272,13 @@ export interface components {
             name?: string | null;
             /** Tz */
             tz?: string | null;
+        };
+        /** MoneyPairOut */
+        MoneyPairOut: {
+            /** Inr */
+            INR: string;
+            /** Usd */
+            USD: string;
         };
         /**
          * MseOwnership
@@ -2809,6 +3634,18 @@ export interface components {
             submission_method: string | null;
             /** Upload Steps */
             upload_steps?: components["schemas"]["UploadStep"][];
+        };
+        /** PassIn */
+        PassIn: {
+            /**
+             * No Bid
+             * @default false
+             */
+            no_bid: boolean;
+            /** Profile Id */
+            profile_id?: string | null;
+            /** Reason */
+            reason: string;
         };
         /** PastPerformanceIn */
         PastPerformanceIn: {
@@ -3485,6 +4322,26 @@ export interface components {
             /** Year Founded */
             year_founded?: number | null;
         };
+        /**
+         * PursueIn
+         * @description `profile_id` is optional while the tenant has exactly one profile.
+         */
+        PursueIn: {
+            /** Profile Id */
+            profile_id?: string | null;
+            /**
+             * Run Agents
+             * @default true
+             */
+            run_agents: boolean;
+        };
+        /** PursuitActionOut */
+        PursuitActionOut: {
+            agents?: components["schemas"]["AgentsQueuedOut"] | null;
+            /** Created */
+            created: boolean;
+            pursuit: components["schemas"]["PursuitOut"];
+        };
         /** PursuitCreateIn */
         PursuitCreateIn: {
             /**
@@ -3497,6 +4354,75 @@ export interface components {
              * Format: uuid
              */
             profile_id: string;
+        };
+        /**
+         * PursuitListItem
+         * @description One card on the board / row in the table (SPEC 9, 10.4 screen 5).
+         */
+        PursuitListItem: {
+            /**
+             * Activity At
+             * Format: date-time
+             */
+            activity_at: string;
+            /** Buyer Org */
+            buyer_org: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Currency */
+            currency: string;
+            /** Decision */
+            decision: string | null;
+            /** Estimated Value Max */
+            estimated_value_max: string | null;
+            /** Estimated Value Max Usd */
+            estimated_value_max_usd: string | null;
+            /** Estimated Value Min */
+            estimated_value_min: string | null;
+            /** Estimated Value Min Usd */
+            estimated_value_min_usd: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            internal_due_at: components["schemas"]["TzDateOut"] | null;
+            /** Matrix Recheck Required */
+            matrix_recheck_required: boolean;
+            /**
+             * Opportunity Id
+             * Format: uuid
+             */
+            opportunity_id: string;
+            /** Owner User Id */
+            owner_user_id: string | null;
+            /** Pass Reason */
+            pass_reason: string | null;
+            /**
+             * Profile Id
+             * Format: uuid
+             */
+            profile_id: string;
+            region: components["schemas"]["Region"];
+            response_due_at: components["schemas"]["TzDateOut"] | null;
+            /** Source Tz */
+            source_tz: string;
+            /** Stage */
+            stage: string;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Watch */
+            watch: boolean;
         };
         /** PursuitMatrixOut */
         PursuitMatrixOut: {
@@ -3519,6 +4445,11 @@ export interface components {
         };
         /** PursuitOut */
         PursuitOut: {
+            /**
+             * Activity At
+             * Format: date-time
+             */
+            activity_at: string;
             /** Budget Month Limit Usd */
             budget_month_limit_usd: string | null;
             /** Budget Month Remaining Usd */
@@ -3545,6 +4476,8 @@ export interface components {
             id: string;
             /** Internal Due At */
             internal_due_at: string | null;
+            /** Matrix Recheck Required */
+            matrix_recheck_required: boolean;
             /**
              * Opportunity Id
              * Format: uuid
@@ -3552,6 +4485,8 @@ export interface components {
             opportunity_id: string;
             /** Owner User Id */
             owner_user_id: string | null;
+            /** Pass Reason */
+            pass_reason: string | null;
             /**
              * Profile Id
              * Format: uuid
@@ -3560,11 +4495,15 @@ export interface components {
             run: components["schemas"]["RunOut"] | null;
             /** Stage */
             stage: string;
+            /** Submitted At */
+            submitted_at: string | null;
             /**
              * Updated At
              * Format: date-time
              */
             updated_at: string;
+            /** Watch */
+            watch: boolean;
         };
         /** PursuitPacketOut */
         PursuitPacketOut: {
@@ -3585,6 +4524,34 @@ export interface components {
              * Format: uuid
              */
             pursuit_id: string;
+        };
+        /** PursuitPage */
+        PursuitPage: {
+            /** By Stage */
+            by_stage: {
+                [key: string]: number;
+            };
+            /** Items */
+            items: components["schemas"]["PursuitListItem"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Pages */
+            pages: number;
+            /** Total */
+            total: number;
+        };
+        /** PursuitPatchIn */
+        PursuitPatchIn: {
+            /** Internal Due At */
+            internal_due_at?: string | null;
+            /** Owner User Id */
+            owner_user_id?: string | null;
+            /** Stage */
+            stage?: string | null;
+            /** Watch */
+            watch?: boolean | null;
         };
         /** PushConfigOut */
         PushConfigOut: {
@@ -3881,6 +4848,53 @@ export interface components {
          * @enum {string}
          */
         SamStatus: "active" | "inactive" | "expired" | "pending";
+        /** SavedSearchIn */
+        SavedSearchIn: {
+            /** Channels */
+            channels?: string[];
+            /** Filters */
+            filters?: {
+                [key: string]: unknown;
+            };
+            /** Min Score */
+            min_score?: number | null;
+            /**
+             * Mode
+             * @default instant
+             * @enum {string}
+             */
+            mode: "instant" | "digest";
+            /** Name */
+            name: string;
+            /** Profile Id */
+            profile_id?: string | null;
+        };
+        /** SavedSearchOut */
+        SavedSearchOut: {
+            /** Alert Rule Id */
+            alert_rule_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Filters */
+            filters: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /** SectionCompletenessOut */
         SectionCompletenessOut: {
             /** Missing */
@@ -4090,6 +5104,52 @@ export interface components {
             /** Value */
             value: unknown;
         };
+        /** SuggestionDecision */
+        SuggestionDecision: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "approved" | "rejected";
+        };
+        /** SuggestionOut */
+        SuggestionOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Decided At */
+            decided_at?: string | null;
+            /** Delta Weight */
+            delta_weight: string;
+            /** Evidence */
+            evidence?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "include" | "exclude";
+            /**
+             * Profile Id
+             * Format: uuid
+             */
+            profile_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "rejected";
+            /** Term */
+            term: string;
+        };
         /** SupportAccessIn */
         SupportAccessIn: {
             /**
@@ -4146,6 +5206,87 @@ export interface components {
             region: components["schemas"]["Region"];
             /** Version */
             version: string;
+        };
+        /** TaskIn */
+        TaskIn: {
+            /** Assignee User Id */
+            assignee_user_id?: string | null;
+            /** Detail */
+            detail?: string | null;
+            /** Due At */
+            due_at?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** TaskListOut */
+        TaskListOut: {
+            /** Items */
+            items: components["schemas"]["TaskOut"][];
+            /** Open Count */
+            open_count: number;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+        };
+        /** TaskOut */
+        TaskOut: {
+            /** Assignee User Id */
+            assignee_user_id: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /** Completed By */
+            completed_by: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: string | null;
+            /** Detail */
+            detail: string | null;
+            /** Due At */
+            due_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+            /** Ref */
+            ref: {
+                [key: string]: unknown;
+            };
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** TaskPatchIn */
+        TaskPatchIn: {
+            /** Assignee User Id */
+            assignee_user_id?: string | null;
+            /** Detail */
+            detail?: string | null;
+            /** Due At */
+            due_at?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Title */
+            title?: string | null;
         };
         /** TeamingPartnerIn */
         TeamingPartnerIn: {
@@ -4499,6 +5640,11 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** WatchIn */
+        WatchIn: {
+            /** Profile Id */
+            profile_id?: string | null;
+        };
         /** WebhookOut */
         WebhookOut: {
             /** Event Id */
@@ -4509,6 +5655,18 @@ export interface components {
             plan_after?: string | null;
             /** Plan Before */
             plan_before?: string | null;
+            /** Status */
+            status: string;
+        };
+        /**
+         * WhatsAppReceiptOut
+         * @description What the BSP callback did: updated | ignored (a status we do not track).
+         */
+        WhatsAppReceiptOut: {
+            /** Delivery Status */
+            delivery_status?: string | null;
+            /** Provider Ref */
+            provider_ref?: string | null;
             /** Status */
             status: string;
         };
@@ -4832,6 +5990,94 @@ export interface operations {
             };
         };
     };
+    list_alert_rules_api_v1_alert_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRuleOut"][];
+                };
+            };
+        };
+    };
+    post_alert_rule_api_v1_alert_rules_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertRuleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_alert_rule_api_v1_alert_rules__rule_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertRuleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertRuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_billing_api_v1_billing_get: {
         parameters: {
             query?: never;
@@ -4881,6 +6127,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calendar_feed_api_v1_calendar_ics_get: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dashboard_api_v1_dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOut"];
                 };
             };
         };
@@ -5135,6 +6430,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_calendar_api_v1_me_calendar_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeCalendarOut"];
+                };
+            };
+        };
+    };
+    disconnect_calendar_api_v1_me_calendar_connections__connection_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rotate_calendar_token_api_v1_me_calendar_token_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeCalendarOut"];
                 };
             };
         };
@@ -5567,7 +6931,7 @@ export interface operations {
             query?: {
                 due_before?: string | null;
                 include_duplicates?: boolean;
-                /** @description accepted now, applied once matches exist (M4) */
+                /** @description only notices this tenant scored at least this high */
                 min_score?: number | null;
                 /** @description NAICS codes, comma-separated */
                 naics?: string | null;
@@ -5625,6 +6989,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpportunityDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_feedback_api_v1_opportunities__opportunity_id__feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pass_opportunity_api_v1_opportunities__opportunity_id__pass_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PassIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitActionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pursue_opportunity_api_v1_opportunities__opportunity_id__pursue_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PursueIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitActionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    watch_opportunity_api_v1_opportunities__opportunity_id__watch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opportunity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitActionOut"];
                 };
             };
             /** @description Validation Error */
@@ -6620,6 +8124,76 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_keyword_suggestions_api_v1_profiles__profile_id__keyword_suggestions_get: {
+        parameters: {
+            query?: {
+                /** @description pending | approved | rejected */
+                status?: string | null;
+            };
+            header?: never;
+            path: {
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_keyword_suggestion_api_v1_profiles__profile_id__keyword_suggestions__id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestionDecision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestionOut"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -7944,6 +9518,47 @@ export interface operations {
             };
         };
     };
+    list_pursuits_api_v1_pursuits_get: {
+        parameters: {
+            query?: {
+                due_before?: string | null;
+                /** @description USD */
+                min_value?: number | string | null;
+                /** @description owner_user_id */
+                owner?: string | null;
+                page?: number;
+                page_size?: number;
+                region?: components["schemas"]["Region"] | null;
+                /** @description stages, comma-separated */
+                stage?: string | null;
+                watch?: boolean | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_pursuit_api_v1_pursuits_post: {
         parameters: {
             query?: never;
@@ -7987,6 +9602,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_pursuit_api_v1_pursuits__pursuit_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PursuitPatchIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -8078,6 +9728,306 @@ export interface operations {
             };
         };
     };
+    list_comments_api_v1_pursuits__pursuit_id__comments_get: {
+        parameters: {
+            query?: {
+                target_id?: string | null;
+                target_type?: string | null;
+                unresolved?: boolean;
+            };
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_comment_api_v1_pursuits__pursuit_id__comments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_comment_api_v1_pursuits__pursuit_id__comments__comment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_comment_api_v1_pursuits__pursuit_id__comments__comment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_dates_api_v1_pursuits__pursuit_id__dates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyDateListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_date_api_v1_pursuits__pursuit_id__dates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeyDateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyDateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_date_api_v1_pursuits__pursuit_id__dates__date_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date_id: string;
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeyDatePatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyDateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_date_api_v1_pursuits__pursuit_id__dates__date_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date_id: string;
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acknowledge_date_api_v1_pursuits__pursuit_id__dates__date_id__acknowledge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date_id: string;
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeyDateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_matrix_api_v1_pursuits__pursuit_id__matrix_get: {
         parameters: {
             query?: never;
@@ -8127,6 +10077,194 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PursuitPacketOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tasks_api_v1_pursuits__pursuit_id__tasks_get: {
+        parameters: {
+            query?: {
+                assignee?: string | null;
+                status?: string | null;
+            };
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_task_api_v1_pursuits__pursuit_id__tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_task_api_v1_pursuits__pursuit_id__tasks__task_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_task_api_v1_pursuits__pursuit_id__tasks__task_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_saved_searches_api_v1_saved_searches_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedSearchOut"][];
+                };
+            };
+        };
+    };
+    post_saved_search_api_v1_saved_searches_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedSearchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedSearchOut"];
                 };
             };
             /** @description Validation Error */
@@ -8353,6 +10491,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookOut"];
+                };
+            };
+        };
+    };
+    whatsapp_receipt_api_v1_webhooks_whatsapp__provider__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

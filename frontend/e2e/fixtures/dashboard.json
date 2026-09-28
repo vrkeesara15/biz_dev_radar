@@ -1,30 +1,56 @@
 {
-  "open_by_stage": { "identified": 5, "reviewing": 3, "drafting": 2, "submitted": 1 },
+  "generated_at": "2026-09-27T09:00:00Z",
+  "open_by_stage": { "drafting": 2, "identified": 5, "qualifying": 3 },
   "due_next_7_days": [
     {
-      "id": "d1",
-      "title": "Questions due — Cloud migration and managed services",
-      "due_at": "2026-10-01T18:00:00Z",
-      "kind": "questions_due",
-      "buyer": "Department of Veterans Affairs",
+      "pursuit_id": "9a000000-0000-4000-8000-000000000001",
       "opportunity_id": "7c1d2e3f-0000-4000-8000-000000000001",
-      "pursuit_id": null
+      "title": "Cloud migration and managed services for VA regional offices",
+      "stage": "identified",
+      "owner_user_id": "00000000-0000-0000-0000-0000000000e2",
+      "due_at": {
+        "utc": "2026-10-01T18:00:00Z",
+        "buyer_tz": "America/New_York",
+        "buyer_local": "2026-10-01T14:00:00-04:00",
+        "buyer_display": "Oct 1, 2:00 PM EDT",
+        "user_tz": "Asia/Kolkata",
+        "user_local": "2026-10-01T23:30:00+05:30",
+        "user_display": "11:30 PM IST",
+        "display": "Oct 1, 2:00 PM EDT = 11:30 PM IST"
+      },
+      "countdown": "4d 9h"
     },
     {
-      "id": "d2",
-      "title": "Proposal due — Supply of laptops",
-      "due_at": "2026-10-03T09:30:00Z",
-      "kind": "response_due",
-      "buyer": "Ministry of Electronics and IT",
+      "pursuit_id": "9a000000-0000-4000-8000-000000000002",
       "opportunity_id": "7c1d2e3f-0000-4000-8000-000000000002",
-      "pursuit_id": null
+      "title": "Supply of laptops and peripherals",
+      "stage": "qualifying",
+      "owner_user_id": null,
+      "due_at": {
+        "utc": "2026-10-03T09:30:00Z",
+        "buyer_tz": "Asia/Kolkata",
+        "buyer_local": "2026-10-03T15:00:00+05:30",
+        "buyer_display": "Oct 3, 3:00 PM IST",
+        "user_tz": "Asia/Kolkata",
+        "user_local": "2026-10-03T15:00:00+05:30",
+        "user_display": "Oct 3, 3:00 PM IST",
+        "display": "Oct 3, 3:00 PM IST"
+      },
+      "countdown": "6d 0h"
     }
   ],
   "pipeline_value_by_stage": {
-    "identified": { "USD": 2500000, "INR": 207500000 },
-    "drafting": { "USD": 1500000, "INR": 124500000 }
+    "identified": { "USD": "2500000.00", "INR": "207500000.00" },
+    "drafting": { "USD": "1500000.00", "INR": "124500000.00" }
   },
+  "pipeline_value_total": { "USD": "4000000.00", "INR": "332000000.00" },
   "win_rate": 0.32,
-  "avg_hours_saved_per_package": 11.5,
-  "alert_precision": 0.74
+  "awarded": 8,
+  "lost": 17,
+  "submitted": 25,
+  "avg_hours_saved_per_package": 20,
+  "hours_saved_total": 500,
+  "hours_saved_basis": "25 packages submitted x 20 hours saved per package (an estimate, not a measurement)",
+  "alert_precision": 0.74,
+  "alert_feedback_rated": 50
 }

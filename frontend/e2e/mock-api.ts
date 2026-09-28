@@ -28,6 +28,15 @@ type SettingsFixture = {
   consents: Json[];
 };
 
+/** Shape of e2e/fixtures/pursuits.json (the M6 pipeline, key dates and calendar routes). */
+type PursuitsFixture = {
+  pursuits: Json[];
+  dates: Record<string, Json[]>;
+  tasks: Record<string, Json[]>;
+  comments: Record<string, Json[]>;
+  calendar: Json;
+};
+
 /** Shape of e2e/fixtures/admin.json (the M7-08 console routes). */
 type AdminFixture = {
   sources: Json[];
@@ -83,6 +92,13 @@ export type MockOptions = {
    * "Not scored yet".
    */
   matches?: boolean;
+  /**
+   * When true, the M6 pursuit routes work in memory: GET /pursuits (paged, with
+   * by_stage over the whole filtered set), PATCH /pursuits/{id} enforcing the
+   * SPEC 9 stage rules with a 409 {error: stage_transition, from, to, reason},
+   * the key-date, task and comment routes, and GET /me/calendar. Default 404.
+   */
+  pursuits?: boolean;
   /** When true, POST /opportunities/{id}/pursue|watch|pass answer 201 (M6-01 contract); default 404. */
   pipelineActions?: boolean;
   /** When true, the tenant member routes work in memory (M7-15); default 404. */
@@ -122,6 +138,12 @@ export class MockApi {
   consents: Json[] = this.settings.consents;
   dataRequests: Json[] = [];
   checkouts: Json[] = [];
+  pursuitsFixture: PursuitsFixture = fixture<PursuitsFixture>("pursuits.json");
+  pursuits: Json[] = this.pursuitsFixture.pursuits;
+  keyDates: Record<string, Json[]> = this.pursuitsFixture.dates;
+  pursuitTasks: Record<string, Json[]> = this.pursuitsFixture.tasks;
+  pursuitComments: Record<string, Json[]> = this.pursuitsFixture.comments;
+  calendar: Json = this.pursuitsFixture.calendar;
   admin: AdminFixture = fixture<AdminFixture>("admin.json");
   adminSources: Json[] = this.admin.sources;
   adminTenants: Json[] = this.admin.tenants;
@@ -284,6 +306,8 @@ export class MockApi {
     if (settingsHandled) return settingsHandled;
     const notificationsHandled = this.handleNotifications(pathname, method, body, url.searchParams, json, route);
     if (notificationsHandled) return notificationsHandled;
+    const pursuitsHandled = this.handlePursuits(pathname, method, body, url.searchParams, json, route);
+    if (pursuitsHandled) return pursuitsHandled;
     if (pathname === "/api/v1/dashboard" && method === "GET") {
       if (!this.options.dashboard) return json(404, { detail: "Not Found" });
       return json(200, this.dashboard);
@@ -414,6 +438,327 @@ export class MockApi {
       }
     }
     return json(404, { detail: `Unhandled ${method} ${pathname}` });
+  }
+
+  // --- M6 pursuits, key dates, tasks, comments and the calendar feed ----------
+
+  /** SPEC 9's ladder and outcomes, in board order (app.core.pursuit_stages). */
+  private static readonly LADDER = [
+    "identified",
+    "qualifying",
+    "bid_decision",
+    "drafting",
+    "in_review",
+    "final_approval",
+    "submitted",
+  ];
+
+  /**
+   * The subset of `app.core.pursuit_stages.can_transition` the board can hit:
+   * one step forward at a time (a skip is refused by naming the stage that was
+   * jumped), Drafting needs Gate 1, and a backwards move is allowed because the
+   * e2e session signs in as a tenant owner.
+   */
+  static transitionRefusal(from: string, to: string, decision: string | null): string | null {
+    if (from === to) return null;
+    const ladder = MockApi.LADDER;
+    const fromIndex = ladder.indexOf(from);
+    const toIndex = ladder.indexOf(to);
+    if (toIndex === -1) return null; // an outcome: cancel / no-bid / awarded, left to the server
+    if (fromIndex === -1) return `${to} is not reachable from ${from}`;
+    if (toIndex > fromIndex + 1) return `${to} needs ${ladder[fromIndex + 1]} first`;
+    if (to === "drafting" && decision !== "bid") return "drafting requires a bid decision (Gate 1)";
+    return null;
+  }
+
+  private handlePursuits(
+    pathname: string,
+    method: string,
+    body: unknown,
+    params: URLSearchParams,
+    json: (status: number, payload: unknown) => Promise<void>,
+    route: Route,
+  ): Promise<void> | null {
+    if (!pathname.startsWith("/api/v1/pursuits") && !pathname.startsWith("/api/v1/me/calendar")) {
+      return null;
+    }
+    if (!this.options.pursuits) return json(404, { detail: "Not Found" });
+
+    if (pathname === "/api/v1/me/calendar" && method === "GET") return json(200, this.calendar);
+    if (pathname === "/api/v1/me/calendar-token" && method === "POST") {
+      this.calendar = {
+        ...this.calendar,
+        feed_url: "https://api.bidradar.test/api/v1/calendar.ics?token=rotated-e2e-token",
+      };
+      return json(200, this.calendar);
+    }
+    const connectionMatch = pathname.match(/^\/api\/v1\/me\/calendar-connections\/([^/]+)$/);
+    if (connectionMatch && method === "DELETE") {
+      const [, connectionId] = connectionMatch;
+      const connections = (this.calendar.connections as Json[]).filter((row) => row.id !== connectionId);
+      this.calendar = { ...this.calendar, connections };
+      return route.fulfill({ status: 204, body: "" });
+    }
+
+    if (pathname === "/api/v1/pursuits" && method === "GET") {
+      return json(200, this.pursuitPage(params));
+    }
+
+    const datesMatch = pathname.match(/^\/api\/v1\/pursuits\/([^/]+)\/dates(?:\/([^/]+))?(\/acknowledge)?$/);
+    if (datesMatch) {
+      const [, pursuitId, dateId, acknowledge] = datesMatch;
+      const list = (this.keyDates[pursuitId] ??= []);
+      if (!dateId) {
+        if (method === "GET") return json(200, { pursuit_id: pursuitId, items: list });
+        if (method === "POST") {
+          const b = (body ?? {}) as Json;
+          const item = this.makeKeyDate(pursuitId, b);
+          list.push(item);
+          return json(201, item);
+        }
+      } else {
+        const index = list.findIndex((row) => row.id === dateId);
+        if (index === -1) return json(404, { detail: "key date not found" });
+        if (acknowledge && method === "POST") {
+          list[index] = {
+            ...list[index],
+            acknowledged_by: "00000000-0000-0000-0000-0000000000e2",
+            acknowledged_at: new Date().toISOString(),
+          };
+          return json(200, list[index]);
+        }
+        if (method === "PUT") {
+          const b = (body ?? {}) as Json;
+          const at = b.at ? this.tzDate(String(b.at)) : list[index].at;
+          list[index] = {
+            ...list[index],
+            at,
+            label: (b.label as string) || list[index].label,
+            note: b.note === undefined ? list[index].note : b.note,
+            source: "user",
+          };
+          return json(200, list[index]);
+        }
+        if (method === "DELETE") {
+          list.splice(index, 1);
+          return route.fulfill({ status: 204, body: "" });
+        }
+      }
+    }
+
+    const tasksMatch = pathname.match(/^\/api\/v1\/pursuits\/([^/]+)\/tasks(?:\/([^/]+))?$/);
+    if (tasksMatch) {
+      const [, pursuitId, taskId] = tasksMatch;
+      const list = (this.pursuitTasks[pursuitId] ??= []);
+      if (!taskId) {
+        if (method === "GET") {
+          return json(200, {
+            pursuit_id: pursuitId,
+            items: list,
+            open_count: list.filter((row) => row.status !== "done").length,
+          });
+        }
+        if (method === "POST") {
+          const now = new Date().toISOString();
+          const item: Json = {
+            id: this.nextId("task"),
+            pursuit_id: pursuitId,
+            detail: null,
+            assignee_user_id: null,
+            due_at: null,
+            status: "open",
+            source: "user",
+            ref: {},
+            created_by: "00000000-0000-0000-0000-0000000000e2",
+            completed_at: null,
+            completed_by: null,
+            created_at: now,
+            updated_at: now,
+            ...(body as Json),
+          };
+          list.push(item);
+          return json(201, item);
+        }
+      } else {
+        const index = list.findIndex((row) => row.id === taskId);
+        if (index === -1) return json(404, { detail: "task not found" });
+        if (method === "PATCH") {
+          const b = (body ?? {}) as Json;
+          list[index] = {
+            ...list[index],
+            ...b,
+            completed_at: b.status === "done" ? new Date().toISOString() : null,
+          };
+          return json(200, list[index]);
+        }
+        if (method === "DELETE") {
+          list.splice(index, 1);
+          return route.fulfill({ status: 204, body: "" });
+        }
+      }
+    }
+
+    const commentsMatch = pathname.match(/^\/api\/v1\/pursuits\/([^/]+)\/comments(?:\/([^/]+))?$/);
+    if (commentsMatch) {
+      const [, pursuitId, commentId] = commentsMatch;
+      const list = (this.pursuitComments[pursuitId] ??= []);
+      if (!commentId) {
+        if (method === "GET") {
+          return json(200, {
+            pursuit_id: pursuitId,
+            items: list,
+            unresolved_count: list.filter((row) => !row.resolved_at).length,
+          });
+        }
+        if (method === "POST") {
+          const now = new Date().toISOString();
+          const item: Json = {
+            id: this.nextId("comment"),
+            pursuit_id: pursuitId,
+            target_type: "pursuit",
+            target_id: null,
+            author_user_id: "00000000-0000-0000-0000-0000000000e2",
+            resolved_at: null,
+            resolved_by: null,
+            created_at: now,
+            updated_at: now,
+            ...(body as Json),
+          };
+          list.push(item);
+          return json(201, item);
+        }
+      } else {
+        const index = list.findIndex((row) => row.id === commentId);
+        if (index === -1) return json(404, { detail: "comment not found" });
+        if (method === "PATCH") {
+          const b = (body ?? {}) as Json;
+          list[index] = {
+            ...list[index],
+            ...(b.body ? { body: b.body } : {}),
+            resolved_at: b.resolved ? new Date().toISOString() : null,
+          };
+          return json(200, list[index]);
+        }
+      }
+    }
+
+    const pursuitMatch = pathname.match(/^\/api\/v1\/pursuits\/([^/]+)$/);
+    if (pursuitMatch) {
+      const [, pursuitId] = pursuitMatch;
+      const index = this.pursuits.findIndex((row) => row.id === pursuitId);
+      if (index === -1) return json(404, { detail: "pursuit not found" });
+      const current = this.pursuits[index];
+      if (method === "GET") return json(200, current);
+      if (method === "PATCH") {
+        const b = (body ?? {}) as Json;
+        if (typeof b.stage === "string") {
+          const reason = MockApi.transitionRefusal(
+            String(current.stage),
+            b.stage,
+            (current.decision as string | null) ?? null,
+          );
+          if (reason) {
+            return json(409, {
+              detail: { error: "stage_transition", from: current.stage, to: b.stage, reason },
+            });
+          }
+        }
+        this.pursuits[index] = { ...current, ...b, activity_at: new Date().toISOString() };
+        return json(200, this.pursuits[index]);
+      }
+    }
+
+    return json(404, { detail: `Unhandled ${method} ${pathname}` });
+  }
+
+  /** GET /api/v1/pursuits: the same filters and by_stage semantics as M6-01. */
+  private pursuitPage(params: URLSearchParams): Json {
+    const owner = params.get("owner");
+    const stages = (params.get("stage") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    const dueBefore = params.get("due_before");
+    const region = params.get("region");
+    const minValue = params.get("min_value");
+    const watch = params.get("watch");
+
+    const matches = this.pursuits.filter((row) => {
+      if (owner && row.owner_user_id !== owner) return false;
+      if (stages.length && !stages.includes(String(row.stage))) return false;
+      if (region && row.region !== region) return false;
+      if (watch !== null && String(row.watch) !== watch) return false;
+      if (minValue !== null) {
+        const value = Number(row.estimated_value_max_usd ?? row.estimated_value_min_usd ?? 0);
+        if (!(value >= Number(minValue))) return false;
+      }
+      if (dueBefore) {
+        const due = (row.response_due_at as Json | null)?.utc as string | undefined;
+        if (!due || due > dueBefore) return false;
+      }
+      return true;
+    });
+
+    // by_stage always covers the WHOLE filtered set, not the page (M6-01).
+    const byStage: Record<string, number> = {};
+    for (const row of matches) {
+      const stage = String(row.stage);
+      byStage[stage] = (byStage[stage] ?? 0) + 1;
+    }
+
+    const page = Math.max(1, Number(params.get("page") ?? 1));
+    const pageSize = Math.max(1, Number(params.get("page_size") ?? 50));
+    const start = (page - 1) * pageSize;
+    return {
+      items: matches.slice(start, start + pageSize),
+      total: matches.length,
+      page,
+      page_size: pageSize,
+      pages: Math.max(1, Math.ceil(matches.length / pageSize)),
+      by_stage: byStage,
+    };
+  }
+
+  /** A TzDateOut the way core.display_time renders one, with the year present. */
+  private tzDate(iso: string, buyerTz = "America/New_York"): Json {
+    const date = new Date(iso);
+    const render = (tz: string) =>
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      }).format(date);
+    const buyer = render(buyerTz);
+    const user = render("Asia/Kolkata");
+    return {
+      utc: date.toISOString(),
+      buyer_tz: buyerTz,
+      buyer_local: date.toISOString(),
+      buyer_display: buyer,
+      user_tz: "Asia/Kolkata",
+      user_local: date.toISOString(),
+      user_display: user,
+      display: buyer === user ? buyer : `${buyer} = ${user}`,
+    };
+  }
+
+  private makeKeyDate(pursuitId: string, body: Json): Json {
+    const now = new Date().toISOString();
+    const kind = String(body.kind ?? "custom");
+    return {
+      id: this.nextId("date"),
+      pursuit_id: pursuitId,
+      kind,
+      label: (body.label as string) || "Key date",
+      note: body.note ?? null,
+      source: "user",
+      at: this.tzDate(String(body.at)),
+      acknowledged_by: null,
+      acknowledged_at: null,
+      created_at: now,
+      updated_at: now,
+    };
   }
 
   /** The M7-08 admin console routes, platform_admin only on the real backend. */
