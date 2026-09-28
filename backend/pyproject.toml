@@ -40,7 +40,7 @@ dependencies = [
   "opentelemetry-instrumentation-httpx>=0.50b0",
   "opentelemetry-instrumentation-celery>=0.50b0",
   "rapidfuzz>=3.14.6",
-  "icalendar>=6,<7",
+  "icalendar>=6,<8",
   "markdown-it-py>=3,<4",
   "nh3>=0.2,<1",
 ]
