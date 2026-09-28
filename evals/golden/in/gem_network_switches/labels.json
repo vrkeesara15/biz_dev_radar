@@ -1,0 +1,112 @@
+{
+  "source": "synthetic GeM bid for network switches (evals/golden/in/gem_network_switches)",
+  "notice_id": "GEM/2026/B/4502277",
+  "region": "in",
+  "notice_type": "bid",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 3,00,00,000 in the last three financial years.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "The bidder shall furnish an EMD of Rs. 7,50,000 by online transfer before the bid end date.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "The bidder shall have at least 3 years of experience supplying managed network switches to educational or government institutions.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "No EMD exemption is available under this bid for MSEs or for recognised startups.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "The bidder shall submit an original equipment manufacturer authorisation certificate valid for this bid number.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-06",
+      "text": "3.1 The supplier shall deliver 210 managed switches to the campus store within 60 days of the supply order.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "3.2 The supplier shall provide five years of OEM back-to-back warranty with next business day replacement.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "3.3 The supplier must ensure every switch supports IEEE 802.1X and IPv6 routing as specified in the technical sheet.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-09",
+      "text": "3.4 The supplier shall commission the switches and hand over configuration backups for each device.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-10",
+      "text": "3.5 The supplier should train four campus engineers on the management console at no additional cost.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-11",
+      "text": "Each uploaded document shall be a searchable PDF of not more than 20 MB.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-12",
+      "text": "Bids shall be submitted on the GeM portal before 04:00 PM IST on 09-12-2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-13",
+      "text": "The bidder shall digitally sign the technical and financial covers with a Class 3 DSC.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "The bidder shall upload the OEM authorisation certificate and the compliance statement against the technical sheet.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-15",
+      "text": "Technically qualified bids will be ranked by the total landed price including installation.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-16",
+      "text": "The buyer will reject any bid whose compliance statement deviates from the mandatory specifications.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "min_avg_turnover_inr": "30000000",
+    "emd_amount_inr": "750000",
+    "min_experience_years": 3,
+    "mse_exemption_allowed": false,
+    "startup_exemption_allowed": false,
+    "requires_gem_registration": true
+  }
+}

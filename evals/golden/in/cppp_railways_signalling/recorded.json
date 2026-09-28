@@ -1,0 +1,176 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 1,
+    "missed_labels": [
+      "L-13"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder is required to have a minimum average annual turnover of Rs. 15,00,00,000 over the last three financial years.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 15,00,00,000 over the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to submit an EMD of Rs. 30,00,000 through the CPP Portal payment gateway or as a bank guarantee.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall submit an EMD of Rs. 30,00,000 through the CPP Portal payment gateway or",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to have at least 3 years of experience commissioning electronic interlocking systems on Indian Railways.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall have at least 3 years of experience commissioning electronic interlocking systems on Indian",
+          "confidence": 0.9
+        },
+        {
+          "text": "MSEs registered under Udyam are exempted from the EMD on submission of a valid certificate.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "MSEs registered under Udyam are exempted from the EMD on submission of a valid",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to hold a valid RDSO approval for the offered electronic interlocking system.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall hold a valid RDSO approval for the offered electronic interlocking",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to supply, install, test and commission electronic interlocking at 11 stations.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall supply, install, test and commission electronic interlocking at 11",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to complete the work at each station within the traffic block periods allotted by the railway.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall complete the work at each station within the traffic block periods allotted by",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to obtain the Commissioner of Railway Safety sanction before commissioning each installation.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must obtain the Commissioner of Railway Safety sanction before commissioning each",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to provide two years of warranty and free maintenance after commissioning.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall provide two years of warranty and free maintenance after",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to train railway signalling staff on the installed system at each station.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall train railway signalling staff on the installed system at each",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor should provide a spares holding plan for the warranty period.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The contractor should provide a spares holding plan for the warranty",
+          "confidence": 0.9
+        },
+        {
+          "text": "Uploaded documents shall be legible PDF files of not more than 20 MB each.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Uploaded documents shall be legible PDF files of not more than 20 MB",
+          "confidence": 0.9
+        },
+        {
+          "text": "Both covers shall be digitally signed with a Class 3 DSC in the name of the authorised signatory.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Both covers shall be digitally signed with a Class 3 DSC in the name of the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to upload the RDSO approval letter and the Udyam certificate where an exemption is claimed.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall upload the RDSO approval letter and the Udyam certificate where an exemption is",
+          "confidence": 0.9
+        },
+        {
+          "text": "Technically responsive bids will be ranked by the total evaluated cost including two years of maintenance.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Technically responsive bids will be ranked by the total evaluated cost including two years of",
+          "confidence": 0.9
+        },
+        {
+          "text": "The railway will verify completion certificates for at least five commissioned interlocking installations.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The railway will verify completion certificates for at least five commissioned interlocking",
+          "confidence": 0.9
+        },
+        {
+          "text": "South Central Railway, Signal and Telecommunication Department, Secunderabad.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "South Central Railway, Signal and Telecommunication Department, Secunderabad",
+          "confidence": 0.7
+        },
+        {
+          "text": "The contractor is required to obtain the Commissioner of Railway Safety sanction before commissioning each installation. (restated in the summary)",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must obtain the Commissioner of Railway Safety sanction before commissioning each",
+          "confidence": 0.8
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

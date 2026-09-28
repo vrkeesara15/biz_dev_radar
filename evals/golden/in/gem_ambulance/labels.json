@@ -1,0 +1,112 @@
+{
+  "source": "synthetic GeM bid for ambulances (evals/golden/in/gem_ambulance)",
+  "notice_id": "GEM/2026/B/4533901",
+  "region": "in",
+  "notice_type": "bid",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 5,00,00,000 over the preceding three financial years.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "The bidder shall submit an EMD of Rs. 9,60,000 online before the bid end date.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "The bidder shall have at least 5 years of experience in supplying ambulances fabricated to AIS-125 standards.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "MSEs registered under Udyam are exempted from the EMD; startup exemption is not available for this bid.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "The bidder shall hold a valid type approval certificate from a notified testing agency for the offered vehicle.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-06",
+      "text": "4.1 The supplier shall deliver 24 fully fabricated ambulances to the district headquarters within 120 days of the order.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "4.2 The supplier shall provide three years of comprehensive warranty covering the chassis and the medical equipment.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "4.3 The supplier must ensure every vehicle carries the medical equipment list specified in Annexure II at handover.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-09",
+      "text": "4.4 The supplier shall establish an authorised service point within 100 kilometres of each district headquarters.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-10",
+      "text": "4.5 The supplier should train two drivers and two paramedics per district on the installed equipment.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-11",
+      "text": "All certificates shall be uploaded as PDF files of not more than 15 MB each.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-12",
+      "text": "Bids shall be submitted on the GeM portal before 05:00 PM IST on 15-12-2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-13",
+      "text": "The bidder shall sign the technical and financial covers with a Class 3 Digital Signature Certificate.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "The bidder shall upload the AIS-125 type approval certificate and the Udyam certificate where applicable.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-15",
+      "text": "Bids will be evaluated on the lowest price per vehicle among technically qualified bidders.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-16",
+      "text": "A physical inspection of a sample vehicle may be required before award.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "min_avg_turnover_inr": "50000000",
+    "emd_amount_inr": "960000",
+    "min_experience_years": 5,
+    "mse_exemption_allowed": true,
+    "startup_exemption_allowed": false,
+    "requires_gem_registration": true
+  }
+}

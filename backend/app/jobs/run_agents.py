@@ -26,8 +26,9 @@ from app.agents.services import AgentServices, services_from_settings
 from app.agents.tracing import Tracer, tracer_from_settings
 from app.core.config import Settings, get_settings
 from app.core.db import Database, get_database
-from app.models import AgentRun
+from app.models import AgentRun, Pursuit
 from app.models.agents import RUN_FAILED
+from app.services.pursuits import cleared_gates, touch
 
 log = structlog.get_logger(__name__)
 
@@ -51,6 +52,7 @@ def result_summary(result: RunResult) -> dict[str, Any]:
         "failed_step": result.failed_step,
         "paused_step": result.paused_step,
         "pause_reason": result.pause_reason,
+        "gate": result.gate,
         "error": result.error,
         "cost_usd": str(result.cost_usd),
     }
@@ -74,8 +76,17 @@ async def run_agents_job(
         if run is None:
             raise LookupError(f"agent run {run_id} not found for tenant {tenant_id}")
         step = str((run.params or {}).get("step") or STEP_ALL)
+        # Human gates: the pursuit's own state says which ones a person has cleared
+        # (an approved bid decision clears Gate 1), so a resumed run plans past them.
+        pursuit = None if run.pursuit_id is None else await session.get(Pursuit, run.pursuit_id)
+        gates = () if pursuit is None else cleared_gates(pursuit)
+        # SPEC 9 stale-pursuit check (OQ-132): a pursuit the agents are working on is not
+        # idle. Bumped when the run starts and again when it finishes, so a pipeline that
+        # runs for an hour does not leave the card looking untouched.
+        if pursuit is not None:
+            touch(pursuit)
     try:
-        specs, finish = plan_steps(step)
+        specs, finish = plan_steps(step, gates_cleared=gates)
     except ValueError as exc:
         async with db.session(tenant_id) as session:
             run = await session.get(AgentRun, run_id)
@@ -94,12 +105,22 @@ async def run_agents_job(
     )
     try:
         result = await runner.run(
-            run_id, specs, finish_status=finish.status, finish_reason=finish.reason
+            run_id,
+            specs,
+            finish_status=finish.status,
+            finish_reason=finish.reason,
+            finish_gate=finish.gate,
         )
     finally:
         if services is None:
             svc.close()
     summary = result_summary(result)
+    async with db.session(tenant_id) as session:
+        run = await session.get(AgentRun, run_id)
+        if run is not None and run.pursuit_id is not None:
+            finished = await session.get(Pursuit, run.pursuit_id)
+            if finished is not None:
+                touch(finished)
     log.info("agents.run_finished", **summary)
     return summary
 

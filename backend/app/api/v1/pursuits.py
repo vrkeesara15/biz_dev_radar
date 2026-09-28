@@ -10,10 +10,12 @@ and the budget approval that resumes a run the cost guard paused.
     GET  /api/v1/pursuits/{pursuit_id}/packet              uploads, portal, signatures, deadline
     POST /api/v1/pursuits/{pursuit_id}/agents/run          {step: collect|...|all}
     POST /api/v1/pursuits/{pursuit_id}/agents/approve-budget {additional_usd, reason?}
+    POST /api/v1/pursuits/{pursuit_id}/decision            {decision: bid|no_bid, note?}
+    POST /api/v1/pursuits/{pursuit_id}/approve-package      Gate 2: the reviewed package
 
-Stage moves go through app.core.pursuit_stages: a refused drag answers 409 with the
-reason the board shows. POST /pursuits/{id}/decision (Gate 1) belongs to the bid/no-bid
-agent milestone and is deliberately NOT defined here.
+Every stage move -- a board drag, a bid decision or a package approval -- goes through
+`services.pursuits.move_stage`, so `app.core.pursuit_stages` is the single set of rules
+and a refusal always answers 409 with the reason the board shows.
 """
 
 from __future__ import annotations
@@ -39,6 +41,7 @@ from app.core import pursuit_stages as stages
 from app.core.compliance import (
     ARTIFACT_CHECKLIST,
     ARTIFACT_FORMAT_RULES,
+    ARTIFACT_RED_TEAM,
     ChecklistItem,
     FormatRules,
 )
@@ -46,14 +49,27 @@ from app.core.config import Region, Settings
 from app.core.display_time import TzDateOut, tz_fields_or_none
 from app.core.packet import Packet, PacketContext, build_packet
 from app.core.plan import Resource
+from app.core.pursuit_stages import DECISION_BID, DECISIONS
 from app.core.roles import Role
 from app.jobs import run_agents as run_agents_job_module
-from app.models import AgentRun, ComplianceItem, Opportunity, Pursuit, Requirement, User
-from app.models.agents import RUN_NEEDS_APPROVAL, RUN_QUEUED
+from app.models import (
+    AgentRun,
+    CompanyProfile,
+    ComplianceItem,
+    Opportunity,
+    Pursuit,
+    Requirement,
+    User,
+)
+from app.models.agents import RUN_NEEDS_APPROVAL, RUN_PAUSED, RUN_QUEUED
+from app.services import drafts as draft_svc
 from app.services import key_dates as key_date_svc
 from app.services import pursuits as pursuit_svc
 from app.services.audit import AuditHint
+from app.services.drafts import DraftsSummary
+from app.services.events import PURSUIT_DECIDED, get_event_bus
 from app.services.plan import PlanService
+from app.services.users import ensure_user_membership
 
 router = APIRouter(prefix="/pursuits", tags=["pursuits"])
 # SPEC 10.3 puts the board actions on the opportunity; they live here with the rest of
@@ -87,12 +103,25 @@ class RunOut(BaseModel):
     status: str
     pause_reason: str | None
     paused_at: str | None
+    gate: str | None
     cost_usd: Decimal
     tokens_in: int
     tokens_out: int
     started_at: datetime | None
     finished_at: datetime | None
     created_at: datetime
+
+
+class DraftsSummaryOut(BaseModel):
+    """Draft state of the pursuit; `unsupported_claims_count` is the grounding validator's
+    tally over the current version of every section (SPEC 8, M5-11)."""
+
+    count: int = 0
+    approved: int = 0
+    in_review: int = 0
+    unsupported_claims_count: int = 0
+    needs_input_count: int = 0
+    flagged_sections: int = 0
 
 
 class PursuitOut(BaseModel):
@@ -102,6 +131,12 @@ class PursuitOut(BaseModel):
     stage: str
     owner_user_id: uuid.UUID | None
     decision: str | None
+    decided_by: uuid.UUID | None
+    decided_at: datetime | None
+    decision_note: str | None
+    # Gate 2 (SPEC 8): the human who approved the reviewed draft package
+    package_approved_by: uuid.UUID | None
+    package_approved_at: datetime | None
     internal_due_at: datetime | None
     watch: bool
     pass_reason: str | None
@@ -117,7 +152,32 @@ class PursuitOut(BaseModel):
     budget_month_limit_usd: Decimal | None  # None = unlimited
     budget_month_spent_usd: Decimal
     budget_month_remaining_usd: Decimal | None
+    drafts: DraftsSummaryOut
     run: RunOut | None
+
+
+class DecisionIn(BaseModel):
+    decision: str = Field(max_length=16)
+    note: str | None = Field(default=None, max_length=2000)
+    # run the resumed pipeline in the API process (tests / no worker); otherwise queued
+    inline: bool = False
+
+    @field_validator("decision")
+    @classmethod
+    def _known(cls, value: str) -> str:
+        if value not in DECISIONS:
+            raise ValueError(f"decision must be one of {list(DECISIONS)}")
+        return value
+
+
+class DecisionOut(BaseModel):
+    pursuit: PursuitOut
+    decision: str
+    previous_stage: str
+    resumed_run_id: uuid.UUID | None
+    mode: str  # queued | inline | none
+    task_id: str | None = None
+    result: dict[str, Any] | None = None
 
 
 class MatrixRowOut(BaseModel):
@@ -213,6 +273,7 @@ def run_out(run: AgentRun) -> RunOut:
         status=run.status,
         pause_reason=run.pause_reason,
         paused_at=params.get("paused_at"),
+        gate=params.get("gate"),
         cost_usd=Decimal(run.cost_usd),
         tokens_in=run.tokens_in,
         tokens_out=run.tokens_out,
@@ -222,7 +283,12 @@ def run_out(run: AgentRun) -> RunOut:
     )
 
 
-def pursuit_out(pursuit: Pursuit, costs: CostSnapshot, run: AgentRun | None) -> PursuitOut:
+def pursuit_out(
+    pursuit: Pursuit,
+    costs: CostSnapshot,
+    run: AgentRun | None,
+    drafts: DraftsSummary | None = None,
+) -> PursuitOut:
     return PursuitOut(
         id=pursuit.id,
         profile_id=pursuit.profile_id,
@@ -230,6 +296,11 @@ def pursuit_out(pursuit: Pursuit, costs: CostSnapshot, run: AgentRun | None) -> 
         stage=pursuit.stage,
         owner_user_id=pursuit.owner_user_id,
         decision=pursuit.decision,
+        decided_by=pursuit.decided_by,
+        decided_at=pursuit.decided_at,
+        decision_note=pursuit.decision_note,
+        package_approved_by=pursuit.package_approved_by,
+        package_approved_at=pursuit.package_approved_at,
         internal_due_at=pursuit.internal_due_at,
         watch=pursuit.watch,
         pass_reason=pursuit.pass_reason,
@@ -244,6 +315,7 @@ def pursuit_out(pursuit: Pursuit, costs: CostSnapshot, run: AgentRun | None) -> 
         budget_month_limit_usd=costs.month_budget_usd,
         budget_month_spent_usd=costs.month_spent_usd,
         budget_month_remaining_usd=costs.month_remaining_usd,
+        drafts=DraftsSummaryOut(**(drafts or DraftsSummary()).as_dict()),
         run=None if run is None else run_out(run),
     )
 
@@ -257,7 +329,12 @@ async def load_pursuit_out(
     await session.refresh(pursuit)
     tenant = await pursuit_svc.get_tenant(session, tenant_id)
     costs = await cost_snapshot(session, pursuit, tenant)
-    return pursuit_out(pursuit, costs, await pursuit_svc.latest_run(session, pursuit.id))
+    return pursuit_out(
+        pursuit,
+        costs,
+        await pursuit_svc.latest_run(session, pursuit.id),
+        await draft_svc.summarise(session, pursuit.id),
+    )
 
 
 def app_llm(request: Request) -> LLMClient | None:
@@ -318,6 +395,167 @@ async def get_pursuit(
 ) -> PursuitOut:
     pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
     return await load_pursuit_out(session, pursuit, user.tenant_id)
+
+
+@router.post("/{pursuit_id}/decision", response_model=DecisionOut)
+async def record_decision(
+    pursuit_id: uuid.UUID,
+    body: DecisionIn,
+    session: TenantSessionDep,
+    user: ReaderDep,
+    request: Request,
+    settings: SettingsDep,
+) -> DecisionOut:
+    """Gate 1 (SPEC 8, 9): an approver records bid or no-bid.
+
+    Only the roles the profile's `required_approver_roles` names (plus the tenant owner)
+    may decide. A `bid` moves the pursuit to Drafting and resumes the run the pipeline
+    left paused at Gate 1; a `no_bid` closes the pursuit and resumes nothing.
+    """
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    profile = await session.get(CompanyProfile, pursuit.profile_id)
+    allowed = pursuit_svc.approver_roles(profile)
+    if user.role not in allowed:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            detail=(
+                f"role {user.role.value} may not approve bid/no-bid; "
+                f"allowed: {sorted(r.value for r in allowed)}"
+            ),
+        )
+    # decided_by references users: make sure the JIT row exists (OQ-16)
+    await ensure_user_membership(
+        user_id=user.id, email=user.email, tenant_id=user.tenant_id, role=user.role
+    )
+    previous_stage = pursuit_svc.record_decision(
+        pursuit, body.decision, user.id, role=user.role, note=body.note
+    )
+    run = await pursuit_svc.latest_run(session, pursuit.id)
+    resumed: AgentRun | None = None
+    if body.decision == DECISION_BID and run is not None and run.status == RUN_PAUSED:
+        run.status = RUN_QUEUED
+        resumed = run
+    request.state.audit = AuditHint(
+        action="pursuit.decided",
+        object_type="pursuit",
+        object_id=str(pursuit.id),
+        meta={
+            "decision": body.decision,
+            "previous_stage": previous_stage,
+            "stage": pursuit.stage,
+            "note": body.note,
+            "run_id": None if resumed is None else str(resumed.id),
+        },
+    )
+    await session.commit()  # the worker / inline job reads the run in its own session
+    await get_event_bus().publish(
+        PURSUIT_DECIDED,
+        {
+            "tenant_id": str(user.tenant_id),
+            "pursuit_id": str(pursuit.id),
+            "profile_id": str(pursuit.profile_id),
+            "opportunity_id": str(pursuit.opportunity_id),
+            "decision": body.decision,
+            "decided_by": str(user.id),
+            "stage": pursuit.stage,
+        },
+    )
+    mode, task_id, result = "none", None, None
+    if resumed is not None:
+        mode, task_id, result = await dispatch_run(
+            request, settings, resumed.id, user.tenant_id, inline=body.inline
+        )
+    session.expire_all()
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    return DecisionOut(
+        pursuit=await load_pursuit_out(session, pursuit, user.tenant_id),
+        decision=body.decision,
+        previous_stage=previous_stage,
+        resumed_run_id=None if resumed is None else resumed.id,
+        mode=mode,
+        task_id=task_id,
+        result=result,
+    )
+
+
+class ApprovePackageIn(BaseModel):
+    note: str | None = Field(default=None, max_length=2000)
+    # run the resumed pipeline in the API process (tests / no worker); otherwise queued
+    inline: bool = False
+
+
+class ApprovePackageOut(BaseModel):
+    pursuit: PursuitOut
+    previous_stage: str
+    approved_sections: int
+    resumed_run_id: uuid.UUID | None
+    mode: str  # queued | inline | none
+    task_id: str | None = None
+    result: dict[str, Any] | None = None
+
+
+@router.post("/{pursuit_id}/approve-package", response_model=ApprovePackageOut)
+async def approve_package(
+    pursuit_id: uuid.UUID,
+    body: ApprovePackageIn,
+    session: TenantSessionDep,
+    user: ManagerDep,
+    request: Request,
+    settings: SettingsDep,
+) -> ApprovePackageOut:
+    """Gate 2 (SPEC 8): a human reviewed, edited and approved the whole draft package.
+
+    Records who approved it and when, marks every section approved, moves the pursuit to
+    Final approval and resumes the run the red-team step left paused at Gate 2. Exports
+    keep their "DRAFT - internal" footer until the package is additionally marked final.
+    """
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    report = await pursuit_svc.latest_artifact(session, pursuit.id, ARTIFACT_RED_TEAM)
+    if report is None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail="the red-team reviewer has not run yet; there is no package to approve",
+        )
+    await ensure_user_membership(
+        user_id=user.id, email=user.email, tenant_id=user.tenant_id, role=user.role
+    )
+    previous_stage = pursuit_svc.approve_package(pursuit, user.id, role=user.role)
+    approved = await pursuit_svc.approve_drafts(session, pursuit.id, user.id)
+    run = await pursuit_svc.latest_run(session, pursuit.id)
+    resumed: AgentRun | None = None
+    if run is not None and run.status == RUN_PAUSED:
+        run.status = RUN_QUEUED
+        resumed = run
+    request.state.audit = AuditHint(
+        action="pursuit.package_approved",
+        object_type="pursuit",
+        object_id=str(pursuit.id),
+        meta={
+            "previous_stage": previous_stage,
+            "stage": pursuit.stage,
+            "approved_sections": approved,
+            "red_team_version": report.version,
+            "note": body.note,
+            "run_id": None if resumed is None else str(resumed.id),
+        },
+    )
+    await session.commit()  # the worker / inline job reads the run in its own session
+    mode, task_id, result = "none", None, None
+    if resumed is not None:
+        mode, task_id, result = await dispatch_run(
+            request, settings, resumed.id, user.tenant_id, inline=body.inline
+        )
+    session.expire_all()
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    return ApprovePackageOut(
+        pursuit=await load_pursuit_out(session, pursuit, user.tenant_id),
+        previous_stage=previous_stage,
+        approved_sections=approved,
+        resumed_run_id=None if resumed is None else resumed.id,
+        mode=mode,
+        task_id=task_id,
+        result=result,
+    )
 
 
 async def _matrix_artifacts(
@@ -449,7 +687,9 @@ async def run_agents(
     (`bidradar.run_agents`) or executed in the API process; the cost guard still decides
     before every step, so a run can come back needs_approval having spent nothing."""
     pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
-    specs, _finish = pipeline.plan_steps(body.step)
+    specs, _finish = pipeline.plan_steps(
+        body.step, gates_cleared=pursuit_svc.cleared_gates(pursuit)
+    )
     runner = AgentRunner(tenant_id=user.tenant_id, llm=app_llm(request) or _NO_LLM)
     run_id = await runner.start(
         kind=pursuit_svc.PIPELINE_RUN_KIND, pursuit_id=pursuit.id, params={"step": body.step}

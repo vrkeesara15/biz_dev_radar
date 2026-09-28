@@ -1,0 +1,168 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 1,
+    "missed_labels": [
+      "L-04"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "Offerors are required to hold an active Alliant 2 governmentwide acquisition contract at the time of proposal submission.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must hold an active Alliant 2 governmentwide acquisition contract at the time of proposal",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to be registered and active in SAM.gov under NAICS 541512 throughout the period of performance.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must be registered and active in SAM.gov under NAICS 541512 throughout the period of",
+          "confidence": 0.9
+        },
+        {
+          "text": "Key personnel proposed for the data architect role must hold an active Public Trust clearance.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Key personnel proposed for the data architect role must hold an active Public Trust",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to implement automated data quality checks for every migrated dataset.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall implement automated data quality checks for every migrated",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to achieve initial operating capability within 180 days of task order award.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall achieve initial operating capability within 180 days of task order",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to comply with the agency's data governance standard and the FedRAMP Moderate baseline.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must comply with the agency's data governance standard and the FedRAMP Moderate",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to provide monthly burn-down reporting against the migration backlog.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall provide monthly burn-down reporting against the migration",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor should propose reusable pipeline components and describe how they reduce future migration cost.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The contractor should propose reusable pipeline components and describe how they reduce future migration",
+          "confidence": 0.9
+        },
+        {
+          "text": "The technical proposal may not exceed 30 pages, excluding the staffing matrix and resumes.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "The technical proposal shall not exceed 30 pages, excluding the staffing matrix and",
+          "confidence": 0.9
+        },
+        {
+          "text": "Submit Volume I Technical and Volume II Price as separate PDF files.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Submit Volume I Technical and Volume II Price as separate PDF",
+          "confidence": 0.9
+        },
+        {
+          "text": "File names shall follow the pattern CompanyName_GS00Q26TO0031_Volume.pdf.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "File names shall follow the pattern CompanyName_GS00Q26TO0031_Volume.pdf",
+          "confidence": 0.9
+        },
+        {
+          "text": "Proposals have to be submitted through the GSA Assisted Acquisition portal by 5:00 PM Eastern Time on 19 November 2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Proposals must be submitted through the GSA Assisted Acquisition portal by 5:00 PM Eastern Time on",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to submit a fully loaded labour rate table mapped to their Alliant 2 ceiling rates.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Offerors shall submit a fully loaded labour rate table mapped to their Alliant 2 ceiling",
+          "confidence": 0.9
+        },
+        {
+          "text": "The buyer will evaluate the technical approach, the transition risk and the realism of the 180-day schedule.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The Government will evaluate the technical approach, the transition risk and the realism of the 180-day",
+          "confidence": 0.9
+        },
+        {
+          "text": "Past performance will be evaluated for relevancy to data platform migrations of at least 50 terabytes.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Past performance will be evaluated for relevancy to data platform migrations of at least 50",
+          "confidence": 0.9
+        },
+        {
+          "text": "This task order is competed among Alliant 2 contract holders only.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "This task order is competed among Alliant 2 contract holders only",
+          "confidence": 0.7
+        },
+        {
+          "text": "File names shall follow the pattern CompanyName_GS00Q26TO0031_Volume.pdf. (restated in the summary)",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "File names shall follow the pattern CompanyName_GS00Q26TO0031_Volume.pdf",
+          "confidence": 0.8
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

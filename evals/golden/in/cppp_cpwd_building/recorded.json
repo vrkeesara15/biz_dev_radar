@@ -1,0 +1,160 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 0,
+    "missed_labels": [
+      "L-05"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder is required to have a minimum average annual turnover of Rs. 9,00,00,000 in the last three financial years.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 9,00,00,000 in the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to furnish an EMD of Rs. 18,00,000 by online payment or a bank guarantee from a scheduled commercial bank.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall furnish an EMD of Rs. 18,00,000 by online payment or a bank guarantee",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to have at least 5 years of experience in building renovation works of comparable value.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall have at least 5 years of experience in building renovation works of comparable",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to be enrolled on the CPP Portal and shall hold a valid Class 3 Digital Signature Certificate.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall be enrolled on the CPP Portal and shall hold a valid Class 3",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to renovate 18,400 square metres of office space including civil, electrical and HVAC works.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall renovate 18,400 square metres of office space including civil, electrical and HVAC",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to complete the work within 15 months from the date of the work order.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall complete the work within 15 months from the date of the work",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to obtain all statutory clearances including the fire safety certificate before handover.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must obtain all statutory clearances including the fire safety certificate before",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to carry out the work in occupied premises in phases agreed with the engineer in charge.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall carry out the work in occupied premises in phases agreed with the engineer",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor should propose measures to limit dust and noise during working hours.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The contractor should propose measures to limit dust and noise during working",
+          "confidence": 0.9
+        },
+        {
+          "text": "Documents shall be uploaded as PDF files; each file may not exceed 30 MB.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Documents shall be uploaded as PDF files; each file shall not exceed 30",
+          "confidence": 0.9
+        },
+        {
+          "text": "Bids shall be uploaded on the CPP Portal before 15:30 hours IST on 05-01-2027.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Bids shall be uploaded on the CPP Portal before 15:30 hours IST on",
+          "confidence": 0.9
+        },
+        {
+          "text": "The technical and financial covers shall be digitally signed with a Class 3 DSC.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The technical and financial covers shall be digitally signed with a Class 3",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to upload an affidavit confirming that the firm is not blacklisted by any government department.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall upload an affidavit confirming that the firm is not blacklisted by any government",
+          "confidence": 0.9
+        },
+        {
+          "text": "The lowest evaluated financial bid among technically qualified bidders will be recommended for award.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The lowest evaluated financial bid among technically qualified bidders will be recommended for",
+          "confidence": 0.9
+        },
+        {
+          "text": "Technical evaluation will verify similar completed works, the solvency certificate and the bid capacity.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Technical evaluation will verify similar completed works, the solvency certificate and the bid",
+          "confidence": 0.9
+        },
+        {
+          "text": "The tender fee of Rs. 5,000 is payable online and is non-refundable.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The tender fee of Rs. 5,000 is payable online and is non-refundable",
+          "confidence": 0.7
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

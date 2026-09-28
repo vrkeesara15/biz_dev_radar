@@ -1527,7 +1527,7 @@
       "Run pauses at Gate 1; POST /api/v1/pursuits/{id}/decision records bid|no_bid by an allowed approver and resumes or closes",
       "Stage cannot move to Drafting without a bid decision"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-07",
@@ -1544,7 +1544,7 @@
       "3-5 win themes and discriminators grounded in profile records with citations",
       "Output validated; unmapped requirements listed as warnings"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-08",
@@ -1563,7 +1563,7 @@
       "Every factual claim about the company carries a citation token to a profile record, past-performance id or file; unsupported claims produce [NEEDS INPUT: ...] and a task for the owner",
       "drafts(pursuit_id, section, current_version_id) and draft_versions(body, citations jsonb, author agent|user, created_at)"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-09",
@@ -1600,7 +1600,7 @@
       "Run stops at Gate 2 (human review, edit, approve); approval recorded with user and time",
       "Eval asserts zero fabricated company facts on the golden set"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-11",
@@ -1617,7 +1617,7 @@
       "Flags are stored on draft_versions and rendered red in the UI; count exposed on the pursuit",
       "Unit tests for supported, unsupported and placeholder sentences"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-12",
@@ -1637,7 +1637,7 @@
       "evals/injection/ contains at least 5 injection cases; eval fails if any changes agent output or triggers a tool call",
       "make eval runs the injection suite"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-13",
@@ -1659,7 +1659,7 @@
       "Every export carries 'DRAFT - internal' footer until marked final and the verify-on-portal disclaimer",
       "Export read is audited; files open with python-docx, pypdf and openpyxl in tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-14",
@@ -1697,7 +1697,7 @@
       "Pass bars enforced: recall >= 90%, precision >= 85%, eligibility exact match >= 90%, zero fabrications, 100% citations",
       "Eval runs with recorded LLM responses by default; ANTHROPIC_API_KEY switches to live"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-16",
@@ -1716,7 +1716,7 @@
       "Comments on drafts and compliance items; reviewer role can comment and approve only",
       "Draft reads written to audit_log; isolation factories registered"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-17",
@@ -1733,7 +1733,7 @@
       "Feedback is retrievable per tenant for future prompt examples; never shared across tenants",
       "Unit test on diff generation"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-18",

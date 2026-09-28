@@ -1,0 +1,104 @@
+{
+  "source": "synthetic NSF notice of funding opportunity (evals/golden/us/nsf_grant_nofo)",
+  "notice_id": "NSF-26-551",
+  "region": "us",
+  "notice_type": "grant",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "Applicants must be accredited institutions of higher education located in the United States.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "Applicants must have an active registration in SAM.gov and a Unique Entity Identifier before submission.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "The principal investigator must hold a full-time appointment at the submitting institution.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "Cost sharing is not required and voluntary committed cost sharing is prohibited.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "II.1 The awardee shall conduct the proposed research over a period of 36 months from the award start date.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-06",
+      "text": "II.2 The awardee shall submit annual project reports within 90 days of the end of each project year.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "II.3 The awardee must make data underlying published results available in an approved repository within 12 months of publication.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-08",
+      "text": "II.4 The awardee shall include a two-page data management plan describing storage, retention and sharing.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-09",
+      "text": "II.5 Proposals should describe broadening participation activities and how their impact will be measured.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-10",
+      "text": "The project description shall not exceed 15 pages including figures and tables.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-11",
+      "text": "Use a 10-point or larger typeface with margins of at least one inch on all sides.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-12",
+      "text": "Proposals must be submitted through Research.gov no later than 5:00 PM submitter's local time on 8 January 2027.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-13",
+      "text": "Applicants shall include biographical sketches for all senior personnel in the approved format.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "Proposals will be reviewed against the intellectual merit and the broader impacts criteria.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-15",
+      "text": "Reviewers will assess the qualifications of the team and the adequacy of the requested resources.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "cfda": "47.070",
+    "applicant_type": "institution_of_higher_education",
+    "sam_registration_required": true,
+    "cost_share_required": false
+  }
+}

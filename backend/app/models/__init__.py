@@ -5,8 +5,9 @@ from app.models.audit import AuditLog
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.billing import BillingCustomer, BillingEventRecord, PlanLimit, UsageLedger
 from app.models.calendar import CalendarConnection, CalendarEvent
-from app.models.collab import PursuitComment, PursuitTask
+from app.models.collab import Comment, Task
 from app.models.compliance import ComplianceItem, PursuitArtifact
+from app.models.drafts import Draft, DraftFeedback, DraftVersion, Export
 from app.models.files import File
 from app.models.integrations import Integration, IntegrationKind
 from app.models.key_dates import PursuitDate
@@ -79,6 +80,7 @@ __all__ = [
     "CalendarConnection",
     "CalendarEvent",
     "Certification",
+    "Comment",
     "CompanyProfile",
     "ComplianceItem",
     "Consent",
@@ -86,6 +88,10 @@ __all__ = [
     "DeliveryChannel",
     "DeliveryStatus",
     "DocumentChunk",
+    "Draft",
+    "DraftFeedback",
+    "DraftVersion",
+    "Export",
     "File",
     "Insurance",
     "Integration",
@@ -109,9 +115,7 @@ __all__ = [
     "ProfileKeyword",
     "Pursuit",
     "PursuitArtifact",
-    "PursuitComment",
     "PursuitDate",
-    "PursuitTask",
     "PushSubscription",
     "RateCardEntry",
     "Registration",
@@ -123,6 +127,7 @@ __all__ = [
     "SourceRun",
     "SuggestionStatus",
     "SupportAccessGrant",
+    "Task",
     "TeamingPartner",
     "Tenant",
     "TenantMixin",

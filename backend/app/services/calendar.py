@@ -44,7 +44,7 @@ from app.models import (
     Opportunity,
     Pursuit,
     PursuitDate,
-    PursuitTask,
+    Task,
     UserNotificationPrefs,
 )
 from app.models.calendar import PROVIDER_GOOGLE, PROVIDER_MICROSOFT
@@ -137,11 +137,7 @@ async def dates_for_user(
     session: AsyncSession, user_id: uuid.UUID
 ) -> Sequence[tuple[PursuitDate, Pursuit, Opportunity]]:
     """Key dates of pursuits the user owns or has an open task on (SPEC 9: assignees)."""
-    assigned = (
-        select(PursuitTask.pursuit_id)
-        .where(PursuitTask.assignee_user_id == user_id)
-        .scalar_subquery()
-    )
+    assigned = select(Task.pursuit_id).where(Task.assignee_user_id == user_id).scalar_subquery()
     stmt = (
         select(PursuitDate, Pursuit, Opportunity)
         .join(Pursuit, Pursuit.id == PursuitDate.pursuit_id)

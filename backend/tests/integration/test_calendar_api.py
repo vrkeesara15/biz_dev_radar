@@ -20,7 +20,7 @@ from app.models import (
     Membership,
     Opportunity,
     PursuitDate,
-    PursuitTask,
+    Task,
     UserNotificationPrefs,
 )
 from app.services import calendar as calendar_svc
@@ -189,7 +189,7 @@ async def test_the_feed_holds_only_the_readers_own_pursuits(
     # an assignee sees the dates of a pursuit they have a task on (SPEC 9)
     async with database.owner_session(ctx["tenant_id"]) as session:
         session.add(
-            PursuitTask(
+            Task(
                 tenant_id=ctx["tenant_id"],
                 pursuit_id=uuid.UUID(pursuit_id),
                 title="Draft the technical volume",

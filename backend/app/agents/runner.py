@@ -43,6 +43,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.llm import CacheBlock, InvalidOutput, LLMClient, LLMResult, Message
 from app.agents.services import AgentServices
+from app.agents.tools import PursuitScope, PursuitTools
 from app.agents.tracing import NoopTracer, Tracer
 from app.core.cost_guard import BudgetDecision, StepEstimate
 from app.core.db import Database, get_database
@@ -118,6 +119,24 @@ class StepContext:
     tenant_id: uuid.UUID
     # storage, scanner, OCR, HTTP client factory (None for LLM-only steps such as summary)
     services: AgentServices | None = None
+    # the runner's Database: a step that fans work out concurrently opens its OWN session
+    # per branch (an AsyncSession is not safe to share between coroutines)
+    database: Database | None = None
+    # SPEC 11: what this run may read and write (app.agents.tools). Every write helper
+    # takes it and raises ScopeViolation outside the run's own tenant / pursuit.
+    scope: PursuitScope | None = None
+
+    def tools(self, region: str | None = None) -> PursuitTools:
+        """The read-only retrieval tool set (kb_search, read_document, read_requirements).
+
+        `region` picks the storage bucket `read_document` reads parsed text from; without
+        it the tool set can still search the knowledge base and read requirements."""
+        if self.scope is None:  # pragma: no cover - the runner always sets a scope
+            raise RuntimeError("the step has no PursuitScope")
+        storage = None
+        if region is not None and self.services is not None:
+            storage = self.services.storage_for(region)
+        return PursuitTools(session=self.session, scope=self.scope, storage=storage)
 
     def cache_block(self, text: str, ttl: str | None = None) -> CacheBlock:
         return CacheBlock(text=text, ttl=ttl)
@@ -178,6 +197,8 @@ class RunResult:
     # when the caller asked for a paused finish (gates / unimplemented steps)
     paused_step: str | None = None
     pause_reason: str | None = None
+    # the human gate the run stopped at (pipeline.GATE_1 / GATE_2), when it is one
+    gate: str | None = None
     decision: BudgetDecision | None = None
 
 
@@ -240,9 +261,11 @@ class AgentRunner:
         *,
         finish_status: str = RUN_DONE,
         finish_reason: str | None = None,
+        finish_gate: str | None = None,
     ) -> RunResult:
         """Execute the not-yet-done steps in order. `finish_status` (done or paused) is the
-        status once every given step is done; `finish_reason` explains a paused finish."""
+        status once every given step is done; `finish_reason` explains a paused finish and
+        `finish_gate` names the human gate it is waiting on (recorded in params["gate"])."""
         if finish_status not in (RUN_DONE, RUN_PAUSED):
             raise ValueError("finish_status must be done or paused")
         async with self.database.session(self.tenant_id) as session:
@@ -263,7 +286,7 @@ class AgentRunner:
             run.pause_reason = None
             done_outputs = await self._done_outputs(session, run_id)
             attempts = await self._attempts(session, run_id)
-            params = {k: v for k, v in (run.params or {}).items() if k != "paused_at"}
+            params = {k: v for k, v in (run.params or {}).items() if k not in ("paused_at", "gate")}
         result = RunResult(run_id, RUN_RUNNING, outputs=dict(done_outputs))
 
         for spec in steps:
@@ -301,8 +324,9 @@ class AgentRunner:
             elif finish_status == RUN_PAUSED:
                 run.status = RUN_PAUSED
                 run.pause_reason = finish_reason
-                run.params = params
+                run.params = params if finish_gate is None else {**params, "gate": finish_gate}
                 result.pause_reason = finish_reason
+                result.gate = finish_gate
             else:
                 run.status = RUN_DONE
                 run.params = params
@@ -388,6 +412,10 @@ class AgentRunner:
                 params=params,
                 tenant_id=self.tenant_id,
                 services=self.services,
+                database=self.database,
+                scope=PursuitScope(
+                    tenant_id=self.tenant_id, pursuit_id=run.pursuit_id, run_id=run_id
+                ),
             )
             try:
                 output = _jsonable(await spec.fn(ctx))

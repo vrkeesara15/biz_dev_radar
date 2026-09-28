@@ -46,9 +46,13 @@ from app.models import (
     BoilerplateBlock,
     CalendarConnection,
     Certification,
+    Comment,
     CompanyProfile,
     Consent,
     DataRequest,
+    Draft,
+    DraftVersion,
+    Export,
     File,
     Insurance,
     Integration,
@@ -64,14 +68,14 @@ from app.models import (
     ProfileFile,
     ProfileKeyword,
     Pursuit,
-    PursuitComment,
+    PursuitArtifact,
     PursuitDate,
-    PursuitTask,
     PushSubscription,
     RateCardEntry,
     Registration,
     SavedSearch,
     ServiceLine,
+    Task,
     TeamingPartner,
     UsageLedger,
     UserNotificationPrefs,
@@ -475,12 +479,6 @@ FACTORIES: dict[tuple[str, str], Factory] = {
             "task_id": ctx.a.ids["pursuit_task"],
         }
     ),
-    ("GET", "/api/v1/pursuits/{pursuit_id}/comments"): lambda ctx: RouteCall(
-        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
-    ),
-    ("POST", "/api/v1/pursuits/{pursuit_id}/comments"): lambda ctx: RouteCall(
-        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"body": "isolation probe"}
-    ),
     ("PATCH", "/api/v1/pursuits/{pursuit_id}/comments/{comment_id}"): lambda ctx: RouteCall(
         path_params={
             "pursuit_id": ctx.a.ids["pursuit"],
@@ -494,17 +492,90 @@ FACTORIES: dict[tuple[str, str], Factory] = {
             "comment_id": ctx.a.ids["pursuit_comment"],
         }
     ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
     ("PATCH", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"stage": "qualifying"}
     ),
-    ("GET", "/api/v1/pursuits/{pursuit_id}"): lambda ctx: RouteCall(
-        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    # M5-06 Gate 1: only an approver of A's profile may decide, and only inside A
+    ("POST", "/api/v1/pursuits/{pursuit_id}/decision"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={"decision": "no_bid", "note": "isolation probe"},
     ),
     ("GET", "/api/v1/pursuits/{pursuit_id}/matrix"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
     ),
     ("GET", "/api/v1/pursuits/{pursuit_id}/packet"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    # --- exports (M5-13)
+    ("POST", "/api/v1/pursuits/{pursuit_id}/export"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        params={"format": "docx"},
+        owner_expect=frozenset({202}),
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/exports"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/exports/{export_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "export_id": ctx.a.ids["export"],
+        }
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/mark-final"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"note": "probe"}
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/approve-package"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"note": "probe"}
+    ),
+    # --- pursuit workspace (M5-16): drafts, approvals and comments
+    ("GET", "/api/v1/pursuits/{pursuit_id}/drafts"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "section_id": ctx.a.ids["draft_section"],
+        }
+    ),
+    ("PUT", "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "section_id": ctx.a.ids["draft_section"],
+        },
+        json={"body_html": "<p>isolation probe</p>", "base_version": 1},
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}/feedback"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "section_id": ctx.a.ids["draft_section"],
+        }
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}/approve"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "section_id": ctx.a.ids["draft_section"],
+        }
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/comments"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/comments"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        json={
+            "target_type": "draft_section",
+            "target_id": ctx.a.ids["draft"],
+            "body": "isolation probe",
+        },
+        owner_expect=frozenset({201}),
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/comments/{comment_id}/resolve"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "comment_id": ctx.a.ids["comment"],
+        }
     ),
     # inline so no broker is needed; B's call must 404 before any run row is created
     ("POST", "/api/v1/pursuits/{pursuit_id}/agents/run"): lambda ctx: RouteCall(
@@ -819,13 +890,6 @@ async def build_context(database: Database) -> IsolationContext:
             source="auto",
             label="Alpha submission due",
         )
-        pursuit_task = PursuitTask(
-            tenant_id=ta.id,
-            pursuit_id=pursuit.id,
-            title="Alpha secret task",
-            assignee_user_id=ua.id,
-            created_by=ua.id,
-        )
         calendar_connection = CalendarConnection(
             tenant_id=ta.id,
             user_id=ua.id,
@@ -833,14 +897,72 @@ async def build_context(database: Database) -> IsolationContext:
             calendar_id="alpha-secret-calendar",
             secret_ref="env:ALPHA_CALENDAR_TOKEN",
         )
-        pursuit_comment = PursuitComment(
+        session.add_all([pursuit_date, calendar_connection])
+        draft = Draft(
             tenant_id=ta.id,
             pursuit_id=pursuit.id,
-            target_type="pursuit",
+            section_id="technical-approach",
+            title="Alpha technical approach",
+            volume="Volume I - Technical",
+        )
+        session.add(draft)
+        await session.flush()
+        draft_version = DraftVersion(
+            tenant_id=ta.id,
+            draft_id=draft.id,
+            version=1,
+            body_html="<p>alpha draft body</p>",
+            body_text="alpha draft body",
+            author="agent",
+        )
+        session.add(draft_version)
+        await session.flush()
+        draft.current_version_id = draft_version.id
+        comment = Comment(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            target_type="draft_section",
+            target_id=draft.id,
             body="alpha secret comment",
             author_user_id=ua.id,
         )
-        session.add_all([pursuit_date, pursuit_task, pursuit_comment, calendar_connection])
+        task = Task(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            title="Alpha secret task",
+            assignee_user_id=ua.id,
+            created_by=ua.id,
+            ref={"kind": "needs_input", "section_id": "technical-approach"},
+        )
+        # Gate 1 then Gate 2 already passed, so approve-package and mark-final have a
+        # coherent pursuit to work on (a package nobody decided to bid on cannot be
+        # approved: core.pursuit_stages refuses the move into drafting).
+        pursuit.decision = "bid"
+        pursuit.decided_by = ua.id
+        pursuit.decided_at = datetime.now(UTC)
+        pursuit.package_approved_by = ua.id
+        pursuit.package_approved_at = datetime.now(UTC)
+        export = Export(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            format="docx",
+            version=1,
+            file_name="alpha-secret-proposal.docx",
+            content_type=(
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ),
+            size_bytes=1024,
+            storage_key=f"tenants/{ta.id}/pursuits/{pursuit.id}/exports/seed.docx",
+        )
+        # a red-team report so Gate 2 (approve-package) has something to approve
+        red_team = PursuitArtifact(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            kind="red_team",
+            version=1,
+            data={"report": {"sections": [], "overall_score": 71, "missing_requirements": []}},
+        )
+        session.add_all([comment, task, red_team, export])
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -896,12 +1018,20 @@ async def build_context(database: Database) -> IsolationContext:
                 "alert_rule_name": "Alpha alert rule",
                 "pursuit_date": str(pursuit_date.id),
                 "pursuit_date_label": "Alpha submission due",
-                "pursuit_task": str(pursuit_task.id),
-                "pursuit_task_title": "Alpha secret task",
-                "pursuit_comment": str(pursuit_comment.id),
-                "pursuit_comment_body": "alpha secret comment",
                 "calendar_connection": str(calendar_connection.id),
                 "calendar_id": "alpha-secret-calendar",
+                "draft": str(draft.id),
+                "draft_section": draft.section_id,
+                "export": str(export.id),
+                "draft_version": str(draft_version.id),
+                "draft_body": "alpha draft body",
+                "comment": str(comment.id),
+                "comment_body": "alpha secret comment",
+                "pursuit_comment": str(comment.id),
+                "pursuit_comment_body": "alpha secret comment",
+                "task": str(task.id),
+                "pursuit_task": str(task.id),
+                "pursuit_task_title": "Alpha secret task",
                 "billing_customer": str(billing_customer.id),
                 "billing_customer_id": "cus_ALPHASECRET",
                 "billing_subscription_id": "sub_ALPHASECRET",

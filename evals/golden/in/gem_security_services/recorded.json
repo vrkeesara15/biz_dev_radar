@@ -1,0 +1,160 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 0,
+    "missed_labels": [
+      "L-11"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder is required to have a minimum average annual turnover of Rs. 1,20,00,000 during the last three financial years.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 1,20,00,000 during the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to deposit an EMD of Rs. 5,00,000 online before the bid end date and time.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall deposit an EMD of Rs. 5,00,000 online before the bid end date and",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to have at least 5 years of experience providing security manpower to public sector undertakings.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall have at least 5 years of experience providing security manpower to public sector",
+          "confidence": 0.9
+        },
+        {
+          "text": "MSEs and recognised startups are exempted from the EMD on submission of the relevant certificate.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "MSEs and recognised startups are exempted from the EMD on submission of the relevant",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to hold a valid licence under the Private Security Agencies (Regulation) Act, 2005 for Tamil Nadu.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall hold a valid licence under the Private Security Agencies (Regulation) Act, 2005 for",
+          "confidence": 0.9
+        },
+        {
+          "text": "The agency is required to deploy 64 trained security personnel across four warehouses on three shifts every day.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The agency shall deploy 64 trained security personnel across four warehouses on three shifts every",
+          "confidence": 0.9
+        },
+        {
+          "text": "The agency is required to pay wages not less than the minimum wages notified for the state and produce proof by the 7th of each month.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The agency shall pay wages not less than the minimum wages notified for the state and",
+          "confidence": 0.9
+        },
+        {
+          "text": "The agency must deposit EPF and ESI contributions for every deployed person and furnish the monthly challans.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The agency must deposit EPF and ESI contributions for every deployed person and furnish the monthly",
+          "confidence": 0.9
+        },
+        {
+          "text": "The agency is required to replace an absent guard within two hours of the reported absence.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The agency shall replace an absent guard within two hours of the reported",
+          "confidence": 0.9
+        },
+        {
+          "text": "The agency should provide an electronic attendance system with biometric verification at each gate.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The agency should provide an electronic attendance system with biometric verification at each",
+          "confidence": 0.9
+        },
+        {
+          "text": "Bids shall be submitted online on the GeM portal before 03:00 PM IST on 02-12-2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Bids shall be submitted online on the GeM portal before 03:00 PM IST on",
+          "confidence": 0.9
+        },
+        {
+          "text": "All uploaded documents shall be digitally signed with a Class 3 DSC in the name of the authorised signatory.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "All uploaded documents shall be digitally signed with a Class 3 DSC in the name of",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to upload the PSARA licence, the PAN card and the GST registration certificate.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall upload the PSARA licence, the PAN card and the GST registration",
+          "confidence": 0.9
+        },
+        {
+          "text": "Evaluation will follow the lowest total monthly cost among bidders meeting the eligibility criteria.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Evaluation will follow the lowest total monthly cost among bidders meeting the eligibility",
+          "confidence": 0.9
+        },
+        {
+          "text": "The buyer will verify statutory compliance records for the last two years before award.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The buyer will verify statutory compliance records for the last two years before",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contract period is two years extendable by one year on satisfactory performance.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The contract period is two years extendable by one year on satisfactory performance",
+          "confidence": 0.7
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

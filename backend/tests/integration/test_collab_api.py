@@ -11,7 +11,15 @@ from app.core.config import Region
 from app.core.db import Database
 from app.core.opportunity import NoticeType
 from app.core.roles import Role
-from app.models import CompanyProfile, Membership, Opportunity, Pursuit, PursuitTask
+from app.models import (
+    CompanyProfile,
+    Membership,
+    Opportunity,
+    OpportunityDocument,
+    Pursuit,
+    Requirement,
+    Task,
+)
 from app.services.collab import (
     create_task_from_placeholder,
     create_tasks_from_placeholders,
@@ -61,8 +69,28 @@ async def _setup(database: Database) -> dict[str, Any]:
         )
         session.add(pursuit)
         await session.flush()
+        # a real matrix row to anchor a comment on: since the merge, a comment may only
+        # point at something that exists inside this pursuit (M5-16's rule)
+        document = OpportunityDocument(
+            opportunity_id=opportunity.id, url="https://x.test/rfp.pdf", file_name="rfp.pdf"
+        )
+        session.add(document)
+        await session.flush()
+        requirement = Requirement(
+            tenant_id=tenant.id,
+            pursuit_id=pursuit.id,
+            req_id="R-004",
+            text="The contractor shall provide a transition plan.",
+            document_id=document.id,
+            page=4,
+            type="shall",
+            quote="shall provide a transition plan",
+        )
+        session.add(requirement)
+        await session.flush()
         return {
             "tenant_id": tenant.id,
+            "requirement_id": requirement.id,
             "owner_id": owner.id,
             "writer_id": writer.id,
             "reviewer_id": reviewer.id,
@@ -196,7 +224,7 @@ async def test_comment_crud_with_targets_and_resolution(
 ) -> None:
     ctx = await _setup(database)
     url = f"/api/v1/pursuits/{ctx['pursuit_id']}/comments"
-    requirement_id = uuid.uuid4()
+    requirement_id = ctx["requirement_id"]
 
     on_pursuit = await api_client.post(
         url, json={"body": "Kick-off on Monday"}, headers=_headers(ctx)
@@ -237,6 +265,18 @@ async def test_comment_crud_with_targets_and_resolution(
     assert (
         await api_client.get(url, params={"target_type": "nowhere"}, headers=_headers(ctx))
     ).status_code == 422
+    # a target outside this pursuit is 404, not a comment pointing at nothing (M5-16)
+    assert (
+        await api_client.post(
+            url,
+            json={
+                "body": "ghost",
+                "target_type": "requirement",
+                "target_id": str(uuid.uuid4()),
+            },
+            headers=_headers(ctx),
+        )
+    ).status_code == 404
 
     edited = await api_client.patch(
         f"{url}/{comment_id}",
@@ -329,7 +369,7 @@ async def test_needs_input_placeholders_become_tasks_exactly_once(
         assert is_new is True
         assert other.id != created[1].id
         rows = (
-            (await session.execute(select(PursuitTask).where(PursuitTask.pursuit_id == pursuit.id)))
+            (await session.execute(select(Task).where(Task.pursuit_id == pursuit.id)))
             .scalars()
             .all()
         )

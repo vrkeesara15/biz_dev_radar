@@ -1501,6 +1501,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pursuits/{pursuit_id}/approve-package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Package
+         * @description Gate 2 (SPEC 8): a human reviewed, edited and approved the whole draft package.
+         *
+         *     Records who approved it and when, marks every section approved, moves the pursuit to
+         *     Final approval and resumes the run the red-team step left paused at Gate 2. Exports
+         *     keep their "DRAFT - internal" footer until the package is additionally marked final.
+         */
+        post: operations["approve_package_api_v1_pursuits__pursuit_id__approve_package_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pursuits/{pursuit_id}/comments": {
         parameters: {
             query?: never;
@@ -1508,7 +1532,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Comments */
+        /**
+         * List Comments
+         * @description `unresolved=true` hides resolved threads; `resolved=` selects one side explicitly
+         *     (M5-16's filter, kept so a "what did we close" view is one call).
+         */
         get: operations["list_comments_api_v1_pursuits__pursuit_id__comments_get"];
         put?: never;
         /** Create Comment */
@@ -1538,6 +1566,26 @@ export interface paths {
          * @description Edit your own comment; anybody who may comment can resolve or reopen a thread.
          */
         patch: operations["update_comment_api_v1_pursuits__pursuit_id__comments__comment_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/comments/{comment_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Comment
+         * @description Mark a thread resolved (M5-16). Idempotent: resolving twice keeps the first stamp.
+         */
+        post: operations["resolve_comment_api_v1_pursuits__pursuit_id__comments__comment_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/pursuits/{pursuit_id}/dates": {
@@ -1600,6 +1648,205 @@ export interface paths {
          * @description "Seen it." Stops the reminder escalation for this date (SPEC 9).
          */
         post: operations["acknowledge_date_api_v1_pursuits__pursuit_id__dates__date_id__acknowledge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Decision
+         * @description Gate 1 (SPEC 8, 9): an approver records bid or no-bid.
+         *
+         *     Only the roles the profile's `required_approver_roles` names (plus the tenant owner)
+         *     may decide. A `bid` moves the pursuit to Drafting and resumes the run the pipeline
+         *     left paused at Gate 1; a `no_bid` closes the pursuit and resumes nothing.
+         */
+        post: operations["record_decision_api_v1_pursuits__pursuit_id__decision_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Drafts
+         * @description Every section of the pursuit with its status and grounding counts.
+         */
+        get: operations["list_drafts_api_v1_pursuits__pursuit_id__drafts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Draft
+         * @description One section's current version with its citations, placeholders and flags.
+         */
+        get: operations["get_draft_api_v1_pursuits__pursuit_id__drafts__section_id__get"];
+        /**
+         * Put Draft
+         * @description Save an edit as a new version (SPEC 8: human edits are kept, never overwritten).
+         *
+         *     `base_version` must be the version the editor loaded; anything else is 409 so two
+         *     writers cannot silently overwrite each other. The body is sanitised and re-checked
+         *     by the grounding validator on the way in (services.drafts.save_version).
+         */
+        put: operations["put_draft_api_v1_pursuits__pursuit_id__drafts__section_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Draft
+         * @description Approve one section (SPEC 3: reviewers may approve sections and nothing else).
+         */
+        post: operations["approve_draft_api_v1_pursuits__pursuit_id__drafts__section_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/drafts/{section_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Draft Feedback
+         * @description The human edits of this section, newest first, as unified diffs (SPEC 8).
+         *
+         *     Reading them is reading draft text, so it is audited like any other draft read and
+         *     the viewer role cannot see it. Feedback never leaves its tenant.
+         */
+        get: operations["list_draft_feedback_api_v1_pursuits__pursuit_id__drafts__section_id__feedback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Export
+         * @description Render the pursuit's package and store it (SPEC 8 outputs).
+         *
+         *     The DOCX uses the tenant's uploaded template when it has one, the PDF is rendered
+         *     from that DOCX, the XLSX carries the matrix, checklist and pricing sheets, and the
+         *     ZIP is named by the solicitation's own file-naming rule.
+         */
+        post: operations["create_export_api_v1_pursuits__pursuit_id__export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Exports */
+        get: operations["list_exports_api_v1_pursuits__pursuit_id__exports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/exports/{export_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Export
+         * @description A short-lived signed download URL. The read is audited (SPEC 11).
+         */
+        get: operations["read_export_api_v1_pursuits__pursuit_id__exports__export_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/mark-final": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Final
+         * @description Drop the "DRAFT - internal" footer from exports rendered from now on (SPEC 11).
+         *
+         *     Only after Gate 2: a package nobody approved is never final. Exports already
+         *     rendered keep the footer they were rendered with.
+         */
+        post: operations["mark_final_api_v1_pursuits__pursuit_id__mark_final_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2102,6 +2349,34 @@ export interface components {
             /** Task Id */
             task_id?: string | null;
         };
+        /** ApprovePackageIn */
+        ApprovePackageIn: {
+            /**
+             * Inline
+             * @default false
+             */
+            inline: boolean;
+            /** Note */
+            note?: string | null;
+        };
+        /** ApprovePackageOut */
+        ApprovePackageOut: {
+            /** Approved Sections */
+            approved_sections: number;
+            /** Mode */
+            mode: string;
+            /** Previous Stage */
+            previous_stage: string;
+            pursuit: components["schemas"]["PursuitOut"];
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
+            /** Resumed Run Id */
+            resumed_run_id: string | null;
+            /** Task Id */
+            task_id?: string | null;
+        };
         /** Attribution */
         Attribution: {
             /** Footer */
@@ -2469,6 +2744,11 @@ export interface components {
             /** Items */
             items: components["schemas"]["CommentOut"][];
             /**
+             * Open Count
+             * @default 0
+             */
+            open_count: number;
+            /**
              * Pursuit Id
              * Format: uuid
              */
@@ -2666,6 +2946,36 @@ export interface components {
          * @enum {string}
          */
         DataRequestStatus: "received" | "in_progress" | "done" | "rejected";
+        /** DecisionIn */
+        DecisionIn: {
+            /** Decision */
+            decision: string;
+            /**
+             * Inline
+             * @default false
+             */
+            inline: boolean;
+            /** Note */
+            note?: string | null;
+        };
+        /** DecisionOut */
+        DecisionOut: {
+            /** Decision */
+            decision: string;
+            /** Mode */
+            mode: string;
+            /** Previous Stage */
+            previous_stage: string;
+            pursuit: components["schemas"]["PursuitOut"];
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
+            /** Resumed Run Id */
+            resumed_run_id: string | null;
+            /** Task Id */
+            task_id?: string | null;
+        };
         /**
          * DeliveryModel
          * @enum {string}
@@ -2695,6 +3005,280 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** DraftFeedbackListOut */
+        DraftFeedbackListOut: {
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /** Items */
+            items?: components["schemas"]["DraftFeedbackOut"][];
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+            /** Section Id */
+            section_id: string;
+        };
+        /**
+         * DraftFeedbackOut
+         * @description One human edit of a section, kept as a unified diff (SPEC 8: edits are saved as
+         *     feedback to improve future drafts). Tenant-scoped; never read across tenants.
+         */
+        DraftFeedbackOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Diff Text */
+            diff_text: string;
+            /**
+             * Draft Id
+             * Format: uuid
+             */
+            draft_id: string;
+            /** Edited By */
+            edited_by: string | null;
+            /** From Author */
+            from_author: string;
+            /** From Version Id */
+            from_version_id: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+            /** Section Id */
+            section_id: string;
+            /** Stats */
+            stats?: {
+                [key: string]: unknown;
+            };
+            /** To Version Id */
+            to_version_id: string | null;
+        };
+        /** DraftListOut */
+        DraftListOut: {
+            /**
+             * Approved
+             * @default 0
+             */
+            approved: number;
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /**
+             * Flagged Sections
+             * @default 0
+             */
+            flagged_sections: number;
+            /**
+             * In Review
+             * @default 0
+             */
+            in_review: number;
+            /** Items */
+            items?: components["schemas"]["DraftSummaryOut"][];
+            /**
+             * Needs Input Count
+             * @default 0
+             */
+            needs_input_count: number;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+            /**
+             * Unsupported Claims Count
+             * @default 0
+             */
+            unsupported_claims_count: number;
+        };
+        /** DraftOut */
+        DraftOut: {
+            /** Approved At */
+            approved_at: string | null;
+            /** Approved By */
+            approved_by: string | null;
+            /**
+             * Comments
+             * @default 0
+             */
+            comments: number;
+            current: components["schemas"]["DraftVersionOut"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+            /** Section Id */
+            section_id: string;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Versions */
+            versions?: number[];
+            /** Volume */
+            volume: string | null;
+        };
+        /**
+         * DraftPutIn
+         * @description Optimistic versioning: `base_version` is the version the editor started from
+         *     (0 for a section that has no draft yet). A newer version answers 409.
+         */
+        DraftPutIn: {
+            /** Base Version */
+            base_version: number;
+            /** Body Html */
+            body_html?: string | null;
+            /** Body Markdown */
+            body_markdown?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Volume */
+            volume?: string | null;
+        };
+        /**
+         * DraftsSummaryOut
+         * @description Draft state of the pursuit; `unsupported_claims_count` is the grounding validator's
+         *     tally over the current version of every section (SPEC 8, M5-11).
+         */
+        DraftsSummaryOut: {
+            /**
+             * Approved
+             * @default 0
+             */
+            approved: number;
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /**
+             * Flagged Sections
+             * @default 0
+             */
+            flagged_sections: number;
+            /**
+             * In Review
+             * @default 0
+             */
+            in_review: number;
+            /**
+             * Needs Input Count
+             * @default 0
+             */
+            needs_input_count: number;
+            /**
+             * Unsupported Claims Count
+             * @default 0
+             */
+            unsupported_claims_count: number;
+        };
+        /** DraftSummaryOut */
+        DraftSummaryOut: {
+            /**
+             * Citations
+             * @default 0
+             */
+            citations: number;
+            /**
+             * Comments
+             * @default 0
+             */
+            comments: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Needs Input
+             * @default 0
+             */
+            needs_input: number;
+            /** Section Id */
+            section_id: string;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+            /**
+             * Unsupported Claims
+             * @default 0
+             */
+            unsupported_claims: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number | null;
+            /** Volume */
+            volume: string | null;
+        };
+        /** DraftVersionOut */
+        DraftVersionOut: {
+            /** Author */
+            author: string;
+            /** Author User Id */
+            author_user_id: string | null;
+            /** Body Html */
+            body_html: string;
+            /** Body Text */
+            body_text: string;
+            /** Citations */
+            citations?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Flags */
+            flags?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Model */
+            model: string | null;
+            /** Needs Input */
+            needs_input?: {
+                [key: string]: unknown;
+            }[];
+            /** Tokens */
+            tokens: number;
+            /** Version */
+            version: number;
+        };
         /** DueSoonOut */
         DueSoonOut: {
             /** Countdown */
@@ -2716,6 +3300,66 @@ export interface components {
             stage: string;
             /** Title */
             title: string;
+        };
+        /** ExportListOut */
+        ExportListOut: {
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /** Items */
+            items?: components["schemas"]["ExportOut"][];
+            /**
+             * Package Final
+             * @default false
+             */
+            package_final: boolean;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+        };
+        /** ExportOut */
+        ExportOut: {
+            /** Content Type */
+            content_type: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            /** Expires In */
+            expires_in?: number | null;
+            /** File Name */
+            file_name: string;
+            /** Final */
+            final: boolean;
+            /** Format */
+            format: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+            /** Renderer */
+            renderer: string | null;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Url */
+            url?: string | null;
+            /** Version */
+            version: number;
         };
         /**
          * FeedbackIn
@@ -3139,6 +3783,27 @@ export interface components {
         MarkAllReadOut: {
             /** Marked */
             marked: number;
+        };
+        /** MarkFinalIn */
+        MarkFinalIn: {
+            /** Note */
+            note?: string | null;
+        };
+        /** MarkFinalOut */
+        MarkFinalOut: {
+            /** Note */
+            note?: string | null;
+            /** Package Final */
+            package_final: boolean;
+            /** Package Final At */
+            package_final_at: string | null;
+            /** Package Final By */
+            package_final_by: string | null;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
         };
         /** MarkReadOut */
         MarkReadOut: {
@@ -4467,8 +5132,15 @@ export interface components {
             created_at: string;
             /** Created By */
             created_by: string | null;
+            /** Decided At */
+            decided_at: string | null;
+            /** Decided By */
+            decided_by: string | null;
             /** Decision */
             decision: string | null;
+            /** Decision Note */
+            decision_note: string | null;
+            drafts: components["schemas"]["DraftsSummaryOut"];
             /**
              * Id
              * Format: uuid
@@ -4485,6 +5157,10 @@ export interface components {
             opportunity_id: string;
             /** Owner User Id */
             owner_user_id: string | null;
+            /** Package Approved At */
+            package_approved_at: string | null;
+            /** Package Approved By */
+            package_approved_by: string | null;
             /** Pass Reason */
             pass_reason: string | null;
             /**
@@ -4800,6 +5476,8 @@ export interface components {
             created_at: string;
             /** Finished At */
             finished_at: string | null;
+            /** Gate */
+            gate: string | null;
             /**
              * Id
              * Format: uuid
@@ -9728,9 +10406,45 @@ export interface operations {
             };
         };
     };
+    approve_package_api_v1_pursuits__pursuit_id__approve_package_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovePackageIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovePackageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_comments_api_v1_pursuits__pursuit_id__comments_get: {
         parameters: {
             query?: {
+                resolved?: boolean | null;
                 target_id?: string | null;
                 target_type?: string | null;
                 unresolved?: boolean;
@@ -9843,6 +10557,38 @@ export interface operations {
                 "application/json": components["schemas"]["CommentPatchIn"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_comment_api_v1_pursuits__pursuit_id__comments__comment_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -10015,6 +10761,335 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KeyDateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_decision_api_v1_pursuits__pursuit_id__decision_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_drafts_api_v1_pursuits__pursuit_id__drafts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_draft_api_v1_pursuits__pursuit_id__drafts__section_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_draft_api_v1_pursuits__pursuit_id__drafts__section_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftPutIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_draft_api_v1_pursuits__pursuit_id__drafts__section_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_draft_feedback_api_v1_pursuits__pursuit_id__drafts__section_id__feedback_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftFeedbackListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_export_api_v1_pursuits__pursuit_id__export_post: {
+        parameters: {
+            query?: {
+                format?: string;
+            };
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_exports_api_v1_pursuits__pursuit_id__exports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_export_api_v1_pursuits__pursuit_id__exports__export_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                export_id: string;
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_final_api_v1_pursuits__pursuit_id__mark_final_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkFinalIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkFinalOut"];
                 };
             };
             /** @description Validation Error */

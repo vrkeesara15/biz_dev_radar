@@ -1,0 +1,112 @@
+{
+  "source": "synthetic GeM bid for desktop computers (evals/golden/in/gem_desktops)",
+  "notice_id": "GEM/2026/B/4410021",
+  "region": "in",
+  "notice_type": "bid",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 45,00,000 over the last three financial years.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "The bidder shall furnish an EMD of Rs. 2,40,000 through the GeM online payment gateway before the bid end date.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "The bidder shall have at least 3 years of past experience in supplying desktop computers to government buyers.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "MSEs registered under Udyam are exempted from the EMD on submission of a valid Udyam certificate; startups are not exempted for this bid.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "The bidder shall be a registered seller on the Government e-Marketplace with the relevant product category approved.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-06",
+      "text": "1.1 The seller shall deliver all 120 desktop computers to the consignee locations within 45 days of the supply order.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "1.2 The seller shall provide a comprehensive on-site warranty of three years covering parts and labour.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "1.3 The seller must supply units bearing a valid BIS registration mark for IT equipment.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-09",
+      "text": "1.4 The seller shall install the operating system and the buyer's standard image on every unit before handover.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-10",
+      "text": "1.5 The seller should provide a single point of contact for warranty escalations across all consignee locations.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-11",
+      "text": "All documents shall be uploaded in PDF format and shall not exceed 10 MB per file.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-12",
+      "text": "The technical and financial bids shall be submitted online on the GeM portal before 05:00 PM IST on 20-11-2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-13",
+      "text": "The bidder shall digitally sign every uploaded document with a Class 3 Digital Signature Certificate.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "The bidder shall upload the Udyam registration certificate where an MSE exemption is claimed.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-15",
+      "text": "Bids will be evaluated on the lowest landed price (L1) among technically qualified bidders.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-16",
+      "text": "Technical qualification will be assessed against the minimum specification sheet and the submitted BIS certificate.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "min_avg_turnover_inr": "4500000",
+    "emd_amount_inr": "240000",
+    "min_experience_years": 3,
+    "mse_exemption_allowed": true,
+    "startup_exemption_allowed": false,
+    "requires_gem_registration": true
+  }
+}

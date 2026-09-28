@@ -40,6 +40,16 @@ def _scoring() -> Any:
     return module
 
 
+def _runner() -> Any:
+    """evals/run.py, which owns the shared metric definitions."""
+    spec = importlib.util.spec_from_file_location("evals_run", REPO_ROOT / "evals" / "run.py")
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def golden_items() -> list[Path]:
     return sorted(p.parent for p in GOLDEN.glob("*/*/labels.json"))
 
@@ -95,9 +105,15 @@ async def test_extraction_recall_precision_and_citations(item: Path) -> None:
         "submission",
         "evaluation",
     }
-    # the labelled eligibility facts are represented among the eligibility requirements
-    eligibility = " ".join(r.text for r in output.requirements if r.type == "eligibility")
-    assert labels["eligibility"]["naics"] in eligibility and "SAM" in eligibility
+    # the labelled eligibility facts are represented among the eligibility requirements.
+    # The check is the shared, region-aware one in evals/run.py: US items must state the
+    # NAICS, the set-aside and the SAM obligation; Indian items must carry the turnover,
+    # EMD and experience numbers exactly (SPEC 12's eligibility bar).
+    checks = _runner().eligibility_checks(labels, list(output.requirements))
+    assert checks, "every golden item declares eligibility facts"
+    assert [c.field for c in checks if not c.ok] == [], [
+        (c.field, c.expected, c.actual) for c in checks if not c.ok
+    ]
 
     # The recorded answer is not a copy of the labels: it restates the requirements, misses
     # one, over-extracts once and includes items with a page outside the batch or an

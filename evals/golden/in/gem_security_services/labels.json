@@ -1,0 +1,112 @@
+{
+  "source": "synthetic GeM bid for security services (evals/golden/in/gem_security_services)",
+  "notice_id": "GEM/2026/B/4471188",
+  "region": "in",
+  "notice_type": "bid",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 1,20,00,000 during the last three financial years.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "The bidder shall deposit an EMD of Rs. 5,00,000 online before the bid end date and time.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "The bidder shall have at least 5 years of experience providing security manpower to public sector undertakings.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "MSEs and recognised startups are exempted from the EMD on submission of the relevant certificate.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "The bidder shall hold a valid licence under the Private Security Agencies (Regulation) Act, 2005 for Tamil Nadu.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-06",
+      "text": "2.1 The agency shall deploy 64 trained security personnel across four warehouses on three shifts every day.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "2.2 The agency shall pay wages not less than the minimum wages notified for the state and produce proof by the 7th of each month.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "2.3 The agency must deposit EPF and ESI contributions for every deployed person and furnish the monthly challans.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-09",
+      "text": "2.4 The agency shall replace an absent guard within two hours of the reported absence.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-10",
+      "text": "2.5 The agency should provide an electronic attendance system with biometric verification at each gate.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-11",
+      "text": "Scanned documents shall be legible and uploaded as a single PDF per requirement.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-12",
+      "text": "Bids shall be submitted online on the GeM portal before 03:00 PM IST on 02-12-2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-13",
+      "text": "All uploaded documents shall be digitally signed with a Class 3 DSC in the name of the authorised signatory.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "The bidder shall upload the PSARA licence, the PAN card and the GST registration certificate.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-15",
+      "text": "Evaluation will follow the lowest total monthly cost among bidders meeting the eligibility criteria.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-16",
+      "text": "The buyer will verify statutory compliance records for the last two years before award.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "min_avg_turnover_inr": "12000000",
+    "emd_amount_inr": "500000",
+    "min_experience_years": 5,
+    "mse_exemption_allowed": true,
+    "startup_exemption_allowed": true,
+    "requires_gem_registration": true
+  }
+}

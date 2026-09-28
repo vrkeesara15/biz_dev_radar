@@ -1,11 +1,13 @@
-"""pursuit_tasks and pursuit_comments (SPEC 8, 9, 10.2): the workspace's Tasks tab and
-the comment threads on the matrix, the drafts and the pursuit itself.
+"""tasks and comments (SPEC 10.2): the workspace's Tasks tab and the comment threads on
+the matrix, the drafts, the scorecard and the pursuit itself.
 
-SPEC 10.2 names these `tasks` and `comments`. They are created here as `pursuit_tasks`
-and `pursuit_comments` because the M5 branch is adding its own `tasks` table for the
-drafters' [NEEDS INPUT] placeholders in parallel; the orchestrator reconciles the two
-names at merge (PROGRESS.m6.md OQ-117). Everything below is addressed through
-`app.services.collab`, so a rename is one module plus the migration.
+Both milestones needed these tables: M5 for the drafters' `[NEEDS INPUT]` asks and the
+red team's findings, M6 for the Tasks tab and the comment threads. They were built twice
+in parallel — `tasks`/`comments` on the M5 branch and `pursuit_tasks`/`pursuit_comments`
+on the M6 branch (M6 OQ-117) — and are reconciled here onto SPEC 10.2's names with the
+union of both sets of columns. Everything is addressed through `app.services.collab`
+(the CRUD and the placeholder helper) and `app.services.drafts` (the agents' single
+insert point), so there is one write path for each.
 """
 
 from __future__ import annotations
@@ -27,7 +29,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.collab import (
-    SOURCE_USER,
+    SOURCE_AGENT,
     TARGET_PURSUIT,
     TARGET_TYPES,
     TASK_OPEN,
@@ -41,12 +43,15 @@ SOURCE_SQL_LIST = ", ".join(f"'{value}'" for value in TASK_SOURCES)
 TARGET_SQL_LIST = ", ".join(f"'{value}'" for value in TARGET_TYPES)
 
 
-class PursuitTask(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
-    __tablename__ = "pursuit_tasks"
+class Task(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
+    """Work handed to a human: an agent's `[NEEDS INPUT]` ask (SPEC 8) or a task somebody
+    typed into the Tasks tab (SPEC 10.4 screen 6)."""
+
+    __tablename__ = "tasks"
     __table_args__ = (
         CheckConstraint(f"status IN ({STATUS_SQL_LIST})", name="status"),
         CheckConstraint(f"source IN ({SOURCE_SQL_LIST})", name="source"),
-        Index("ix_pursuit_tasks_assignee", "tenant_id", "assignee_user_id", "status"),
+        Index("ix_tasks_assignee", "tenant_id", "assignee_user_id", "status"),
     )
 
     pursuit_id: Mapped[uuid.UUID] = mapped_column(
@@ -55,20 +60,22 @@ class PursuitTask(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
     detail: Mapped[str | None] = mapped_column(Text)
     assignee_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
     due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # open | done
     status: Mapped[str] = mapped_column(
         String(16), nullable=False, server_default=text(f"'{TASK_OPEN}'")
     )
+    # agent | user
     source: Mapped[str] = mapped_column(
-        String(8), nullable=False, server_default=text(f"'{SOURCE_USER}'")
+        String(8), nullable=False, server_default=text(f"'{SOURCE_AGENT}'")
     )
-    # where the ask came from: {"placeholder": "labor category", "agent": "pricing",
-    # "artifact": "pricing_template", "section": "L.3", "document_id": ..., "page": 4}
+    # where the ask came from: {"kind": "needs_input", "placeholder": "labor category",
+    # "agent": "draft:technical-approach", "section_id": ..., "draft_id": ...}
     ref: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
@@ -87,11 +94,14 @@ class PursuitTask(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     )
 
 
-class PursuitComment(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
-    __tablename__ = "pursuit_comments"
+class Comment(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
+    """A comment anchored on one artefact of a pursuit (SPEC 3: a reviewer may comment and
+    approve, nothing else; SPEC 10.2 `comments`)."""
+
+    __tablename__ = "comments"
     __table_args__ = (
         CheckConstraint(f"target_type IN ({TARGET_SQL_LIST})", name="target_type"),
-        Index("ix_pursuit_comments_target", "pursuit_id", "target_type", "target_id"),
+        Index("ix_comments_target", "pursuit_id", "target_type", "target_id"),
     )
 
     pursuit_id: Mapped[uuid.UUID] = mapped_column(
@@ -104,7 +114,7 @@ class PursuitComment(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     target_type: Mapped[str] = mapped_column(
         String(32), nullable=False, server_default=text(f"'{TARGET_PURSUIT}'")
     )
-    target_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    target_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), index=True)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     author_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
@@ -119,3 +129,6 @@ class PursuitComment(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
         server_default=text("now()"),
         onupdate=text("now()"),
     )
+
+
+__all__ = ["Comment", "Task"]

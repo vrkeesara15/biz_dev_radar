@@ -11,6 +11,8 @@ from app.api.v1 import (
     calendar,
     collab,
     dashboard,
+    drafts,
+    exports,
     files,
     integrations,
     me,
@@ -47,6 +49,8 @@ api_router.include_router(pursuits.opportunity_router)
 api_router.include_router(pursuits.router)
 api_router.include_router(pursuit_dates.router)
 api_router.include_router(collab.router)
+api_router.include_router(drafts.router)
+api_router.include_router(exports.router)
 api_router.include_router(calendar.router)
 api_router.include_router(calendar.me_router)
 api_router.include_router(dashboard.router)

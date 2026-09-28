@@ -22,7 +22,9 @@ from typing import Any
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.tools import PursuitScope, enforce
 from app.core.collab import (
+    MAX_TITLE,
     SOURCE_AGENT,
     TASK_DONE,
     TASK_OPEN,
@@ -30,7 +32,7 @@ from app.core.collab import (
     placeholder_key,
     task_title,
 )
-from app.models import Pursuit, PursuitComment, PursuitTask
+from app.models import Comment, Pursuit, Task
 
 PLACEHOLDER_REF = "placeholder"
 AGENT_REF = "agent"
@@ -41,15 +43,13 @@ def task_statement(
     *,
     status: str | None = None,
     assignee_user_id: uuid.UUID | None = None,
-) -> Select[PursuitTask]:
-    stmt = select(PursuitTask).where(PursuitTask.pursuit_id == pursuit_id)
+) -> Select[Task]:
+    stmt = select(Task).where(Task.pursuit_id == pursuit_id)
     if status is not None:
-        stmt = stmt.where(PursuitTask.status == status)
+        stmt = stmt.where(Task.status == status)
     if assignee_user_id is not None:
-        stmt = stmt.where(PursuitTask.assignee_user_id == assignee_user_id)
-    return stmt.order_by(
-        PursuitTask.status, PursuitTask.due_at.asc().nullslast(), PursuitTask.created_at
-    )
+        stmt = stmt.where(Task.assignee_user_id == assignee_user_id)
+    return stmt.order_by(Task.status, Task.due_at.asc().nullslast(), Task.created_at)
 
 
 async def list_tasks(
@@ -58,7 +58,7 @@ async def list_tasks(
     *,
     status: str | None = None,
     assignee_user_id: uuid.UUID | None = None,
-) -> Sequence[PursuitTask]:
+) -> Sequence[Task]:
     stmt = task_statement(pursuit_id, status=status, assignee_user_id=assignee_user_id)
     return (await session.execute(stmt)).scalars().all()
 
@@ -70,29 +70,32 @@ async def list_comments(
     target_type: str | None = None,
     target_id: uuid.UUID | None = None,
     include_resolved: bool = True,
-) -> Sequence[PursuitComment]:
-    stmt = select(PursuitComment).where(PursuitComment.pursuit_id == pursuit_id)
+    resolved: bool | None = None,
+) -> Sequence[Comment]:
+    stmt = select(Comment).where(Comment.pursuit_id == pursuit_id)
     if target_type is not None:
-        stmt = stmt.where(PursuitComment.target_type == target_type)
+        stmt = stmt.where(Comment.target_type == target_type)
     if target_id is not None:
-        stmt = stmt.where(PursuitComment.target_id == target_id)
+        stmt = stmt.where(Comment.target_id == target_id)
     if not include_resolved:
-        stmt = stmt.where(PursuitComment.resolved_at.is_(None))
-    stmt = stmt.order_by(PursuitComment.created_at)
+        stmt = stmt.where(Comment.resolved_at.is_(None))
+    if resolved is not None:
+        stmt = stmt.where(
+            Comment.resolved_at.is_not(None) if resolved else Comment.resolved_at.is_(None)
+        )
+    stmt = stmt.order_by(Comment.created_at)
     return (await session.execute(stmt)).scalars().all()
 
 
 async def find_placeholder_task(
     session: AsyncSession, pursuit_id: uuid.UUID, agent: str, placeholder: str
-) -> PursuitTask | None:
+) -> Task | None:
     """The task this exact ask already produced, whatever its status."""
     key = placeholder_key(placeholder)
     rows = (
         (
             await session.execute(
-                select(PursuitTask).where(
-                    PursuitTask.pursuit_id == pursuit_id, PursuitTask.source == SOURCE_AGENT
-                )
+                select(Task).where(Task.pursuit_id == pursuit_id, Task.source == SOURCE_AGENT)
             )
         )
         .scalars()
@@ -117,19 +120,25 @@ async def create_task_from_placeholder(
     assignee_user_id: uuid.UUID | None = None,
     due_at: datetime | None = None,
     ref: dict[str, Any] | None = None,
-) -> tuple[PursuitTask, bool]:
+    title: str | None = None,
+    scope: PursuitScope | None = None,
+) -> tuple[Task, bool]:
     """One open task for one `[NEEDS INPUT: ...]` ask. Returns (task, created).
 
     Idempotent per (pursuit, agent, placeholder): a re-run of the agent finds the task it
-    made last time, leaving a completed one completed.
+    made last time, leaving a completed one completed. `title` overrides the default
+    "Provide: <placeholder>" wording where the agent has a better sentence (the drafters
+    prefix the section), and `scope` is the M5-12 guard that stops an agent writing a
+    task at a sibling pursuit of the same tenant.
     """
+    enforce(scope, tenant_id=pursuit.tenant_id, pursuit_id=pursuit.id)
     existing = await find_placeholder_task(session, pursuit.id, agent, placeholder)
     if existing is not None:
         return existing, False
-    task = PursuitTask(
+    task = Task(
         tenant_id=pursuit.tenant_id,
         pursuit_id=pursuit.id,
-        title=task_title(placeholder),
+        title=(title or task_title(placeholder))[:MAX_TITLE],
         assignee_user_id=assignee_user_id or pursuit.owner_user_id,
         due_at=due_at or pursuit.internal_due_at,
         status=TASK_OPEN,
@@ -149,25 +158,32 @@ async def create_tasks_from_placeholders(
     agent: str,
     assignee_user_id: uuid.UUID | None = None,
     ref: dict[str, Any] | None = None,
-) -> list[PursuitTask]:
+    scope: PursuitScope | None = None,
+) -> list[Task]:
     """Every distinct placeholder in `text` as a task; returns only the NEW ones."""
-    created: list[PursuitTask] = []
+    created: list[Task] = []
     for placeholder in find_placeholders(text):
         task, is_new = await create_task_from_placeholder(
-            session, pursuit, placeholder, agent=agent, assignee_user_id=assignee_user_id, ref=ref
+            session,
+            pursuit,
+            placeholder,
+            agent=agent,
+            assignee_user_id=assignee_user_id,
+            ref=ref,
+            scope=scope,
         )
         if is_new:
             created.append(task)
     return created
 
 
-def complete(task: PursuitTask, user_id: uuid.UUID, *, now: datetime | None = None) -> None:
+def complete(task: Task, user_id: uuid.UUID, *, now: datetime | None = None) -> None:
     task.status = TASK_DONE
     task.completed_at = now or datetime.now(UTC)
     task.completed_by = user_id
 
 
-def reopen(task: PursuitTask) -> None:
+def reopen(task: Task) -> None:
     task.status = TASK_OPEN
     task.completed_at = None
     task.completed_by = None

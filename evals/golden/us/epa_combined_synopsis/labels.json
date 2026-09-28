@@ -1,0 +1,109 @@
+{
+  "source": "synthetic EPA combined synopsis/solicitation (evals/golden/us/epa_combined_synopsis)",
+  "notice_id": "68HE0126Q0009",
+  "region": "us",
+  "notice_type": "combined_synopsis",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "This procurement is set aside for HUBZone small business concerns certified by the Small Business Administration under NAICS 562910.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "Offerors must be registered and active in SAM.gov and must have completed the annual representations and certifications.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "Offerors must hold a current state licence for hazardous waste transport in Colorado and Utah.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "Offerors must carry pollution liability insurance of at least $2,000,000 per occurrence.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "3.1 The contractor shall collect and analyse 480 soil and groundwater samples per year across 12 sites.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-06",
+      "text": "3.2 The contractor shall deliver validated analytical results within 21 calendar days of sample collection.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "3.3 The contractor must use laboratories accredited under the National Environmental Laboratory Accreditation Program.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-08",
+      "text": "3.4 The contractor shall maintain chain-of-custody documentation for every sample and provide it on request.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-09",
+      "text": "3.5 The contractor shall submit a quality assurance project plan within 30 days of award.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-10",
+      "text": "3.6 The contractor should propose field methods that reduce site visits without reducing data quality.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-11",
+      "text": "Quotations shall not exceed 20 pages, excluding certifications and the price schedule.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-12",
+      "text": "Use 11-point Arial with one-inch margins; submit as a searchable PDF.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-13",
+      "text": "Quotations must be emailed to r8.contracts@epa.example.gov by 2:00 PM Mountain Time on 12 November 2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "Offerors shall complete and return the pricing schedule for the base year and both option years.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-15",
+      "text": "Award will be made to the responsible offeror whose quotation is the lowest price technically acceptable.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-16",
+      "text": "Technical acceptability will be determined against the sampling methodology, the laboratory accreditation and the staffing plan.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "naics": "562910",
+    "set_aside": "hubzone",
+    "sam_registration_required": true
+  }
+}

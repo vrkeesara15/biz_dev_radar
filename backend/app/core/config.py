@@ -273,6 +273,12 @@ class Settings(BaseSettings):
     # default output cap per call and extra attempts when the JSON output fails validation
     llm_max_tokens: int = 4096
     llm_output_retries: int = 2
+    # SPEC 8 agent 6: one drafter per volume. "inline" runs them as concurrent coroutines
+    # in the worker that owns the run; "celery" fans them out as a group of
+    # bidradar.draft_volume tasks (ignored when CELERY_TASK_ALWAYS_EAGER is on).
+    agent_fanout: str = "inline"
+    agent_fanout_concurrency: int = 3
+    agent_fanout_timeout: float = 900.0
 
     # embeddings (SPEC 10.1: configurable provider, default Voyage 1024-dim, batch embed)
     embedding_provider: EmbeddingProviderName = EmbeddingProviderName.VOYAGE

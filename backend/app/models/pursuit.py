@@ -1,9 +1,10 @@
 """pursuits (SPEC 9, 10.2): a tenant's decision to chase one opportunity with one profile.
 
-M5-02 created the minimal shape the agent pipeline hangs off; M6-01 adds the stage rules
-(`app.core.pursuit_stages`), the watch flag, the pass reason and the decision stamps.
-Agent runs, requirements, compliance items, artifacts, key dates, tasks, comments and
-reminders all hang off `pursuit_id`.
+M5-02 created the minimal shape the agent pipeline hangs off; M5-06/M5-10/M5-13 added the
+Gate 1 and Gate 2 stamps and the "package final" switch; M6-01 added the stage rules
+(`app.core.pursuit_stages`), the watch flag and the pass reason. Agent runs, requirements,
+compliance items, artifacts, drafts, key dates, tasks, comments, exports and reminders all
+hang off `pursuit_id`.
 """
 
 from __future__ import annotations
@@ -28,8 +29,10 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.pursuit_stages import DEFAULT_STAGE, STAGES
+from app.core.pursuit_stages import DECISIONS, DEFAULT_STAGE, STAGES
 from app.models.base import Base, TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
+
+__all__ = ["DECISIONS", "STAGES", "STAGE_IDENTIFIED", "STAGE_SQL_LIST", "Pursuit"]
 
 STAGE_IDENTIFIED = DEFAULT_STAGE
 # "'identified', 'qualifying', ..." for the CHECK constraint, in SPEC 9 order
@@ -66,11 +69,24 @@ class Pursuit(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     decision: Mapped[str | None] = mapped_column(String(16))  # bid | no_bid
-    # who closed Gate 1 and when (the decision endpoint itself is M5's)
+    # Gate 1 (SPEC 8, 9): who recorded the decision, when, and why
     decided_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    decision_note: Mapped[str | None] = mapped_column(Text)
+    # Gate 2 (SPEC 8): who approved the whole draft package for export, and when
+    package_approved_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    package_approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # SPEC 11: exports carry the "DRAFT - internal" footer until a human marks the
+    # package final (POST /pursuits/{id}/mark-final, after Gate 2)
+    package_final: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
+    package_final_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    package_final_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
     internal_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # "Watch" (SPEC 7 one-click action): tracked for amendments, but no agent work
     watch: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
@@ -78,7 +94,8 @@ class Pursuit(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     pass_reason: Mapped[str | None] = mapped_column(Text)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # SPEC 9 "stale pursuits": the last time anyone (or any agent) touched this pursuit.
-    # Bumped by app.services.pursuits.touch from every stage move, task, comment and date.
+    # Bumped by app.services.pursuits.touch from every stage move, task, comment, date and
+    # agent run (OQ-132).
     activity_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
     )

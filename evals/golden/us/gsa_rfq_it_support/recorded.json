@@ -1,0 +1,160 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 1,
+    "missed_labels": [
+      "L-11"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "Quoters must hold an active GSA Multiple Award Schedule contract under SIN 54151S.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Quoters must hold an active GSA Multiple Award Schedule contract under SIN",
+          "confidence": 0.9
+        },
+        {
+          "text": "This requirement is set aside for certified 8(a) participants under NAICS 541513.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "This requirement is set aside for certified 8(a) participants under NAICS",
+          "confidence": 0.9
+        },
+        {
+          "text": "Quoters must be registered and active in SAM.gov at the time of quotation.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Quoters must be registered and active in SAM.gov at the time of",
+          "confidence": 0.9
+        },
+        {
+          "text": "Quoters are required to submit a completed and signed Standard Form 1449 with the quotation.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Quoters shall submit a completed and signed Standard Form 1449 with the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to operate a Tier 2 service desk from 06:00 to 20:00 Eastern Time on federal business days.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall operate a Tier 2 service desk from 06:00 to 20:00 Eastern Time on",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to resolve 85 percent of Tier 2 tickets within four business hours.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall resolve 85 percent of Tier 2 tickets within four business",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to report ticket volumes, resolution times and customer satisfaction monthly.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall report ticket volumes, resolution times and customer satisfaction",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to complete a favourable Tier 1 background investigation for every agent before granting system access.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must complete a favourable Tier 1 background investigation for every agent before granting system",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor should propose knowledge base improvements that reduce repeat tickets.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The contractor should propose knowledge base improvements that reduce repeat",
+          "confidence": 0.9
+        },
+        {
+          "text": "Quotations may not exceed 15 pages, excluding the price sheet.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Quotations shall not exceed 15 pages, excluding the price",
+          "confidence": 0.9
+        },
+        {
+          "text": "Quotations have to be submitted through GSA eBuy no later than 12:00 PM Eastern Time on 3 November 2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Quotations must be submitted through GSA eBuy no later than 12:00 PM Eastern Time on 3",
+          "confidence": 0.9
+        },
+        {
+          "text": "Quoters are required to provide labour category mapping to their schedule rates for every proposed position.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Quoters shall provide labour category mapping to their schedule rates for every proposed",
+          "confidence": 0.9
+        },
+        {
+          "text": "Award will be made to the quoter offering the best value considering technical capability, past performance and price.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Award will be made to the quoter offering the best value considering technical capability, past performance",
+          "confidence": 0.9
+        },
+        {
+          "text": "The buyer will evaluate the realism of proposed staffing levels against the stated ticket volumes.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The Government will evaluate the realism of proposed staffing levels against the stated ticket",
+          "confidence": 0.9
+        },
+        {
+          "text": "This requirement is issued under GSA Multiple Award Schedule 54151S.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "This requirement is issued under GSA Multiple Award Schedule 54151S",
+          "confidence": 0.7
+        },
+        {
+          "text": "Quoters are required to submit a completed and signed Standard Form 1449 with the quotation. (restated in the summary)",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Quoters shall submit a completed and signed Standard Form 1449 with the",
+          "confidence": 0.8
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

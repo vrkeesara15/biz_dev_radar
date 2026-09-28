@@ -62,6 +62,8 @@ OPEN_STAGES: tuple[str, ...] = tuple(s for s in LADDER if s != STAGE_SUBMITTED)
 
 DECISION_BID = "bid"
 DECISION_NO_BID = "no_bid"
+# Gate 1 vocabulary for `pursuits.decision` (POST /pursuits/{id}/decision, M5-06)
+DECISIONS: tuple[str, ...] = (DECISION_BID, DECISION_NO_BID)
 
 # SPEC 3: bid managers (and the tenant owner) move, assign and decide.
 MANAGER_ROLES: frozenset[Role] = frozenset({Role.TENANT_OWNER, Role.BID_MANAGER})

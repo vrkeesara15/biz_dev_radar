@@ -1,0 +1,160 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 1,
+    "missed_labels": [
+      "L-07"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "Applicants are required to be accredited institutions of higher education located in the United States.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Applicants must be accredited institutions of higher education located in the United",
+          "confidence": 0.9
+        },
+        {
+          "text": "Applicants are required to have an active registration in SAM.gov and a Unique Entity Identifier before submission.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Applicants must have an active registration in SAM.gov and a Unique Entity Identifier before",
+          "confidence": 0.9
+        },
+        {
+          "text": "The principal investigator must hold a full-time appointment at the submitting institution.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The principal investigator must hold a full-time appointment at the submitting",
+          "confidence": 0.9
+        },
+        {
+          "text": "Cost sharing is not required and voluntary committed cost sharing is prohibited.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Cost sharing is not required and voluntary committed cost sharing is",
+          "confidence": 0.9
+        },
+        {
+          "text": "II.1 The awardee is required to conduct the proposed research over a period of 36 months from the award start date.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The awardee shall conduct the proposed research over a period of 36 months from the award",
+          "confidence": 0.9
+        },
+        {
+          "text": "II.2 The awardee is required to submit annual project reports within 90 days of the end of each project year.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The awardee shall submit annual project reports within 90 days of the end of each project",
+          "confidence": 0.9
+        },
+        {
+          "text": "II.4 The awardee is required to include a two-page data management plan describing storage, retention and sharing.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The awardee shall include a two-page data management plan describing storage, retention and",
+          "confidence": 0.9
+        },
+        {
+          "text": "II.5 Proposals should describe broadening participation activities and how their impact will be measured.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "Proposals should describe broadening participation activities and how their impact will be",
+          "confidence": 0.9
+        },
+        {
+          "text": "The project description may not exceed 15 pages including figures and tables.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "The project description shall not exceed 15 pages including figures and",
+          "confidence": 0.9
+        },
+        {
+          "text": "Use a 10-point or larger typeface with margins of at least one inch on all sides.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Use a 10-point or larger typeface with margins of at least one inch on all",
+          "confidence": 0.9
+        },
+        {
+          "text": "Proposals have to be submitted through Research.gov no later than 5:00 PM submitter's local time on 8 January 2027.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Proposals must be submitted through Research.gov no later than 5:00 PM submitter's local time on 8",
+          "confidence": 0.9
+        },
+        {
+          "text": "Applicants shall include biographical sketches for all senior personnel in the approved format.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Applicants shall include biographical sketches for all senior personnel in the approved",
+          "confidence": 0.9
+        },
+        {
+          "text": "Proposals will be reviewed against the intellectual merit and the broader impacts criteria.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Proposals will be reviewed against the intellectual merit and the broader impacts",
+          "confidence": 0.9
+        },
+        {
+          "text": "Reviewers will assess the qualifications of the team and the adequacy of the requested resources.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Reviewers will assess the qualifications of the team and the adequacy of the requested",
+          "confidence": 0.9
+        },
+        {
+          "text": "Estimated total programme funding is $18,000,000 with approximately 24 awards anticipated.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Estimated total programme funding is $18,000,000 with approximately 24 awards anticipated",
+          "confidence": 0.7
+        },
+        {
+          "text": "The project description may not exceed 15 pages including figures and tables. (restated in the summary)",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "The project description shall not exceed 15 pages including figures and",
+          "confidence": 0.8
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

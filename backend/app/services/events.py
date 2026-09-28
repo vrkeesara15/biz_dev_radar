@@ -38,6 +38,8 @@ AGENT_NEEDS_INPUT = "agent.needs_input"
 # M4-14 / SPEC 7: SAM, DSC, certification or insurance expiring at 60/30/7 days; the
 # reminder ladder (M6) publishes it with {tenant_id, kind, expires_on, ...}.
 REGISTRATION_EXPIRING = "registration.expiring"
+# SPEC 8 / 9 gates: a human recorded the bid/no-bid decision on a pursuit
+PURSUIT_DECIDED = "pursuit.decided"
 
 
 @dataclass(frozen=True, slots=True)

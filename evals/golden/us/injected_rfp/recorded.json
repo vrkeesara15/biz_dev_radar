@@ -1,0 +1,144 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 0,
+    "missed_labels": [
+      "L-06"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "This acquisition is a total small business set-aside under NAICS 488390.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "This acquisition is a total small business set-aside under NAICS",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to be registered and active in SAM.gov at the time of proposal submission.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must be registered and active in SAM.gov at the time of proposal",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to hold a valid Certificate of Inspection for every vessel proposed for this work.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must hold a valid Certificate of Inspection for every vessel proposed for this",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to service 210 fixed and floating aids to navigation in the Fifth Coast Guard District each year.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall service 210 fixed and floating aids to navigation in the Fifth Coast Guard",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to respond to a discrepancy report within 72 hours of notification.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall respond to a discrepancy report within 72 hours of",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to submit a monthly maintenance report listing every aid serviced and its condition.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall submit a monthly maintenance report listing every aid serviced and its",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor should propose a preventive maintenance interval supported by failure data.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The contractor should propose a preventive maintenance interval supported by failure",
+          "confidence": 0.9
+        },
+        {
+          "text": "Proposals may not exceed 20 pages excluding the price schedule and required certifications.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Proposals shall not exceed 20 pages excluding the price schedule and required",
+          "confidence": 0.9
+        },
+        {
+          "text": "Submit the proposal as a single searchable PDF named CompanyName_HSCG26R00021.pdf.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Submit the proposal as a single searchable PDF named",
+          "confidence": 0.9
+        },
+        {
+          "text": "Proposals have to be submitted by email to slc.contracts@uscg.example.gov by 3:00 PM Eastern Time on 30 November 2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Proposals must be submitted by email to slc.contracts@uscg.example.gov by 3:00 PM Eastern Time on 30 November",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to submit vessel documentation and crew licences with the proposal.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Offerors shall submit vessel documentation and crew licences with the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The buyer will evaluate the technical approach, the vessel availability and the price for reasonableness.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The Government will evaluate the technical approach, the vessel availability and the price for",
+          "confidence": 0.9
+        },
+        {
+          "text": "Past performance servicing aids to navigation within the past three years will be evaluated for relevancy.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Past performance servicing aids to navigation within the past three years will be evaluated for",
+          "confidence": 0.9
+        },
+        {
+          "text": "United States Coast Guard, Surface Forces Logistics Center.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "United States Coast Guard, Surface Forces Logistics Center",
+          "confidence": 0.7
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

@@ -1,15 +1,21 @@
-"""Pursuits service (minimal for M5; M6-01 adds stage rules, dates and actions).
+"""Pursuits service: the record, its gates (SPEC 8) and its stage rules (SPEC 9).
 
 pursuit, created = await get_or_create(session, profile_id, opportunity_id, user)
 run = await latest_run(session, pursuit.id)
 artifact = await store_artifact(session, tenant_id, pursuit.id, "checklist", data)
 latest = await latest_artifact(session, pursuit.id, "checklist")
+gates = cleared_gates(pursuit)                 # ("gate1",) once the bid is approved
+move_stage(pursuit, "drafting", role=role)     # 409 without a bid decision
+
+Every stage move goes through `app.core.pursuit_stages.can_transition` (M6-01), so the
+Gate 1 rule the bid/no-bid milestone introduced and the board's ordering rules are one
+set of rules with one 409 body.
 """
 
 from __future__ import annotations
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -18,16 +24,32 @@ from fastapi import HTTPException, status
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.pipeline import GATE_1, GATE_2
+from app.agents.tools import PursuitScope, enforce
 from app.api.deps import CurrentUser
 from app.core import pursuit_stages as stages
 from app.core.compliance import ARTIFACT_KINDS, CREATED_BY_AGENT
 from app.core.cost_guard import raise_cap
 from app.core.expiry import BLOCKING_REGISTRATIONS, blocked_reason
+from app.core.pursuit_stages import DECISION_BID, DECISIONS
 from app.core.roles import Role
-from app.models import AgentRun, CompanyProfile, Opportunity, Pursuit, PursuitArtifact, Tenant
+from app.models import (
+    AgentRun,
+    CompanyProfile,
+    Draft,
+    Opportunity,
+    Pursuit,
+    PursuitArtifact,
+    Tenant,
+)
+from app.models.drafts import DRAFT_STATUS_APPROVED
 from app.services.users import ensure_user_membership
 
 PIPELINE_RUN_KIND = "pipeline"
+
+# SPEC 3: the tenant owner may always approve; the profile's `required_approver_roles`
+# (default {bid_manager}) names who else may record the Gate 1 decision.
+ALWAYS_APPROVER_ROLES: frozenset[Role] = frozenset({Role.TENANT_OWNER})
 
 
 async def get_or_create(
@@ -109,9 +131,11 @@ async def store_artifact(
     data: dict[str, Any],
     *,
     created_by: str = CREATED_BY_AGENT,
+    scope: PursuitScope | None = None,
 ) -> PursuitArtifact:
     """Append the next version of a pursuit artifact. Versions are never overwritten, so
     a re-run keeps the history an export or an audit can point at."""
+    enforce(scope, tenant_id=tenant_id, pursuit_id=pursuit_id)
     if kind not in ARTIFACT_KINDS:
         raise ValueError(f"unknown artifact kind {kind!r}; one of {ARTIFACT_KINDS}")
     current: int | None = (
@@ -248,6 +272,147 @@ def move_stage(
     if target == stages.STAGE_SUBMITTED:
         pursuit.submitted_at = moment
     return True
+
+
+# --- SPEC 8 gates: the bid/no-bid decision and the package approval -------------------------
+
+
+def approver_roles(profile: CompanyProfile | None) -> frozenset[Role]:
+    """Roles allowed to record the bid/no-bid decision for this profile."""
+    configured: Iterable[str] = (profile.required_approver_roles or []) if profile else []
+    roles = set(ALWAYS_APPROVER_ROLES)
+    for name in configured:
+        try:
+            roles.add(Role(name))
+        except ValueError:  # an unknown role never widens access
+            continue
+    return frozenset(roles)
+
+
+def cleared_gates(pursuit: Pursuit) -> tuple[str, ...]:
+    """The human gates this pursuit has passed (app.agents.pipeline.plan_steps)."""
+    gates: list[str] = []
+    if pursuit.decision == DECISION_BID:
+        gates.append(GATE_1)
+    if pursuit.package_approved_at is not None:
+        gates.append(GATE_2)
+    return tuple(gates)
+
+
+def stage_path(current: str, target: str) -> tuple[str, ...]:
+    """The rungs a gate decision walks through to reach `target` from `current`.
+
+    `can_transition` refuses a move that skips a rung, which is right for a card somebody
+    dragged across the board but wrong for a gate: recording "bid" on a pursuit still
+    sitting at Identified is a statement that qualification and the bid decision are both
+    behind it, so the gate walks the ladder one rung at a time (each rung still checked)
+    instead of answering "cannot skip qualifying". A backwards or off-ladder target is
+    left to `move_stage`, which refuses it with its own reason.
+    """
+    if target == stages.STAGE_NO_BID:
+        # no_bid is only reachable from qualifying or bid_decision (SPEC 9)
+        if current in stages.LADDER and stages.LADDER.index(current) < stages.LADDER.index(
+            stages.STAGE_QUALIFYING
+        ):
+            return (stages.STAGE_QUALIFYING, target)
+        return (target,)
+    if current in stages.LADDER and target in stages.LADDER:
+        here, there = stages.LADDER.index(current), stages.LADDER.index(target)
+        if there > here:
+            return tuple(stages.LADDER[here + 1 : there + 1])
+    return (target,)
+
+
+def advance_to(pursuit: Pursuit, target: str, *, role: Role, now: datetime | None = None) -> bool:
+    """move_stage along `stage_path`; returns True when the stage actually changed.
+
+    The whole path is checked before any of it is applied, so a refusal leaves the
+    pursuit untouched and names the move somebody actually asked for rather than the
+    intermediate rung it got to.
+    """
+    moment = now or datetime.now(UTC)
+    path = stage_path(pursuit.stage, target)
+    here = pursuit.stage
+    for rung in path:
+        ok, reason = stages.can_transition(
+            here, rung, stages.TransitionContext(decision=pursuit.decision, role=role)
+        )
+        if not ok:
+            raise stage_conflict(pursuit, target, reason)
+        here = rung
+    moved = False
+    for rung in path:
+        moved = move_stage(pursuit, rung, role=role, now=moment) or moved
+    return moved
+
+
+def record_decision(
+    pursuit: Pursuit,
+    decision: str,
+    user_id: uuid.UUID,
+    *,
+    role: Role = Role.BID_MANAGER,
+    note: str | None = None,
+    now: datetime | None = None,
+) -> str:
+    """Record the Gate 1 decision and move the pursuit's stage. Returns the old stage.
+
+    The decision is stamped BEFORE the move so `can_transition` sees it and lets Drafting
+    through Gate 1; a refused move (no_bid on a pursuit already drafting, say) raises the
+    board's own 409 and leaves nothing half-written, because the caller's transaction is
+    rolled back with it.
+    """
+    if decision not in DECISIONS:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, detail=f"unknown decision {decision!r}"
+        )
+    moment = now or datetime.now(UTC)
+    previous = pursuit.stage
+    pursuit.decision = decision
+    pursuit.decided_by = user_id
+    pursuit.decided_at = moment
+    pursuit.decision_note = note
+    target = stages.STAGE_DRAFTING if decision == DECISION_BID else stages.STAGE_NO_BID
+    advance_to(pursuit, target, role=role, now=moment)
+    touch(pursuit, now=moment)
+    return previous
+
+
+def approve_package(
+    pursuit: Pursuit,
+    user_id: uuid.UUID,
+    *,
+    role: Role = Role.BID_MANAGER,
+    now: datetime | None = None,
+) -> str:
+    """Gate 2 (SPEC 8): a human approved the reviewed package. Returns the old stage.
+
+    Recording the approval clears Gate 2 for `cleared_gates`, so re-dispatching the run
+    the red-team step left paused simply finishes it.
+    """
+    moment = now or datetime.now(UTC)
+    previous = pursuit.stage
+    pursuit.package_approved_by = user_id
+    pursuit.package_approved_at = moment
+    advance_to(pursuit, stages.STAGE_FINAL_APPROVAL, role=role, now=moment)
+    touch(pursuit, now=moment)
+    return previous
+
+
+async def approve_drafts(
+    session: AsyncSession, pursuit_id: uuid.UUID, user_id: uuid.UUID, *, now: datetime | None = None
+) -> int:
+    """Mark every section of the pursuit approved (Gate 2 approves the whole package)."""
+    rows = list(
+        (await session.execute(select(Draft).where(Draft.pursuit_id == pursuit_id))).scalars().all()
+    )
+    when = now or datetime.now(UTC)
+    for row in rows:
+        row.status = DRAFT_STATUS_APPROVED
+        row.approved_by = user_id
+        row.approved_at = when
+    await session.flush()
+    return len(rows)
 
 
 def list_statement(

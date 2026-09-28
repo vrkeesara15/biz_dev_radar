@@ -1,0 +1,147 @@
+{
+  "source": "synthetic DoD RFP with Sections L and M (evals/golden/us/dod_rfp_section_lm)",
+  "notice_id": "W91QUZ-26-R-0001",
+  "region": "us",
+  "notice_type": "rfp",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "This acquisition is a total small business set-aside under NAICS 541519 with a size standard of $34 million.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "Offerors must be registered and active in SAM.gov before the proposal due date.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "The prime offeror must hold a facility clearance at the Secret level at the time of award.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "Offerors must have submitted a current representations and certifications record in SAM.gov.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "L.1 The technical volume shall not exceed 40 pages, excluding the cover page, table of contents and resumes.",
+      "page": 2,
+      "type": "format"
+    },
+    {
+      "id": "L-06",
+      "text": "L.2 Use 12-point Times New Roman with one-inch margins on 8.5 by 11 inch paper.",
+      "page": 2,
+      "type": "format"
+    },
+    {
+      "id": "L-07",
+      "text": "L.3 Submit Volume I Technical, Volume II Past Performance and Volume III Price as separate PDF files.",
+      "page": 2,
+      "type": "format"
+    },
+    {
+      "id": "L-08",
+      "text": "L.4 File names shall follow the pattern CompanyName_W91QUZ-26-R-0001_VolumeNumber.pdf.",
+      "page": 2,
+      "type": "format"
+    },
+    {
+      "id": "L-09",
+      "text": "L.5 Offerors shall submit proposals through the Procurement Integrated Enterprise Environment no later than 4:00 PM Eastern Time on 14 December 2026.",
+      "page": 2,
+      "type": "submission"
+    },
+    {
+      "id": "L-10",
+      "text": "L.6 Offerors shall submit a completed Standard Form 33 signed by an authorised representative.",
+      "page": 2,
+      "type": "submission"
+    },
+    {
+      "id": "L-11",
+      "text": "L.7 Questions must be submitted in writing no later than 20 November 2026; answers will be issued by amendment.",
+      "page": 2,
+      "type": "submission"
+    },
+    {
+      "id": "L-12",
+      "text": "L.8 The contractor shall provide three past performance references for contracts of similar size and scope completed within the past five years.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-13",
+      "text": "C.1 The contractor shall replace 1,200 end-of-life network switches across 38 installations within 18 months of award.",
+      "page": 3,
+      "type": "shall"
+    },
+    {
+      "id": "L-14",
+      "text": "C.2 The contractor shall maintain 99.9 percent network availability measured monthly across all supported sites.",
+      "page": 3,
+      "type": "shall"
+    },
+    {
+      "id": "L-15",
+      "text": "C.3 The contractor must ensure that all personnel with administrative access hold an active Secret clearance.",
+      "page": 3,
+      "type": "must"
+    },
+    {
+      "id": "L-16",
+      "text": "C.4 The contractor shall deliver a cutover plan for each installation 30 calendar days before the scheduled cutover.",
+      "page": 3,
+      "type": "shall"
+    },
+    {
+      "id": "L-17",
+      "text": "C.5 The contractor should propose automation that reduces manual configuration effort and report the savings quarterly.",
+      "page": 3,
+      "type": "should"
+    },
+    {
+      "id": "L-18",
+      "text": "C.6 The contractor shall provide a transition-in plan within 15 calendar days of award and a transition-out plan 90 days before contract end.",
+      "page": 3,
+      "type": "shall"
+    },
+    {
+      "id": "L-19",
+      "text": "M.1 Factor 1 Technical Approach: the Government will evaluate the soundness of the proposed cutover methodology and the realism of the 18-month schedule.",
+      "page": 4,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-20",
+      "text": "M.2 Factor 2 Management Approach: the Government will evaluate the staffing plan, the key personnel qualifications and the risk mitigation approach.",
+      "page": 4,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-21",
+      "text": "M.3 Factor 3 Past Performance: the Government will evaluate the recency, relevancy and quality of the references submitted under L.8.",
+      "page": 4,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-22",
+      "text": "M.4 Factor 4 Price: the Government will evaluate total evaluated price for the base period and all option years for reasonableness and balance.",
+      "page": 4,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "naics": "541519",
+    "set_aside": "small_business",
+    "size_standard_usd": 34000000,
+    "sam_registration_required": true,
+    "clearance": "Secret"
+  }
+}

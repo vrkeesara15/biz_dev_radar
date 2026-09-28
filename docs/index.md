@@ -26,6 +26,7 @@ matching `app/core/config.py`.
 | [../infra/terraform/README.md](../infra/terraform/README.md) | The four environments as Terraform, what each module creates, residency enforcement |
 | [../infra/cloudrun/README.md](../infra/cloudrun/README.md) | The generated Cloud Run services and per-adapter jobs, and the one-image/six-modes entrypoint |
 | [../scripts/load/README.md](../scripts/load/README.md) | **The load tests.** The SPEC 12 targets (50k x 200 in under 10 minutes, search p95 under 500 ms), how to run `make load-smoke` / `make load-full`, the measured numbers and the extrapolation |
+| [evals.md](evals.md) | **The eval set.** The SPEC 12 extraction and grounding bars, the 20 golden notices (10 US, 10 India), how `make eval` scores them, how to regenerate a notice and how to run the set against the live model |
 
 ## Runbooks
 

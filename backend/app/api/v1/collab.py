@@ -8,10 +8,16 @@
     GET    /api/v1/pursuits/{id}/comments?target_type=&target_id=&unresolved=
     POST   /api/v1/pursuits/{id}/comments        {body, target_type?, target_id?}
     PATCH  /api/v1/pursuits/{id}/comments/{comment_id} {body?, resolved?}
+    POST   /api/v1/pursuits/{id}/comments/{comment_id}/resolve   (idempotent, M5-16)
     DELETE /api/v1/pursuits/{id}/comments/{comment_id}
 
 Roles (SPEC 3): a reviewer may comment and resolve but not create or reassign work; a
 writer owns the task list; a viewer reads. Anybody who is assigned a task may close it.
+
+These are SPEC 10.2's `tasks` and `comments` (app.models.collab): the M5 workspace and
+the M6 Tasks tab were built against the same two tables under different names and are
+reconciled here (M6 OQ-117). A comment may only point at something inside its own
+pursuit, so `_check_target` resolves every non-pursuit target before the row is written.
 """
 
 from __future__ import annotations
@@ -22,22 +28,40 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import TENANT_ROLES, CurrentUser, TenantSessionDep, require_role
 from app.core.collab import (
     SOURCE_USER,
+    TARGET_ARTIFACT,
+    TARGET_COMPLIANCE_ITEM,
+    TARGET_DRAFT_SECTION,
+    TARGET_KEY_DATE,
     TARGET_PURSUIT,
+    TARGET_REQUIREMENT,
+    TARGET_TASK,
     TARGET_TYPES,
     TASK_DONE,
     TASK_OPEN,
     TASK_STATUSES,
 )
 from app.core.roles import Role
-from app.models import PursuitComment, PursuitTask, User
+from app.models import (
+    Comment,
+    ComplianceItem,
+    Draft,
+    PursuitArtifact,
+    PursuitDate,
+    Requirement,
+    Task,
+    User,
+)
 from app.services import collab as collab_svc
+from app.services import drafts as draft_svc
 from app.services import pursuits as pursuit_svc
 from app.services.audit import AuditHint
+from app.services.users import ensure_user_membership
 
 router = APIRouter(prefix="/pursuits", tags=["pursuits"])
 
@@ -150,9 +174,11 @@ class CommentListOut(BaseModel):
     pursuit_id: uuid.UUID
     items: list[CommentOut]
     unresolved_count: int
+    # M5-16 called the same number `open_count`; both names ship so neither reader broke
+    open_count: int = 0
 
 
-def task_out(row: PursuitTask) -> TaskOut:
+def task_out(row: Task) -> TaskOut:
     return TaskOut(
         id=row.id,
         pursuit_id=row.pursuit_id,
@@ -171,7 +197,7 @@ def task_out(row: PursuitTask) -> TaskOut:
     )
 
 
-def comment_out(row: PursuitComment) -> CommentOut:
+def comment_out(row: Comment) -> CommentOut:
     return CommentOut(
         id=row.id,
         pursuit_id=row.pursuit_id,
@@ -186,22 +212,50 @@ def comment_out(row: PursuitComment) -> CommentOut:
     )
 
 
-async def _task(session: AsyncSession, pursuit_id: uuid.UUID, task_id: uuid.UUID) -> PursuitTask:
+async def _task(session: AsyncSession, pursuit_id: uuid.UUID, task_id: uuid.UUID) -> Task:
     await pursuit_svc.get_pursuit(session, pursuit_id)
-    row = await session.get(PursuitTask, task_id)
+    row = await session.get(Task, task_id)
     if row is None or row.pursuit_id != pursuit_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="task not found")
     return row
 
 
-async def _comment(
-    session: AsyncSession, pursuit_id: uuid.UUID, comment_id: uuid.UUID
-) -> PursuitComment:
+async def _comment(session: AsyncSession, pursuit_id: uuid.UUID, comment_id: uuid.UUID) -> Comment:
     await pursuit_svc.get_pursuit(session, pursuit_id)
-    row = await session.get(PursuitComment, comment_id)
+    row = await session.get(Comment, comment_id)
     if row is None or row.pursuit_id != pursuit_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="comment not found")
     return row
+
+
+#: every comment anchor, and the table that has to hold a row with that id in THIS
+#: pursuit before the comment is written (M5-16's rule, applied to M6's vocabulary).
+TARGET_MODELS: dict[str, Any] = {
+    TARGET_REQUIREMENT: Requirement,
+    TARGET_COMPLIANCE_ITEM: ComplianceItem,
+    TARGET_DRAFT_SECTION: Draft,
+    TARGET_TASK: Task,
+    TARGET_KEY_DATE: PursuitDate,
+    TARGET_ARTIFACT: PursuitArtifact,
+}
+
+
+async def _check_target(
+    session: AsyncSession, pursuit_id: uuid.UUID, target_type: str, target_id: uuid.UUID | None
+) -> None:
+    """A comment may only point at something inside its own pursuit (404 otherwise)."""
+    if target_type == TARGET_PURSUIT or target_id is None:
+        return
+    model = TARGET_MODELS[target_type]
+    row = (
+        await session.execute(
+            select(model).where(model.id == target_id, model.pursuit_id == pursuit_id)
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, detail=f"{target_type} {target_id} not found in this pursuit"
+        )
 
 
 async def _known_user(session: AsyncSession, user_id: uuid.UUID | None) -> uuid.UUID | None:
@@ -249,7 +303,7 @@ async def create_task(
     request: Request,
 ) -> TaskOut:
     pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
-    row = PursuitTask(
+    row = Task(
         tenant_id=user.tenant_id,
         pursuit_id=pursuit.id,
         title=body.title,
@@ -266,7 +320,7 @@ async def create_task(
     await session.flush()
     request.state.audit = AuditHint(
         action="pursuit.task_created",
-        object_type="pursuit_task",
+        object_type="task",
         object_id=str(row.id),
         meta={"pursuit_id": str(pursuit.id)},
     )
@@ -315,7 +369,7 @@ async def update_task(
     await session.refresh(row)
     request.state.audit = AuditHint(
         action="pursuit.task_updated",
-        object_type="pursuit_task",
+        object_type="task",
         object_id=str(row.id),
         meta=meta,
     )
@@ -333,7 +387,7 @@ async def delete_task(
     row = await _task(session, pursuit_id, task_id)
     request.state.audit = AuditHint(
         action="pursuit.task_deleted",
-        object_type="pursuit_task",
+        object_type="task",
         object_id=str(row.id),
         meta={"pursuit_id": str(pursuit_id)},
     )
@@ -352,7 +406,10 @@ async def list_comments(
     target_type: str | None = None,
     target_id: uuid.UUID | None = None,
     unresolved: bool = False,
+    resolved: bool | None = None,
 ) -> CommentListOut:
+    """`unresolved=true` hides resolved threads; `resolved=` selects one side explicitly
+    (M5-16's filter, kept so a "what did we close" view is one call)."""
     pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
     if target_type is not None and target_type not in TARGET_TYPES:
         raise HTTPException(
@@ -365,11 +422,13 @@ async def list_comments(
         target_type=target_type,
         target_id=target_id,
         include_resolved=not unresolved,
+        resolved=resolved,
     )
     return CommentListOut(
         pursuit_id=pursuit.id,
         items=[comment_out(row) for row in rows],
         unresolved_count=sum(1 for row in rows if row.resolved_at is None),
+        open_count=sum(1 for row in rows if row.resolved_at is None),
     )
 
 
@@ -384,22 +443,32 @@ async def create_comment(
     request: Request,
 ) -> CommentOut:
     pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
-    row = PursuitComment(
-        tenant_id=user.tenant_id,
-        pursuit_id=pursuit.id,
+    await _check_target(session, pursuit.id, body.target_type, body.target_id)
+    await ensure_user_membership(
+        user_id=user.id, email=user.email, tenant_id=user.tenant_id, role=user.role
+    )
+    # services.drafts.add_comment is the single insert point: the reviewer's POST and the
+    # red team's findings both land there (M5-10).
+    row = await draft_svc.add_comment(
+        session,
+        user.tenant_id,
+        pursuit.id,
         target_type=body.target_type,
         target_id=body.target_id,
         body=body.body,
         author_user_id=user.id,
     )
-    session.add(row)
     pursuit_svc.touch(pursuit)
     await session.flush()
     request.state.audit = AuditHint(
-        action="pursuit.comment_created",
-        object_type="pursuit_comment",
+        action="comment.created",
+        object_type="comment",
         object_id=str(row.id),
-        meta={"pursuit_id": str(pursuit.id), "target_type": row.target_type},
+        meta={
+            "pursuit_id": str(pursuit.id),
+            "target_type": row.target_type,
+            "target_id": None if row.target_id is None else str(row.target_id),
+        },
     )
     return comment_out(row)
 
@@ -430,11 +499,35 @@ async def update_comment(
     await session.flush()
     await session.refresh(row)
     request.state.audit = AuditHint(
-        action="pursuit.comment_updated",
-        object_type="pursuit_comment",
+        action="comment.updated",
+        object_type="comment",
         object_id=str(row.id),
         meta=meta,
     )
+    return comment_out(row)
+
+
+@router.post("/{pursuit_id}/comments/{comment_id}/resolve", response_model=CommentOut)
+async def resolve_comment(
+    pursuit_id: uuid.UUID,
+    comment_id: uuid.UUID,
+    session: TenantSessionDep,
+    user: CommenterDep,
+    request: Request,
+) -> CommentOut:
+    """Mark a thread resolved (M5-16). Idempotent: resolving twice keeps the first stamp."""
+    row = await _comment(session, pursuit_id, comment_id)
+    if row.resolved_at is None:  # resolving twice is a no-op, not an error
+        row.resolved_at = datetime.now(UTC)
+        row.resolved_by = user.id
+    request.state.audit = AuditHint(
+        action="comment.resolved",
+        object_type="comment",
+        object_id=str(row.id),
+        meta={"pursuit_id": str(pursuit_id)},
+    )
+    await session.flush()
+    await session.refresh(row)
     return comment_out(row)
 
 
@@ -452,8 +545,8 @@ async def delete_comment(
             status.HTTP_403_FORBIDDEN, detail="only the author or a bid manager may delete"
         )
     request.state.audit = AuditHint(
-        action="pursuit.comment_deleted",
-        object_type="pursuit_comment",
+        action="comment.deleted",
+        object_type="comment",
         object_id=str(row.id),
         meta={"pursuit_id": str(pursuit_id)},
     )

@@ -1,0 +1,118 @@
+{
+  "source": "synthetic CPPP railways signalling tender (evals/golden/in/cppp_railways_signalling)",
+  "notice_id": "RLY/SCR/SIG/2026/0043",
+  "region": "in",
+  "notice_type": "tender",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 15,00,00,000 over the last three financial years.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "The bidder shall submit an EMD of Rs. 30,00,000 through the CPP Portal payment gateway or as a bank guarantee.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "The bidder shall have at least 3 years of experience commissioning electronic interlocking systems on Indian Railways.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "MSEs registered under Udyam are exempted from the EMD on submission of a valid certificate.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "The bidder shall hold a valid RDSO approval for the offered electronic interlocking system.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-06",
+      "text": "7.1 The contractor shall supply, install, test and commission electronic interlocking at 11 stations.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "7.2 The contractor shall complete the work at each station within the traffic block periods allotted by the railway.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "7.3 The contractor must obtain the Commissioner of Railway Safety sanction before commissioning each installation.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-09",
+      "text": "7.4 The contractor shall provide two years of warranty and free maintenance after commissioning.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-10",
+      "text": "7.5 The contractor shall train railway signalling staff on the installed system at each station.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-11",
+      "text": "7.6 The contractor should provide a spares holding plan for the warranty period.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-12",
+      "text": "Uploaded documents shall be legible PDF files of not more than 20 MB each.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-13",
+      "text": "Bids shall be submitted on the CPP Portal before 15:00 hours IST on 18-12-2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "Both covers shall be digitally signed with a Class 3 DSC in the name of the authorised signatory.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-15",
+      "text": "The bidder shall upload the RDSO approval letter and the Udyam certificate where an exemption is claimed.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-16",
+      "text": "Technically responsive bids will be ranked by the total evaluated cost including two years of maintenance.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-17",
+      "text": "The railway will verify completion certificates for at least five commissioned interlocking installations.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "min_avg_turnover_inr": "150000000",
+    "emd_amount_inr": "3000000",
+    "min_experience_years": 3,
+    "mse_exemption_allowed": true,
+    "startup_exemption_allowed": false,
+    "requires_cppp_enrolment": true
+  }
+}

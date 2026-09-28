@@ -1,0 +1,168 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 1,
+    "missed_labels": [
+      "L-05"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "This procurement is set aside for HUBZone small business concerns certified by the Small Business Administration under NAICS 562910.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "This procurement is set aside for HUBZone small business concerns certified by the Small Business Administration",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to be registered and active in SAM.gov and must have completed the annual representations and certifications.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must be registered and active in SAM.gov and must have completed the annual representations and",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to hold a current state licence for hazardous waste transport in Colorado and Utah.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must hold a current state licence for hazardous waste transport in Colorado and",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to carry pollution liability insurance of at least $2,000,000 per occurrence.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must carry pollution liability insurance of at least $2,000,000 per",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to deliver validated analytical results within 21 calendar days of sample collection.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall deliver validated analytical results within 21 calendar days of sample",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to use laboratories accredited under the National Environmental Laboratory Accreditation Program.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must use laboratories accredited under the National Environmental Laboratory Accreditation",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to maintain chain-of-custody documentation for every sample and provide it on request.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall maintain chain-of-custody documentation for every sample and provide it on",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to submit a quality assurance project plan within 30 days of award.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall submit a quality assurance project plan within 30 days of",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor should propose field methods that reduce site visits without reducing data quality.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The contractor should propose field methods that reduce site visits without reducing data",
+          "confidence": 0.9
+        },
+        {
+          "text": "Quotations may not exceed 20 pages, excluding certifications and the price schedule.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Quotations shall not exceed 20 pages, excluding certifications and the price",
+          "confidence": 0.9
+        },
+        {
+          "text": "Use 11-point Arial with one-inch margins; submit as a searchable PDF.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Use 11-point Arial with one-inch margins; submit as a searchable",
+          "confidence": 0.9
+        },
+        {
+          "text": "Quotations must be emailed to r8.contracts@epa.example.gov by 2:00 PM Mountain Time on 12 November 2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Quotations must be emailed to r8.contracts@epa.example.gov by 2:00 PM Mountain Time on 12 November",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to complete and return the pricing schedule for the base year and both option years.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Offerors shall complete and return the pricing schedule for the base year and both option",
+          "confidence": 0.9
+        },
+        {
+          "text": "Award will be made to the responsible offeror whose quotation is the lowest price technically acceptable.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Award will be made to the responsible offeror whose quotation is the lowest price technically",
+          "confidence": 0.9
+        },
+        {
+          "text": "Technical acceptability will be determined against the sampling methodology, the laboratory accreditation and the staffing plan.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Technical acceptability will be determined against the sampling methodology, the laboratory accreditation and the staffing",
+          "confidence": 0.9
+        },
+        {
+          "text": "This is a combined synopsis and solicitation prepared under FAR Subpart 12.6.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "This is a combined synopsis and solicitation prepared under FAR Subpart 12.6",
+          "confidence": 0.7
+        },
+        {
+          "text": "Offerors are required to be registered and active in SAM.gov and must have completed the annual representations and certifications. (restated in the summary)",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must be registered and active in SAM.gov and must have completed the annual representations and",
+          "confidence": 0.8
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

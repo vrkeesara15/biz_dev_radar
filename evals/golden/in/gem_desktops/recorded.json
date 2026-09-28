@@ -1,0 +1,168 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 1,
+    "missed_labels": [
+      "L-08"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder is required to have a minimum average annual turnover of Rs. 45,00,000 over the last three financial years.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 45,00,000 over the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to furnish an EMD of Rs. 2,40,000 through the GeM online payment gateway before the bid end date.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall furnish an EMD of Rs. 2,40,000 through the GeM online payment gateway before",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to have at least 3 years of past experience in supplying desktop computers to government buyers.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall have at least 3 years of past experience in supplying desktop computers to",
+          "confidence": 0.9
+        },
+        {
+          "text": "MSEs registered under Udyam are exempted from the EMD on submission of a valid Udyam certificate; startups are not exempted for this bid.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "MSEs registered under Udyam are exempted from the EMD on submission of a valid Udyam certificate",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to be a registered seller on the Government e-Marketplace with the relevant product category approved.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall be a registered seller on the Government e-Marketplace with the relevant product category",
+          "confidence": 0.9
+        },
+        {
+          "text": "The seller is required to deliver all 120 desktop computers to the consignee locations within 45 days of the supply order.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The seller shall deliver all 120 desktop computers to the consignee locations within 45 days of",
+          "confidence": 0.9
+        },
+        {
+          "text": "The seller is required to provide a comprehensive on-site warranty of three years covering parts and labour.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The seller shall provide a comprehensive on-site warranty of three years covering parts and",
+          "confidence": 0.9
+        },
+        {
+          "text": "The seller is required to install the operating system and the buyer's standard image on every unit before handover.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The seller shall install the operating system and the buyer's standard image on every unit before",
+          "confidence": 0.9
+        },
+        {
+          "text": "The seller should provide a single point of contact for warranty escalations across all consignee locations.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The seller should provide a single point of contact for warranty escalations across all consignee",
+          "confidence": 0.9
+        },
+        {
+          "text": "All documents shall be uploaded in PDF format and may not exceed 10 MB per file.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "All documents shall be uploaded in PDF format and shall not exceed 10 MB per",
+          "confidence": 0.9
+        },
+        {
+          "text": "The technical and financial bids shall be submitted online on the GeM portal before 05:00 PM IST on 20-11-2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The technical and financial bids shall be submitted online on the GeM portal before 05:00 PM",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to digitally sign every uploaded document with a Class 3 Digital Signature Certificate.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall digitally sign every uploaded document with a Class 3 Digital Signature",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to upload the Udyam registration certificate where an MSE exemption is claimed.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall upload the Udyam registration certificate where an MSE exemption is",
+          "confidence": 0.9
+        },
+        {
+          "text": "Bids will be evaluated on the lowest landed price (L1) among technically qualified bidders.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Bids will be evaluated on the lowest landed price (L1) among technically qualified",
+          "confidence": 0.9
+        },
+        {
+          "text": "Technical qualification will be assessed against the minimum specification sheet and the submitted BIS certificate.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Technical qualification will be assessed against the minimum specification sheet and the submitted BIS",
+          "confidence": 0.9
+        },
+        {
+          "text": "Bid opening will be held online in the presence of authorised representatives.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Bid opening will be held online in the presence of authorised representatives",
+          "confidence": 0.7
+        },
+        {
+          "text": "The bidder is required to be a registered seller on the Government e-Marketplace with the relevant product category approved. (restated in the summary)",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall be a registered seller on the Government e-Marketplace with the relevant product category",
+          "confidence": 0.8
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

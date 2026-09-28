@@ -14,6 +14,7 @@ from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
+from app.core.collab import TARGET_PURSUIT, TARGET_TYPES, TASK_SOURCES, TASK_STATUSES
 from app.core.plan import PLAN_DEFAULTS, Resource
 from migrations.rls import enable_rls, grant_app
 from sqlalchemy.dialects import postgresql
@@ -23,10 +24,25 @@ down_revision: str | None = "0010_m7_admin"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
-TENANT_TABLES = ("pursuits", "requirements", "compliance_items", "pursuit_artifacts")
+TENANT_TABLES = (
+    "pursuits",
+    "requirements",
+    "compliance_items",
+    "pursuit_artifacts",
+    "drafts",
+    "draft_versions",
+    "draft_feedback",
+    "tasks",
+    "comments",
+    "exports",
+)
 # plan_limits rows added by this milestone (0001 seeds PLAN_DEFAULTS on a fresh database,
 # so the insert is idempotent for databases migrated before this revision existed).
 NEW_RESOURCES = (Resource.AGENT_BUDGET_USD_MONTH,)
+
+TASK_STATUS_LIST = ", ".join(f"'{value}'" for value in TASK_STATUSES)
+TASK_SOURCE_LIST = ", ".join(f"'{value}'" for value in TASK_SOURCES)
+TARGET_TYPE_LIST = ", ".join(f"'{value}'" for value in TARGET_TYPES)
 
 
 def _uuid_pk() -> sa.Column[object]:
@@ -97,6 +113,17 @@ def upgrade() -> None:
         sa.Column("stage", sa.String(32), nullable=False, server_default=sa.text("'identified'")),
         _fk("owner_user_id", "users.id", ondelete="SET NULL", nullable=True),
         sa.Column("decision", sa.String(16)),
+        # Gate 1 (M5-06): who approved bid / no-bid, when and why
+        _fk("decided_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("decided_at"),
+        sa.Column("decision_note", sa.Text()),
+        # Gate 2 (M5-10): who approved the draft package for export, and when
+        _fk("package_approved_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("package_approved_at"),
+        # M5-13: exports stay "DRAFT - internal" until a human marks the package final
+        sa.Column("package_final", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        _ts("package_final_at"),
+        _fk("package_final_by", "users.id", ondelete="SET NULL", nullable=True),
         _ts("internal_due_at"),
         _fk("created_by", "users.id", ondelete="SET NULL", nullable=True),
         sa.Column("cost_cap_usd", sa.Numeric(12, 2)),
@@ -172,6 +199,162 @@ def upgrade() -> None:
     for col in ("tenant_id", "pursuit_id"):
         op.create_index(f"ix_pursuit_artifacts_{col}", "pursuit_artifacts", [col])
 
+    # --- drafts, versions and tasks (M5-08) ------------------------------------------
+    op.create_table(
+        "drafts",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        sa.Column("section_id", sa.String(64), nullable=False),
+        sa.Column("title", sa.String(200), nullable=False),
+        sa.Column("volume", sa.String(120)),
+        # FK added after draft_versions exists (the two tables reference each other)
+        sa.Column("current_version_id", postgresql.UUID(as_uuid=True)),
+        sa.Column("status", sa.String(16), nullable=False, server_default=sa.text("'draft'")),
+        _fk("approved_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("approved_at"),
+        _ts("created_at", nullable=False, default_now=True),
+        _ts("updated_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("pursuit_id", "section_id", name="uq_drafts_section"),
+    )
+    for col in ("tenant_id", "pursuit_id"):
+        op.create_index(f"ix_drafts_{col}", "drafts", [col])
+
+    op.create_table(
+        "draft_versions",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("draft_id", "drafts.id", ondelete="CASCADE", nullable=False),
+        sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1")),
+        sa.Column("body_html", sa.Text(), nullable=False, server_default=sa.text("''")),
+        sa.Column("body_text", sa.Text(), nullable=False, server_default=sa.text("''")),
+        sa.Column(
+            "citations", postgresql.JSONB(), nullable=False, server_default=sa.text("'[]'::jsonb")
+        ),
+        sa.Column(
+            "needs_input",
+            postgresql.JSONB(),
+            nullable=False,
+            server_default=sa.text("'[]'::jsonb"),
+        ),
+        sa.Column(
+            "flags", postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")
+        ),
+        sa.Column("author", sa.String(8), nullable=False, server_default=sa.text("'agent'")),
+        _fk("author_user_id", "users.id", ondelete="SET NULL", nullable=True),
+        sa.Column("model", sa.String(128)),
+        sa.Column("tokens", sa.Integer(), nullable=False, server_default=sa.text("0")),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("draft_id", "version", name="uq_draft_versions_version"),
+    )
+    for col in ("tenant_id", "draft_id"):
+        op.create_index(f"ix_draft_versions_{col}", "draft_versions", [col])
+    op.create_foreign_key(
+        "fk_drafts_current_version_id_draft_versions",
+        "drafts",
+        "draft_versions",
+        ["current_version_id"],
+        ["id"],
+        ondelete="SET NULL",
+    )
+
+    # --- human edit diffs as drafting feedback (M5-17) --------------------------------
+    op.create_table(
+        "draft_feedback",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        _fk("draft_id", "drafts.id", ondelete="CASCADE", nullable=False),
+        sa.Column("section_id", sa.String(64), nullable=False),
+        _fk("from_version_id", "draft_versions.id", ondelete="SET NULL", nullable=True),
+        _fk("to_version_id", "draft_versions.id", ondelete="SET NULL", nullable=True),
+        sa.Column("from_author", sa.String(8), nullable=False, server_default=sa.text("'agent'")),
+        sa.Column("diff_text", sa.Text(), nullable=False, server_default=sa.text("''")),
+        sa.Column(
+            "stats", postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")
+        ),
+        _fk("edited_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("created_at", nullable=False, default_now=True),
+    )
+    for col in ("tenant_id", "pursuit_id", "draft_id", "section_id"):
+        op.create_index(f"ix_draft_feedback_{col}", "draft_feedback", [col])
+
+    # SPEC 10.2 `tasks`: the drafters' [NEEDS INPUT] asks (M5-08) and the Tasks tab
+    # (M6-07, reconciled onto this table at merge -- OQ-117 -- hence detail / created_by /
+    # completed_* / updated_at and the two CHECKs).
+    op.create_table(
+        "tasks",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        sa.Column("title", sa.Text(), nullable=False),
+        sa.Column("detail", sa.Text()),
+        _fk("assignee_user_id", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("due_at"),
+        sa.Column("status", sa.String(16), nullable=False, server_default=sa.text("'open'")),
+        sa.Column("source", sa.String(8), nullable=False, server_default=sa.text("'agent'")),
+        sa.Column("ref", postgresql.JSONB(), nullable=False, server_default=sa.text("'{}'::jsonb")),
+        _fk("created_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("completed_at"),
+        _fk("completed_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("created_at", nullable=False, default_now=True),
+        _ts("updated_at", nullable=False, default_now=True),
+        sa.CheckConstraint(f"status IN ({TASK_STATUS_LIST})", name="ck_tasks_status"),
+        sa.CheckConstraint(f"source IN ({TASK_SOURCE_LIST})", name="ck_tasks_source"),
+    )
+    for col in ("tenant_id", "pursuit_id"):
+        op.create_index(f"ix_tasks_{col}", "tasks", [col])
+    op.create_index("ix_tasks_assignee", "tasks", ["tenant_id", "assignee_user_id", "status"])
+
+    # --- review comments (M5-16) ------------------------------------------------------
+    # SPEC 10.2 `comments`: the red team's findings (M5-10) and the pursuit's comment
+    # threads (M6-07). target_id is NULL for a comment on the pursuit itself, and
+    # target_type carries app.core.collab's seven anchors.
+    op.create_table(
+        "comments",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        sa.Column(
+            "target_type",
+            sa.String(32),
+            nullable=False,
+            server_default=sa.text(f"'{TARGET_PURSUIT}'"),
+        ),
+        sa.Column("target_id", postgresql.UUID(as_uuid=True)),
+        sa.Column("body", sa.Text(), nullable=False),
+        _fk("author_user_id", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("resolved_at"),
+        _fk("resolved_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("created_at", nullable=False, default_now=True),
+        _ts("updated_at", nullable=False, default_now=True),
+        sa.CheckConstraint(f"target_type IN ({TARGET_TYPE_LIST})", name="ck_comments_target_type"),
+    )
+    for col in ("tenant_id", "pursuit_id", "target_id"):
+        op.create_index(f"ix_comments_{col}", "comments", [col])
+    op.create_index("ix_comments_target", "comments", ["pursuit_id", "target_type", "target_id"])
+
+    # --- exports (M5-13) ----------------------------------------------------------------
+    op.create_table(
+        "exports",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        sa.Column("format", sa.String(8), nullable=False),
+        sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1")),
+        sa.Column("file_name", sa.String(255), nullable=False),
+        sa.Column("content_type", sa.String(128), nullable=False),
+        sa.Column("size_bytes", sa.Integer(), nullable=False, server_default=sa.text("0")),
+        sa.Column("storage_key", sa.String(512), nullable=False),
+        sa.Column("renderer", sa.String(16)),
+        sa.Column("final", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        _fk("created_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("pursuit_id", "format", "version", name="uq_exports_version"),
+    )
+    for col in ("tenant_id", "pursuit_id"):
+        op.create_index(f"ix_exports_{col}", "exports", [col])
+
     for table in TENANT_TABLES:
         grant_app(op, table)
         enable_rls(op, table)
@@ -180,6 +363,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_constraint("fk_agent_runs_pursuit_id_pursuits", "agent_runs", type_="foreignkey")
     op.drop_column("agent_runs", "pause_reason")
+    op.drop_constraint("fk_drafts_current_version_id_draft_versions", "drafts", type_="foreignkey")
     for table in reversed(TENANT_TABLES):
         op.drop_table(table)
     for resource in NEW_RESOURCES:

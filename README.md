@@ -386,6 +386,9 @@ credential-looking field is added without listing it, and
 | `LLM_PRICES` | JSON map model id -> {input, output, cache_read, cache_write} USD per million tokens; the cost ledger uses these, never a guess. Empty means the defaults in `config.py`. | see `DEFAULT_LLM_PRICES` in `config.py` | - | - |
 | `LLM_MAX_TOKENS` | Default output cap per LLM call. | `4096` | - | - |
 | `LLM_OUTPUT_RETRIES` | Extra attempts when a JSON tool output fails schema validation. | `2` | - | - |
+| `AGENT_FANOUT` | `inline` \| `celery`. How the section drafters fan out over the outline's volumes (M5-08). `celery` needs a broker and falls back to inline when none answers. | `inline` | - | - |
+| `AGENT_FANOUT_CONCURRENCY` | Volumes drafted at once when the fan-out is inline. | `3` | - | - |
+| `AGENT_FANOUT_TIMEOUT` | Seconds to wait for a Celery drafting group before the step fails. | `900.0` | - | - |
 | `EMBEDDING_PROVIDER` | `voyage` \| `fake`. `fake` is deterministic and offline (tests). | `voyage` | - | - |
 | `EMBEDDING_MODEL` | Embedding model id. | `voyage-3` | - | - |
 | `EMBEDDING_DIM` | Vector width; must match the pgvector column (1024). | `1024` | - | - |

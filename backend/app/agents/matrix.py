@@ -267,7 +267,12 @@ async def matrix(ctx: StepContext) -> MatrixOutput:
     items = await store_matrix(ctx.session, ctx.tenant_id, pursuit.id, rows, assignments)
     by_req = {a.req_id: a for a in assignments}
     rules_artifact = await store_artifact(
-        ctx.session, ctx.tenant_id, pursuit.id, ARTIFACT_FORMAT_RULES, rules.model_dump(mode="json")
+        ctx.session,
+        ctx.tenant_id,
+        pursuit.id,
+        ARTIFACT_FORMAT_RULES,
+        rules.model_dump(mode="json"),
+        scope=ctx.scope,
     )
     checklist_artifact = await store_artifact(
         ctx.session,
@@ -275,6 +280,7 @@ async def matrix(ctx: StepContext) -> MatrixOutput:
         pursuit.id,
         ARTIFACT_CHECKLIST,
         {"items": [item.model_dump(mode="json") for item in checklist]},
+        scope=ctx.scope,
     )
     output = MatrixOutput(
         items=[

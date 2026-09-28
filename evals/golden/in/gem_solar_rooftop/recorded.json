@@ -1,0 +1,168 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 1,
+    "missed_labels": [
+      "L-12"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder is required to have a minimum average annual turnover of Rs. 8,00,00,000 in each of the last three financial years.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 8,00,00,000 in each",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to furnish an EMD of Rs. 15,00,000 through the online gateway before the bid end date.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall furnish an EMD of Rs. 15,00,000 through the online gateway before the bid",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to have at least 7 years of experience commissioning grid-connected rooftop solar plants.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall have at least 7 years of experience commissioning grid-connected rooftop solar",
+          "confidence": 0.9
+        },
+        {
+          "text": "Recognised startups are exempted from the EMD; MSE exemption is not available under this bid.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Recognised startups are exempted from the EMD; MSE exemption is not available under this",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to be empanelled with the state distribution company for net metering work.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall be empanelled with the state distribution company for net metering",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to design, supply, install and commission 2.4 MW of rooftop solar capacity within 180 days.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall design, supply, install and commission 2.4 MW of rooftop solar capacity within 180",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to guarantee a minimum plant availability of 97 percent over the five-year operation period.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall guarantee a minimum plant availability of 97 percent over the five-year operation",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to use modules and inverters listed in the Approved List of Models and Manufacturers.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must use modules and inverters listed in the Approved List of Models and",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to obtain net metering approval from the distribution company before commissioning.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall obtain net metering approval from the distribution company before",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to operate and maintain the plants for five years after commissioning.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall operate and maintain the plants for five years after",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor should provide a remote monitoring portal with daily generation reports.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The contractor should provide a remote monitoring portal with daily generation",
+          "confidence": 0.9
+        },
+        {
+          "text": "Bids shall be submitted on the GeM portal before 03:00 PM IST on 22-12-2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Bids shall be submitted on the GeM portal before 03:00 PM IST on",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to digitally sign all covers with a Class 3 DSC and upload the empanelment letter.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall digitally sign all covers with a Class 3 DSC and upload the empanelment",
+          "confidence": 0.9
+        },
+        {
+          "text": "Evaluation will be on the lowest levelised cost per kWh over the five-year operation period.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Evaluation will be on the lowest levelised cost per kWh over the five-year operation",
+          "confidence": 0.9
+        },
+        {
+          "text": "The buyer will verify commissioning certificates for at least 5 MW of completed rooftop capacity.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The buyer will verify commissioning certificates for at least 5 MW of completed rooftop",
+          "confidence": 0.9
+        },
+        {
+          "text": "The scope covers 2.4 MW of rooftop capacity across nine buildings.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The scope covers 2.4 MW of rooftop capacity across nine buildings",
+          "confidence": 0.7
+        },
+        {
+          "text": "Recognised startups are exempted from the EMD; MSE exemption is not available under this bid. (restated in the summary)",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Recognised startups are exempted from the EMD; MSE exemption is not available under this",
+          "confidence": 0.8
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}
