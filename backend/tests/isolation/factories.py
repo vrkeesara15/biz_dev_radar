@@ -49,6 +49,7 @@ from app.models import (
     DataRequest,
     Draft,
     DraftVersion,
+    Export,
     File,
     Insurance,
     Integration,
@@ -354,6 +355,24 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ),
     ("GET", "/api/v1/pursuits/{pursuit_id}/packet"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    # --- exports (M5-13)
+    ("POST", "/api/v1/pursuits/{pursuit_id}/export"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]},
+        params={"format": "docx"},
+        owner_expect=frozenset({202}),
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/exports"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/exports/{export_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "export_id": ctx.a.ids["export"],
+        }
+    ),
+    ("POST", "/api/v1/pursuits/{pursuit_id}/mark-final"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"note": "probe"}
     ),
     ("POST", "/api/v1/pursuits/{pursuit_id}/approve-package"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}, json={"note": "probe"}
@@ -693,6 +712,21 @@ async def build_context(database: Database) -> IsolationContext:
             title="Alpha secret task",
             ref={"kind": "needs_input", "section_id": "technical-approach"},
         )
+        # Gate 2 already passed, so mark-final has something to mark (M5-13)
+        pursuit.package_approved_by = ua.id
+        pursuit.package_approved_at = datetime.now(UTC)
+        export = Export(
+            tenant_id=ta.id,
+            pursuit_id=pursuit.id,
+            format="docx",
+            version=1,
+            file_name="alpha-secret-proposal.docx",
+            content_type=(
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ),
+            size_bytes=1024,
+            storage_key=f"tenants/{ta.id}/pursuits/{pursuit.id}/exports/seed.docx",
+        )
         # a red-team report so Gate 2 (approve-package) has something to approve
         red_team = PursuitArtifact(
             tenant_id=ta.id,
@@ -701,7 +735,7 @@ async def build_context(database: Database) -> IsolationContext:
             version=1,
             data={"report": {"sections": [], "overall_score": 71, "missing_requirements": []}},
         )
-        session.add_all([comment, task, red_team])
+        session.add_all([comment, task, red_team, export])
         await session.flush()
         a = TenantCtx(
             id=ta.id,
@@ -746,6 +780,7 @@ async def build_context(database: Database) -> IsolationContext:
                 "pursuit": str(pursuit.id),
                 "draft": str(draft.id),
                 "draft_section": draft.section_id,
+                "export": str(export.id),
                 "draft_version": str(draft_version.id),
                 "draft_body": "alpha draft body",
                 "comment": str(comment.id),

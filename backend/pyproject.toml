@@ -55,6 +55,7 @@ dev = [
   "types-pyyaml>=6",
   "respx>=0.21,<1",
   "types-openpyxl>=3.1.5.20260827",
+  "pypdf>=6.19.0",
 ]
 
 [build-system]

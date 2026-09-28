@@ -16,6 +16,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Integer,
@@ -207,5 +208,42 @@ class DraftFeedback(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
     edited_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+
+
+EXPORT_FORMATS: tuple[str, ...] = ("docx", "pdf", "xlsx", "zip")
+
+
+class Export(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
+    """One rendered export of a pursuit's package (SPEC 8: DOCX / PDF / XLSX / ZIP).
+
+    Versions are never overwritten, so the file a reviewer downloaded stays downloadable.
+    `final` records whether the package was already marked final when it was rendered:
+    an export made before that carries the "DRAFT - internal" footer forever (SPEC 11).
+    """
+
+    __tablename__ = "exports"
+    __table_args__ = (
+        UniqueConstraint("pursuit_id", "format", "version", name="uq_exports_version"),
+    )
+
+    pursuit_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("pursuits.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # docx | pdf | xlsx | zip
+    format: Mapped[str] = mapped_column(String(8), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    storage_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    # libreoffice | pymupdf (which PDF path produced it), NULL for docx / xlsx
+    renderer: Mapped[str | None] = mapped_column(String(16))
+    final: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )

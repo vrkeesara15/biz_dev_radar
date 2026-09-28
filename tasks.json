@@ -1659,7 +1659,7 @@
       "Every export carries 'DRAFT - internal' footer until marked final and the verify-on-portal disclaimer",
       "Export read is audited; files open with python-docx, pypdf and openpyxl in tests"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-14",

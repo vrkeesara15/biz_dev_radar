@@ -33,6 +33,7 @@ TENANT_TABLES = (
     "draft_feedback",
     "tasks",
     "comments",
+    "exports",
 )
 # plan_limits rows added by this milestone (0001 seeds PLAN_DEFAULTS on a fresh database,
 # so the insert is idempotent for databases migrated before this revision existed).
@@ -114,6 +115,10 @@ def upgrade() -> None:
         # Gate 2 (M5-10): who approved the draft package for export, and when
         _fk("package_approved_by", "users.id", ondelete="SET NULL", nullable=True),
         _ts("package_approved_at"),
+        # M5-13: exports stay "DRAFT - internal" until a human marks the package final
+        sa.Column("package_final", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        _ts("package_final_at"),
+        _fk("package_final_by", "users.id", ondelete="SET NULL", nullable=True),
         _ts("internal_due_at"),
         _fk("created_by", "users.id", ondelete="SET NULL", nullable=True),
         sa.Column("cost_cap_usd", sa.Numeric(12, 2)),
@@ -300,6 +305,27 @@ def upgrade() -> None:
     )
     for col in ("tenant_id", "pursuit_id", "target_id"):
         op.create_index(f"ix_comments_{col}", "comments", [col])
+
+    # --- exports (M5-13) ----------------------------------------------------------------
+    op.create_table(
+        "exports",
+        _uuid_pk(),
+        _tenant_id(),
+        _fk("pursuit_id", "pursuits.id", ondelete="CASCADE", nullable=False),
+        sa.Column("format", sa.String(8), nullable=False),
+        sa.Column("version", sa.Integer(), nullable=False, server_default=sa.text("1")),
+        sa.Column("file_name", sa.String(255), nullable=False),
+        sa.Column("content_type", sa.String(128), nullable=False),
+        sa.Column("size_bytes", sa.Integer(), nullable=False, server_default=sa.text("0")),
+        sa.Column("storage_key", sa.String(512), nullable=False),
+        sa.Column("renderer", sa.String(16)),
+        sa.Column("final", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        _fk("created_by", "users.id", ondelete="SET NULL", nullable=True),
+        _ts("created_at", nullable=False, default_now=True),
+        sa.UniqueConstraint("pursuit_id", "format", "version", name="uq_exports_version"),
+    )
+    for col in ("tenant_id", "pursuit_id"):
+        op.create_index(f"ix_exports_{col}", "exports", [col])
 
     for table in TENANT_TABLES:
         grant_app(op, table)

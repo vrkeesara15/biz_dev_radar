@@ -12,6 +12,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Numeric,
@@ -98,6 +99,15 @@ class Pursuit(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
     package_approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # SPEC 11: exports carry the "DRAFT - internal" footer until a human marks the
+    # package final (POST /pursuits/{id}/mark-final, after Gate 2)
+    package_final: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    package_final_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    package_final_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
     internal_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
