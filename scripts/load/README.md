@@ -185,3 +185,7 @@ machine run, recorded above and in `PROGRESS.md`.
 arithmetic, the determinism and distribution of the generators, and runs all three
 scripts end to end at `--scale 0.01` (500 notices × 2 profiles) against the test
 database, so the load scripts cannot rot between load runs.
+
+## Re-measurement after the matches index (OQ-106)
+
+With `ix_matches_tenant_opportunity_score` (migration 0012) applied to the same 50,000 × 200 corpus, `search.py --queries 500` reports p50 19.4 ms · p95 156.8 ms · p99 310.3 ms — inside the SPEC 12 gate of p95 < 500 ms. The earlier p95 538 ms figure above predates the index.

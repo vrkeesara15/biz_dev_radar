@@ -47,6 +47,8 @@ class Match(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
             name="uq_matches_profile_opportunity_versions",
         ),
         Index("ix_matches_tenant_band_created", "tenant_id", "band", "created_at"),
+        # OQ-106: the min_score EXISTS probe on the search route walks this index only
+        Index("ix_matches_tenant_opportunity_score", "tenant_id", "opportunity_id", "score"),
     )
 
     profile_id: Mapped[uuid.UUID] = mapped_column(
