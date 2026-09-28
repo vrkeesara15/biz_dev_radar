@@ -37,6 +37,19 @@ type PursuitsFixture = {
   calendar: Json;
 };
 
+/** Shape of e2e/fixtures/pursuit-workspace.json (the M5-18 workspace routes). */
+type WorkspaceFixture = {
+  pursuitId: string;
+  pursuitExtra: Json;
+  profile: Json;
+  matrix: Json;
+  packet: Json;
+  drafts: Json[];
+  tasks: Json[];
+  scorecard: Json;
+  pricing: Json;
+};
+
 /** Shape of e2e/fixtures/admin.json (the M7-08 console routes). */
 type AdminFixture = {
   sources: Json[];
@@ -99,6 +112,14 @@ export type MockOptions = {
    * the key-date, task and comment routes, and GET /me/calendar. Default 404.
    */
   pursuits?: boolean;
+  /**
+   * When true the M5-18 workspace routes work in memory on the fixture's
+   * pursuit: the compliance matrix, the packet, the draft sections with
+   * optimistic versioning (a stale `base_version` answers the API's own 409
+   * sentence), section approval, agent runs, both gates, the exports and the
+   * artifact probe the scorecard and pricing panels make. Default 404.
+   */
+  workspace?: boolean;
   /** When true, POST /opportunities/{id}/pursue|watch|pass answer 201 (M6-01 contract); default 404. */
   pipelineActions?: boolean;
   /** When true, the tenant member routes work in memory (M7-15); default 404. */
@@ -144,6 +165,13 @@ export class MockApi {
   pursuitTasks: Record<string, Json[]> = this.pursuitsFixture.tasks;
   pursuitComments: Record<string, Json[]> = this.pursuitsFixture.comments;
   calendar: Json = this.pursuitsFixture.calendar;
+  workspace: WorkspaceFixture = fixture<WorkspaceFixture>("pursuit-workspace.json");
+  /** section_id -> the DraftOut the API serves. */
+  drafts: Record<string, Json> = {};
+  exports: Json[] = [];
+  /** Gate 2 refuses until agent 8 has run, the way the route does. */
+  redTeamRan = false;
+  packageFinal = false;
   admin: AdminFixture = fixture<AdminFixture>("admin.json");
   adminSources: Json[] = this.admin.sources;
   adminTenants: Json[] = this.admin.tenants;
@@ -151,6 +179,18 @@ export class MockApi {
   private seq = 0;
 
   constructor(private readonly options: MockOptions = {}) {
+    if (options.workspace) {
+      const id = this.workspace.pursuitId;
+      this.pursuits = this.pursuits.map((row) =>
+        row.id === id ? { ...row, ...this.workspace.pursuitExtra } : row,
+      );
+      for (const draft of this.workspace.drafts) {
+        this.drafts[String(draft.section_id)] = JSON.parse(JSON.stringify(draft)) as Json;
+      }
+      this.pursuitTasks[id] = [...(this.pursuitTasks[id] ?? []), ...this.workspace.tasks];
+      // The workspace reads the profile for the Gate 1 approver roles.
+      this.profile = { ...fixture<Json>("profile.json"), ...this.workspace.profile };
+    }
     if (options.billingProvider === "razorpay") {
       this.billing = { ...this.billing, provider: "razorpay", currency: "INR" };
     }
@@ -484,6 +524,9 @@ export class MockApi {
     }
     if (!this.options.pursuits) return json(404, { detail: "Not Found" });
 
+    const workspaceHandled = this.handleWorkspace(pathname, method, body, params, json);
+    if (workspaceHandled) return workspaceHandled;
+
     if (pathname === "/api/v1/me/calendar" && method === "GET") return json(200, this.calendar);
     if (pathname === "/api/v1/me/calendar-token" && method === "POST") {
       this.calendar = {
@@ -604,10 +647,19 @@ export class MockApi {
       const list = (this.pursuitComments[pursuitId] ??= []);
       if (!commentId) {
         if (method === "GET") {
+          // The API filters by anchor (M5-16 / OQ-145): a draft_section thread
+          // must not show the pursuit-level conversation.
+          const targetType = params.get("target_type");
+          const targetId = params.get("target_id");
+          const items = list.filter(
+            (row) =>
+              (!targetType || row.target_type === targetType) &&
+              (!targetId || row.target_id === targetId),
+          );
           return json(200, {
             pursuit_id: pursuitId,
-            items: list,
-            unresolved_count: list.filter((row) => !row.resolved_at).length,
+            items,
+            unresolved_count: items.filter((row) => !row.resolved_at).length,
           });
         }
         if (method === "POST") {
@@ -666,6 +718,264 @@ export class MockApi {
         this.pursuits[index] = { ...current, ...b, activity_at: new Date().toISOString() };
         return json(200, this.pursuits[index]);
       }
+    }
+
+    return json(404, { detail: `Unhandled ${method} ${pathname}` });
+  }
+
+  // --- M5-18 pursuit workspace: matrix, packet, drafts, gates, exports -------
+
+  /** The 409 the PUT answers on a stale base_version (api/v1/drafts.py). */
+  static staleDraft(sectionId: string, current: number, base: number): string {
+    return (
+      `draft ${sectionId} is at version ${current}, not ${base}; ` +
+      "reload the section and reapply your edit"
+    );
+  }
+
+  private draftSummary(draft: Json): Json {
+    const version = (draft.current ?? null) as Json | null;
+    const flags = ((version?.flags ?? {}) as Json) ?? {};
+    return {
+      id: draft.id,
+      section_id: draft.section_id,
+      title: draft.title,
+      volume: draft.volume,
+      status: draft.status,
+      version: version ? version.version : null,
+      unsupported_claims: Number(flags.unsupported_count ?? 0),
+      needs_input: ((version?.needs_input ?? []) as Json[]).length,
+      citations: ((version?.citations ?? []) as Json[]).length,
+      comments: 0,
+      updated_at: draft.updated_at,
+    };
+  }
+
+  /** The PursuitOut the workspace reads back after a gate or a run. */
+  private pursuitOut(pursuitId: string): Json {
+    return this.pursuits.find((row) => row.id === pursuitId) ?? {};
+  }
+
+  private patchPursuit(pursuitId: string, patch: Json): Json {
+    const index = this.pursuits.findIndex((row) => row.id === pursuitId);
+    if (index === -1) return {};
+    this.pursuits[index] = { ...this.pursuits[index], ...patch, activity_at: new Date().toISOString() };
+    return this.pursuits[index];
+  }
+
+  private handleWorkspace(
+    pathname: string,
+    method: string,
+    body: unknown,
+    params: URLSearchParams,
+    json: (status: number, payload: unknown) => Promise<void>,
+  ): Promise<void> | null {
+    const match = pathname.match(/^\/api\/v1\/pursuits\/([^/]+)\/(.+)$/);
+    if (!match) return null;
+    const [, pursuitId, rest] = match;
+    const workspaceRoute =
+      /^(matrix|packet|drafts|export|exports|decision|approve-package|mark-final|agents|artifacts)/.test(rest);
+    if (!workspaceRoute) return null;
+    if (!this.options.workspace) return json(404, { detail: "Not Found" });
+    const now = new Date().toISOString();
+    const b = (body ?? {}) as Json;
+
+    if (rest === "matrix" && method === "GET") return json(200, this.workspace.matrix);
+    if (rest === "packet" && method === "GET") return json(200, this.workspace.packet);
+
+    if (rest === "artifacts" && method === "GET") {
+      const kind = params.get("kind");
+      if (kind === "scorecard") return json(200, this.workspace.scorecard);
+      if (kind === "pricing_template") return json(200, this.workspace.pricing);
+      return json(404, { detail: "no such artifact" });
+    }
+
+    if (rest === "drafts" && method === "GET") {
+      const items = Object.values(this.drafts).map((draft) => this.draftSummary(draft));
+      return json(200, {
+        pursuit_id: pursuitId,
+        items,
+        count: items.length,
+        approved: items.filter((row) => row.status === "approved").length,
+        in_review: items.filter((row) => row.status === "in_review").length,
+        unsupported_claims_count: items.reduce((total, row) => total + Number(row.unsupported_claims), 0),
+        needs_input_count: items.reduce((total, row) => total + Number(row.needs_input), 0),
+        flagged_sections: items.filter((row) => Number(row.unsupported_claims) > 0).length,
+      });
+    }
+
+    const draftMatch = rest.match(/^drafts\/([^/]+)(?:\/(approve|feedback))?$/);
+    if (draftMatch) {
+      const [, sectionId, action] = draftMatch;
+      const draft = this.drafts[sectionId];
+      if (!draft) return json(404, { detail: "draft section not found" });
+      const current = (draft.current ?? {}) as Json;
+      if (!action && method === "GET") return json(200, { pursuit_id: pursuitId, ...draft });
+      if (!action && method === "PUT") {
+        const base = Number(b.base_version);
+        const version = Number(current.version ?? 0);
+        if (base !== version) {
+          return json(409, { detail: MockApi.staleDraft(sectionId, version, base) });
+        }
+        const next = version + 1;
+        draft.current = {
+          ...current,
+          version: next,
+          body_html: String(b.body_html ?? current.body_html),
+          body_text: String(b.body_html ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+          author: "user",
+          author_user_id: "00000000-0000-0000-0000-0000000000e2",
+          created_at: now,
+        };
+        draft.versions = [...((draft.versions as number[]) ?? []), next];
+        draft.updated_at = now;
+        return json(200, { pursuit_id: pursuitId, ...draft });
+      }
+      if (action === "approve" && method === "POST") {
+        draft.status = "approved";
+        draft.approved_by = "00000000-0000-0000-0000-0000000000e2";
+        draft.approved_at = now;
+        draft.updated_at = now;
+        return json(200, { pursuit_id: pursuitId, ...draft });
+      }
+      if (action === "feedback" && method === "GET") {
+        return json(200, { pursuit_id: pursuitId, section_id: sectionId, items: [], count: 0 });
+      }
+    }
+
+    if (rest === "agents/run" && method === "POST") {
+      const step = String(b.step ?? "all");
+      if (step === "red_team" || step === "all") this.redTeamRan = true;
+      const pursuit = this.patchPursuit(pursuitId, {
+        run: {
+          ...((this.pursuitOut(pursuitId).run ?? {}) as Json),
+          step,
+          status: step === "red_team" || step === "all" ? "paused" : "done",
+          gate: step === "red_team" || step === "all" ? "gate2" : null,
+        },
+      });
+      return json(202, {
+        run_id: "aa000000-0000-4000-8000-000000000001",
+        step,
+        steps: [step],
+        mode: "queued",
+        task_id: "celery-1",
+        result: null,
+        pursuit,
+      });
+    }
+
+    if (rest === "agents/approve-budget" && method === "POST") {
+      const previous = String(this.pursuitOut(pursuitId).cost_cap_usd ?? "0");
+      const next = (Number(previous) + Number(b.additional_usd ?? 0)).toFixed(2);
+      const pursuit = this.patchPursuit(pursuitId, {
+        cost_cap_usd: next,
+        run: { ...((this.pursuitOut(pursuitId).run ?? {}) as Json), status: "queued", gate: null },
+      });
+      return json(200, {
+        pursuit,
+        previous_cap_usd: previous,
+        new_cap_usd: next,
+        resumed_run_id: "aa000000-0000-4000-8000-000000000001",
+        mode: "queued",
+        task_id: "celery-2",
+        result: null,
+      });
+    }
+
+    if (rest === "decision" && method === "POST") {
+      const decision = String(b.decision ?? "bid");
+      const previous = String(this.pursuitOut(pursuitId).stage ?? "identified");
+      const pursuit = this.patchPursuit(pursuitId, {
+        decision,
+        decided_by: "00000000-0000-0000-0000-0000000000e2",
+        decided_at: now,
+        decision_note: b.note ?? null,
+        stage: decision === "bid" ? "drafting" : "no_bid",
+        run: { ...((this.pursuitOut(pursuitId).run ?? {}) as Json), status: "queued", gate: null },
+      });
+      return json(200, {
+        pursuit,
+        decision,
+        previous_stage: previous,
+        resumed_run_id: decision === "bid" ? "aa000000-0000-4000-8000-000000000001" : null,
+        mode: "queued",
+        task_id: null,
+        result: null,
+      });
+    }
+
+    if (rest === "approve-package" && method === "POST") {
+      if (!this.redTeamRan) {
+        return json(409, {
+          detail: "the red-team reviewer has not run yet; there is no package to approve",
+        });
+      }
+      const previous = String(this.pursuitOut(pursuitId).stage ?? "drafting");
+      for (const draft of Object.values(this.drafts)) draft.status = "approved";
+      const pursuit = this.patchPursuit(pursuitId, {
+        package_approved_by: "00000000-0000-0000-0000-0000000000e2",
+        package_approved_at: now,
+        stage: "final_approval",
+      });
+      return json(200, {
+        pursuit,
+        previous_stage: previous,
+        approved_sections: Object.keys(this.drafts).length,
+        resumed_run_id: null,
+        mode: "none",
+        task_id: null,
+        result: null,
+      });
+    }
+
+    if (rest === "mark-final" && method === "POST") {
+      this.packageFinal = true;
+      this.exports = this.exports.map((row) => ({ ...row, final: true }));
+      return json(200, {
+        pursuit_id: pursuitId,
+        package_final: true,
+        package_final_at: now,
+        package_final_by: "00000000-0000-0000-0000-0000000000e2",
+        note: b.note ?? null,
+      });
+    }
+
+    if (rest === "export" && method === "POST") {
+      const format = params.get("format") ?? "docx";
+      const row: Json = {
+        id: this.nextId("export"),
+        pursuit_id: pursuitId,
+        format,
+        version: this.exports.length + 1,
+        file_name: `36C24825R0042_package.${format}`,
+        content_type: "application/octet-stream",
+        size_bytes: 24_576,
+        renderer: format === "pdf" ? "libreoffice" : "python-docx",
+        final: this.packageFinal,
+        created_by: "00000000-0000-0000-0000-0000000000e2",
+        created_at: now,
+        url: `https://files.bidradar.test/exports/${format}?signature=e2e`,
+        expires_in: 900,
+        expires_at: new Date(Date.now() + 900_000).toISOString(),
+      };
+      this.exports = [row, ...this.exports];
+      return json(202, row);
+    }
+
+    if (rest === "exports" && method === "GET") {
+      return json(200, {
+        pursuit_id: pursuitId,
+        items: this.exports,
+        count: this.exports.length,
+        package_final: this.packageFinal,
+      });
+    }
+
+    const exportMatch = rest.match(/^exports\/([^/]+)$/);
+    if (exportMatch && method === "GET") {
+      const row = this.exports.find((item) => item.id === exportMatch[1]);
+      return row ? json(200, row) : json(404, { detail: "export not found" });
     }
 
     return json(404, { detail: `Unhandled ${method} ${pathname}` });

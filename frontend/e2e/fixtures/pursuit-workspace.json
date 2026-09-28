@@ -1,0 +1,350 @@
+{
+  "pursuitId": "9a000000-0000-4000-8000-000000000001",
+  "pursuitExtra": {
+    "decided_by": null,
+    "decided_at": null,
+    "decision_note": null,
+    "package_approved_by": null,
+    "package_approved_at": null,
+    "created_by": "00000000-0000-0000-0000-0000000000e2",
+    "cost_so_far_usd": "12.40",
+    "cost_cap_usd": "15.00",
+    "budget_month_limit_usd": "200.00",
+    "budget_month_spent_usd": "48.10",
+    "budget_month_remaining_usd": "151.90",
+    "drafts": {
+      "count": 2,
+      "approved": 0,
+      "in_review": 2,
+      "unsupported_claims_count": 1,
+      "needs_input_count": 1,
+      "flagged_sections": 1
+    },
+    "run": {
+      "id": "aa000000-0000-4000-8000-000000000001",
+      "kind": "pipeline",
+      "step": "bid_no_bid",
+      "status": "paused",
+      "pause_reason": "gate1: a bid/no-bid decision is required before drafting",
+      "paused_at": "2026-09-26T09:30:00Z",
+      "gate": "gate1",
+      "cost_usd": "12.40",
+      "tokens_in": 82000,
+      "tokens_out": 9100,
+      "started_at": "2026-09-26T09:00:00Z",
+      "finished_at": null,
+      "created_at": "2026-09-26T09:00:00Z"
+    }
+  },
+  "profile": {
+    "id": "5f000000-0000-4000-8000-000000000001",
+    "region": "us",
+    "legal_name": "Acme Federal Systems LLC",
+    "required_approver_roles": ["bid_manager"]
+  },
+  "matrix": {
+    "pursuit_id": "9a000000-0000-4000-8000-000000000001",
+    "items": [
+      {
+        "id": "b1000000-0000-4000-8000-000000000001",
+        "requirement_id": "r1000000-0000-4000-8000-000000000001",
+        "req_id": "R-001",
+        "text": "The offeror shall describe its approach to migrating 40 workloads to a FedRAMP High environment.",
+        "type": "technical",
+        "volume": "Volume I — Technical",
+        "document_id": "d0c00000-0000-4000-8000-000000000001",
+        "page": 12,
+        "quote": "The offeror shall describe its approach to migrating 40 workloads.",
+        "section": "Technical approach",
+        "reason": "Section L.3.1 asks for the migration approach",
+        "owner_user_id": "00000000-0000-0000-0000-0000000000e2",
+        "status": "drafted",
+        "notes": null
+      },
+      {
+        "id": "b1000000-0000-4000-8000-000000000002",
+        "requirement_id": "r1000000-0000-4000-8000-000000000002",
+        "req_id": "R-002",
+        "text": "Submit three past-performance references of similar size and scope within the last three years.",
+        "type": "past_performance",
+        "volume": "Volume II — Past performance",
+        "document_id": "d0c00000-0000-4000-8000-000000000001",
+        "page": 14,
+        "quote": "Submit three past-performance references of similar size and scope.",
+        "section": "Past performance",
+        "reason": "Section L.4 requires three references",
+        "owner_user_id": null,
+        "status": "open",
+        "notes": null
+      }
+    ],
+    "format_rules": {
+      "page_limit": 30,
+      "font": "Times New Roman",
+      "font_size_pt": 12,
+      "margins": "1 inch",
+      "file_types": ["pdf", "docx"],
+      "file_naming": "{solicitation}_{volume}_{company}.pdf",
+      "copies": 1,
+      "portal": "SAM.gov",
+      "submission_method": "portal_upload",
+      "email": null,
+      "sources": { "page_limit": "RFP-36C24825R0042.pdf p. 9" }
+    },
+    "format_rules_version": 1,
+    "checklist": [],
+    "checklist_version": 1,
+    "generated_at": "2026-09-26T09:20:00Z"
+  },
+  "packet": {
+    "pursuit_id": "9a000000-0000-4000-8000-000000000001",
+    "opportunity_id": "7c1d2e3f-0000-4000-8000-000000000001",
+    "packet": {
+      "portal": "SAM.gov",
+      "portal_url": "https://sam.gov/opp/36C24825R0042/view",
+      "submission_method": "portal_upload",
+      "email": null,
+      "upload_steps": [
+        {
+          "order": 1,
+          "label": "Technical volume",
+          "destination": "SAM.gov contract opportunity response",
+          "file_name": "36C24825R0042_VolI_Acme.pdf",
+          "formats": ["pdf"],
+          "note": "30 page limit",
+          "source_req_ids": ["R-001"]
+        },
+        {
+          "order": 2,
+          "label": "Past performance volume",
+          "destination": "SAM.gov contract opportunity response",
+          "file_name": "36C24825R0042_VolII_Acme.pdf",
+          "formats": ["pdf"],
+          "note": null,
+          "source_req_ids": ["R-002"]
+        }
+      ],
+      "signatures": [
+        {
+          "key": "sf33",
+          "label": "SF 33 block 17",
+          "signed_by": "Authorised representative",
+          "note": "Wet or digital signature accepted"
+        }
+      ],
+      "dsc_steps": [],
+      "sam_login_note": "A SAM.gov account with the Contract Opportunities role is needed to upload.",
+      "page_limit": 30,
+      "copies": 1,
+      "deadline": {
+        "utc": "2026-12-10T19:00:00Z",
+        "buyer_tz": "America/New_York",
+        "buyer_local": "2026-12-10T14:00:00-05:00",
+        "buyer_display": "Dec 10, 2:00 PM EST",
+        "user_tz": "Asia/Kolkata",
+        "user_local": "2026-12-11T00:30:00+05:30",
+        "user_display": "Dec 11, 12:30 AM IST",
+        "display": "Dec 10, 2:00 PM EST = Dec 11, 12:30 AM IST"
+      },
+      "disclaimer": "BidRadar never submits a bid. A person signs in to the portal and submits; Verify every detail on the official portal before submitting."
+    },
+    "checklist": [
+      {
+        "key": "sam_registration",
+        "label": "Active SAM.gov registration",
+        "category": "eligibility",
+        "required": true,
+        "note": "Expires 2027-03-01",
+        "source_req_ids": ["R-003"]
+      },
+      {
+        "key": "past_performance_refs",
+        "label": "Three past-performance references",
+        "category": "attachments",
+        "required": true,
+        "note": null,
+        "source_req_ids": ["R-002"]
+      },
+      {
+        "key": "sf33",
+        "label": "Signed SF 33",
+        "category": "forms",
+        "required": true,
+        "note": null,
+        "source_req_ids": []
+      }
+    ],
+    "checklist_version": 1,
+    "generated_at": "2026-09-26T09:21:00Z"
+  },
+  "drafts": [
+    {
+      "id": "d1000000-0000-4000-8000-000000000001",
+      "section_id": "past-performance",
+      "title": "Past performance",
+      "volume": "Volume II — Past performance",
+      "status": "in_review",
+      "approved_by": null,
+      "approved_at": null,
+      "updated_at": "2026-09-26T09:40:00Z",
+      "versions": [1, 2],
+      "comments": 0,
+      "current": {
+        "id": "d2000000-0000-4000-8000-000000000001",
+        "version": 2,
+        "body_html": "<p>Acme Federal has delivered 14 cloud migrations for federal agencies [KB:past_performance:11111111-1111-4111-8111-111111111111#2].</p><p>Our team holds an ISO 27001 certificate.</p><p>The named site lead will be [NEEDS INPUT: site lead name].</p>",
+        "body_text": "Acme Federal has delivered 14 cloud migrations for federal agencies [KB:past_performance:11111111-1111-4111-8111-111111111111#2].\nOur team holds an ISO 27001 certificate.\nThe named site lead will be [NEEDS INPUT: site lead name].",
+        "citations": [
+          {
+            "token": "KB:past_performance:11111111-1111-4111-8111-111111111111#2",
+            "source_type": "past_performance",
+            "source_id": "11111111-1111-4111-8111-111111111111",
+            "page": 3,
+            "quote": "Migrated 14 agency workloads to AWS GovCloud between 2023 and 2025."
+          }
+        ],
+        "needs_input": [
+          {
+            "placeholder": "[NEEDS INPUT: site lead name]",
+            "question": "Who is the named site lead for this contract?",
+            "task_id": "40000000-0000-4000-8000-000000000002"
+          }
+        ],
+        "flags": {
+          "flags": [
+            {
+              "sentence": "Our team holds an ISO 27001 certificate.",
+              "reason": "certification",
+              "detail": "no certification record on this profile supports it"
+            }
+          ],
+          "supported_count": 1,
+          "unsupported_count": 1,
+          "placeholder_count": 1,
+          "sentences": 3,
+          "unresolved_tokens": [],
+          "red_team": {
+            "section_id": "past-performance",
+            "revised": false,
+            "issues": [
+              {
+                "kind": "missing_requirement",
+                "requirement_id": "R-002",
+                "sentence": null,
+                "fix_suggestion": "Only two references are described; Section L.4 asks for three."
+              }
+            ],
+            "page_estimate": { "pages": 4, "limit": 30, "over": false }
+          }
+        },
+        "author": "agent",
+        "author_user_id": null,
+        "model": "claude-sonnet-4-5",
+        "tokens": 1840,
+        "created_at": "2026-09-26T09:40:00Z"
+      }
+    },
+    {
+      "id": "d1000000-0000-4000-8000-000000000002",
+      "section_id": "technical-approach",
+      "title": "Technical approach",
+      "volume": "Volume I — Technical",
+      "status": "in_review",
+      "approved_by": null,
+      "approved_at": null,
+      "updated_at": "2026-09-26T09:42:00Z",
+      "versions": [1],
+      "comments": 0,
+      "current": {
+        "id": "d2000000-0000-4000-8000-000000000002",
+        "version": 1,
+        "body_html": "<p>We will migrate the 40 workloads in three waves.</p>",
+        "body_text": "We will migrate the 40 workloads in three waves.",
+        "citations": [],
+        "needs_input": [],
+        "flags": { "flags": [], "supported_count": 1, "unsupported_count": 0 },
+        "author": "agent",
+        "author_user_id": null,
+        "model": "claude-sonnet-4-5",
+        "tokens": 900,
+        "created_at": "2026-09-26T09:42:00Z"
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "id": "40000000-0000-4000-8000-000000000002",
+      "pursuit_id": "9a000000-0000-4000-8000-000000000001",
+      "title": "Past performance: Who is the named site lead for this contract?",
+      "detail": "Asked by the drafting agent for the past-performance section.",
+      "assignee_user_id": null,
+      "due_at": null,
+      "status": "open",
+      "source": "agent",
+      "ref": {
+        "kind": "needs_input",
+        "section_id": "past-performance",
+        "marker": "[NEEDS INPUT: site lead name]"
+      },
+      "created_by": null,
+      "completed_at": null,
+      "completed_by": null,
+      "created_at": "2026-09-26T09:40:00Z",
+      "updated_at": "2026-09-26T09:40:00Z"
+    }
+  ],
+  "scorecard": {
+    "kind": "scorecard",
+    "version": 1,
+    "created_at": "2026-09-26T09:30:00Z",
+    "data": {
+      "scorecard": {
+        "fit": 82,
+        "eligibility": 100,
+        "capacity": 64,
+        "competition": 45,
+        "incumbent_note": "The incumbent task order is held by a small business.",
+        "value_fit": 71,
+        "win_probability": 38,
+        "gaps": [
+          {
+            "gap": "No FedRAMP High past performance on the profile",
+            "suggested_fix": "Team with a prime that holds a FedRAMP High ATO"
+          }
+        ],
+        "teaming_suggestions": [
+          {
+            "partner_or_capability": "FedRAMP High cloud prime",
+            "why": "Covers the ATO gap and the 24x7 operations requirement"
+          }
+        ],
+        "recommendation": "bid",
+        "reasons": [
+          "NAICS 541519 and the migration service line match the profile",
+          "The response window is 11 weeks, which fits the drafting capacity"
+        ]
+      },
+      "weights": { "fit": 30, "eligibility": 25, "capacity": 15, "competition": 10, "value": 10, "win_probability": 10 },
+      "weighted_score": "71.9",
+      "suggested_recommendation": "bid",
+      "requirements": 24,
+      "version": 1,
+      "gate": "gate1"
+    }
+  },
+  "pricing": {
+    "kind": "pricing_template",
+    "version": 1,
+    "data": {
+      "storage_key": "tenants/t/pursuits/p/pricing/v1.xlsx",
+      "file_name": "36C24825R0042_pricing_v1.xlsx",
+      "currency": "USD",
+      "region": "us",
+      "labor_rows": 6,
+      "rate_card_rows": 12,
+      "placeholder_cells": 3,
+      "warnings": ["Two labour categories are not on the rate card"],
+      "version": 1
+    }
+  }
+}

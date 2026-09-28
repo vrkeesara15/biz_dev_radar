@@ -256,15 +256,31 @@ export const patchTask = (
     }),
   );
 
-export const listComments = (pursuitId: string, signal?: AbortSignal) =>
+/** Anchors a thread to one artefact (M5-16 / OQ-145: draft_section, artifact, …). */
+export type CommentTarget = { targetType?: string; targetId?: string | null };
+
+export const listComments = (
+  pursuitId: string,
+  target: CommentTarget = {},
+  signal?: AbortSignal,
+) =>
   unwrap(
     browserApi.GET("/api/v1/pursuits/{pursuit_id}/comments", {
-      params: { path: { pursuit_id: pursuitId } },
+      params: {
+        path: { pursuit_id: pursuitId },
+        query: {
+          ...(target.targetType ? { target_type: target.targetType } : {}),
+          ...(target.targetId ? { target_id: target.targetId } : {}),
+        } as never,
+      },
       signal,
     }),
   );
 
-export const createComment = (pursuitId: string, body: { body: string; target_type?: string }) =>
+export const createComment = (
+  pursuitId: string,
+  body: { body: string; target_type?: string; target_id?: string | null },
+) =>
   unwrap(
     browserApi.POST("/api/v1/pursuits/{pursuit_id}/comments", {
       params: { path: { pursuit_id: pursuitId } },

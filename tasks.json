@@ -1753,7 +1753,7 @@
       "Gate 1 and Gate 2 approval controls respect roles; export buttons for DOCX/PDF/XLSX/ZIP",
       "Cost meter shows cost_so_far vs cap"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M6-01",

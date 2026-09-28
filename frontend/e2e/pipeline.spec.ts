@@ -180,11 +180,13 @@ test("the table toggle keeps the filters and both live in the URL", async ({ pag
   await expect(page.getByTestId("pursuit-row")).toHaveCount(5);
 });
 
-test("the pursuit shell shows the header, key dates, tasks and comments", async ({
+test("the pursuit workspace carries M6's key dates, tasks and comments", async ({
   page,
   context,
   baseURL,
 }) => {
+  // No `workspace` option: the M5-18 routes answer 404 here, so this is the
+  // workspace over a deployment that only has the M6 pursuit routes.
   const api = new MockApi({ pursuits: true, members: true });
   await api.install(page);
   await signInAs(context, baseURL!);
@@ -194,6 +196,9 @@ test("the pursuit shell shows the header, key dates, tasks and comments", async 
   const header = page.getByTestId("pursuit-header");
   await expect(header.getByTestId("pursuit-stage")).toHaveText("Identified");
   await expect(header.getByTestId("pursuit-internal-due")).toContainText("Dec 8, 2:00 PM EST");
+
+  // Key dates and tasks live on the Tasks tab (SPEC 10.4 screen 6).
+  await page.getByRole("tab", { name: "Tasks" }).click();
 
   // Key dates with the dual time zone string, and Acknowledge on each row.
   const dates = page.getByTestId("key-dates-panel");
@@ -221,7 +226,8 @@ test("the pursuit shell shows the header, key dates, tasks and comments", async 
   await expect.poll(() => api.pursuitTasks[VA][0].status).toBe("done");
   await expect(tasks.getByTestId("task-row").first().getByRole("checkbox")).toBeChecked();
 
-  // Comments: the seeded thread plus a new post.
+  // Comments: the seeded thread plus a new post, on the Activity tab.
+  await page.getByRole("tab", { name: "Activity" }).click();
   const comments = page.getByTestId("comments-thread");
   await expect(comments.getByTestId("comment-row")).toHaveCount(1);
   await comments.getByLabel("Add a comment").fill("Pricing sheet is ready for review.");

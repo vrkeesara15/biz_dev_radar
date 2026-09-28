@@ -22,6 +22,8 @@ export type CommentsThreadProps = {
   pursuitId: string;
   /** Anchors the thread to one artefact ("pursuit" by default). */
   targetType?: string;
+  /** The row the thread hangs off, e.g. a draft id for `draft_section`. */
+  targetId?: string | null;
   className?: string;
 };
 
@@ -30,7 +32,12 @@ export type CommentsThreadProps = {
  * the M5-18 pursuit workspace, which anchors its own threads to a draft by
  * passing `targetType`.
  */
-export function CommentsThread({ pursuitId, targetType = "pursuit", className }: CommentsThreadProps) {
+export function CommentsThread({
+  pursuitId,
+  targetType = "pursuit",
+  targetId = null,
+  className,
+}: CommentsThreadProps) {
   const now = useNow();
   const [comments, setComments] = React.useState<PursuitComment[] | null>(null);
   const [members, setMembers] = React.useState<Member[]>([]);
@@ -40,7 +47,7 @@ export function CommentsThread({ pursuitId, targetType = "pursuit", className }:
 
   React.useEffect(() => {
     const controller = new AbortController();
-    listComments(pursuitId, controller.signal)
+    listComments(pursuitId, { targetType, targetId }, controller.signal)
       .then((list) => setComments(list.items))
       .catch((caught: unknown) => {
         if (controller.signal.aborted) return;
@@ -50,7 +57,7 @@ export function CommentsThread({ pursuitId, targetType = "pursuit", className }:
       .then(setMembers)
       .catch(() => setMembers([]));
     return () => controller.abort();
-  }, [pursuitId]);
+  }, [pursuitId, targetType, targetId]);
 
   const author = (userId: string | null) => {
     if (!userId) return "Someone";
@@ -64,7 +71,11 @@ export function CommentsThread({ pursuitId, targetType = "pursuit", className }:
     if (!clean) return;
     setBusy("new");
     try {
-      const created = await createComment(pursuitId, { body: clean, target_type: targetType });
+      const created = await createComment(pursuitId, {
+        body: clean,
+        target_type: targetType,
+        target_id: targetId,
+      });
       setComments((current) => [...(current ?? []), created]);
       setBody("");
     } catch (caught) {

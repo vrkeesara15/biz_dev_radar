@@ -128,3 +128,40 @@
     @apply font-sans;
   }
 }
+/* Pursuit workspace draft editor (M5-18, SPEC 8 grounding). */
+@layer components {
+  /* An unsupported claim: red, per SPEC 8 "unsupported claims are highlighted red". */
+  .bidradar-unsupported {
+    background-color: color-mix(in oklch, var(--destructive) 18%, transparent);
+    border-bottom: 2px solid var(--destructive);
+    border-radius: 2px;
+  }
+  /* An agent's [NEEDS INPUT: ...] marker: amber, never red — it is honest, not wrong. */
+  .bidradar-needs-input {
+    background-color: color-mix(in oklch, oklch(0.83 0.16 84) 35%, transparent);
+    border-radius: 2px;
+    font-weight: 500;
+  }
+  .bidradar-editor .ProseMirror {
+    min-height: 18rem;
+    outline: none;
+  }
+  .bidradar-editor .ProseMirror :is(h1, h2, h3) {
+    font-weight: 600;
+    margin-block: 0.75em 0.35em;
+  }
+  .bidradar-editor .ProseMirror :is(ul, ol) {
+    margin-inline-start: 1.25rem;
+    list-style: revert;
+  }
+  .bidradar-editor .ProseMirror p {
+    margin-block: 0.5em;
+  }
+  .bidradar-editor .ProseMirror table {
+    border-collapse: collapse;
+  }
+  .bidradar-editor .ProseMirror :is(td, th) {
+    border: 1px solid var(--border);
+    padding: 0.25rem 0.5rem;
+  }
+}
