@@ -1,0 +1,216 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 1,
+    "missed_labels": [
+      "L-06"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "This acquisition is a total small business set-aside under NAICS 541519 with a size standard of $34 million.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "This acquisition is a total small business set-aside under NAICS 541519 with a size standard of",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to be registered and active in SAM.gov before the proposal due date.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must be registered and active in SAM.gov before the proposal due",
+          "confidence": 0.9
+        },
+        {
+          "text": "The prime offeror must hold a facility clearance at the Secret level at the time of award.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The prime offeror must hold a facility clearance at the Secret level at the time of",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to have submitted a current representations and certifications record in SAM.gov.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must have submitted a current representations and certifications record in",
+          "confidence": 0.9
+        },
+        {
+          "text": "The technical volume may not exceed 40 pages, excluding the cover page, table of contents and resumes.",
+          "page": 2,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "The technical volume shall not exceed 40 pages, excluding the cover page, table of contents and",
+          "confidence": 0.9
+        },
+        {
+          "text": "Submit Volume I Technical, Volume II Past Performance and Volume III Price as separate PDF files.",
+          "page": 2,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Submit Volume I Technical, Volume II Past Performance and Volume III Price as separate PDF",
+          "confidence": 0.9
+        },
+        {
+          "text": "File names shall follow the pattern CompanyName_W91QUZ-26-R-0001_VolumeNumber.pdf.",
+          "page": 2,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "File names shall follow the pattern CompanyName_W91QUZ-26-R-0001_VolumeNumber.pdf",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to submit proposals through the Procurement Integrated Enterprise Environment no later than 4:00 PM Eastern Time on 14 December 2026.",
+          "page": 2,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Offerors shall submit proposals through the Procurement Integrated Enterprise Environment no later than 4:00 PM Eastern",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to submit a completed Standard Form 33 signed by an authorised representative.",
+          "page": 2,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Offerors shall submit a completed Standard Form 33 signed by an authorised",
+          "confidence": 0.9
+        },
+        {
+          "text": "Questions have to be submitted in writing no later than 20 November 2026; answers will be issued by amendment.",
+          "page": 2,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Questions must be submitted in writing no later than 20 November 2026; answers will be issued",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to provide three past performance references for contracts of similar size and scope completed within the past five years.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall provide three past performance references for contracts of similar size and scope completed",
+          "confidence": 0.9
+        },
+        {
+          "text": "C.1 The contractor is required to replace 1,200 end-of-life network switches across 38 installations within 18 months of award.",
+          "page": 3,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall replace 1,200 end-of-life network switches across 38 installations within 18 months of",
+          "confidence": 0.9
+        },
+        {
+          "text": "C.2 The contractor is required to maintain 99.9 percent network availability measured monthly across all supported sites.",
+          "page": 3,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall maintain 99.9 percent network availability measured monthly across all supported",
+          "confidence": 0.9
+        },
+        {
+          "text": "C.3 The contractor is required to ensure that all personnel with administrative access hold an active Secret clearance.",
+          "page": 3,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must ensure that all personnel with administrative access hold an active Secret",
+          "confidence": 0.9
+        },
+        {
+          "text": "C.4 The contractor is required to deliver a cutover plan for each installation 30 calendar days before the scheduled cutover.",
+          "page": 3,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall deliver a cutover plan for each installation 30 calendar days before the scheduled",
+          "confidence": 0.9
+        },
+        {
+          "text": "C.5 The contractor should propose automation that reduces manual configuration effort and report the savings quarterly.",
+          "page": 3,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The contractor should propose automation that reduces manual configuration effort and report the savings",
+          "confidence": 0.9
+        },
+        {
+          "text": "C.6 The contractor is required to provide a transition-in plan within 15 calendar days of award and a transition-out plan 90 days before contract end.",
+          "page": 3,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall provide a transition-in plan within 15 calendar days of award and a transition-out",
+          "confidence": 0.9
+        },
+        {
+          "text": "Factor 1 Technical Approach: the Government will evaluate the soundness of the proposed cutover methodology and the realism of the 18-month schedule.",
+          "page": 4,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Factor 1 Technical Approach: the Government will evaluate the soundness of the proposed cutover methodology and",
+          "confidence": 0.9
+        },
+        {
+          "text": "Factor 2 Management Approach: the Government will evaluate the staffing plan, the key personnel qualifications and the risk mitigation approach.",
+          "page": 4,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Factor 2 Management Approach: the Government will evaluate the staffing plan, the key personnel qualifications and",
+          "confidence": 0.9
+        },
+        {
+          "text": "Factor 3 Past Performance: the Government will evaluate the recency, relevancy and quality of the references submitted under L.8.",
+          "page": 4,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Factor 3 Past Performance: the Government will evaluate the recency, relevancy and quality of the references",
+          "confidence": 0.9
+        },
+        {
+          "text": "Factor 4 Price: the Government will evaluate total evaluated price for the base period and all option years for reasonableness and balance.",
+          "page": 4,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Factor 4 Price: the Government will evaluate total evaluated price for the base period and all",
+          "confidence": 0.9
+        },
+        {
+          "text": "The anticipated period of performance is a 12-month base period and four option years.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The anticipated period of performance is a 12-month base period and four option years",
+          "confidence": 0.7
+        },
+        {
+          "text": "Offerors are required to submit proposals through the Procurement Integrated Enterprise Environment no later than 4:00 PM Eastern Time on 14 December 2026. (restated in the summary)",
+          "page": 2,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Offerors shall submit proposals through the Procurement Integrated Enterprise Environment no later than 4:00 PM Eastern",
+          "confidence": 0.8
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 8,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

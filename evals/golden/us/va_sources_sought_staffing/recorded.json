@@ -1,0 +1,144 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 0,
+    "missed_labels": [
+      "L-08"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "The Department intends to consider a set-aside for service-disabled veteran-owned small businesses verified in SBA VetCert.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The Department intends to consider a set-aside for service-disabled veteran-owned small businesses verified in SBA",
+          "confidence": 0.9
+        },
+        {
+          "text": "Respondents are required to be registered and active in SAM.gov with NAICS 621399 and a size standard of $9 million.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Respondents must be registered and active in SAM.gov with NAICS 621399 and a size standard of",
+          "confidence": 0.9
+        },
+        {
+          "text": "Respondents are required to hold a current Joint Commission accreditation or describe an equivalent quality programme.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Respondents must hold a current Joint Commission accreditation or describe an equivalent quality",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to provide 42 licensed practical nurses across four medical centres on a 24x7 rotation.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall provide 42 licensed practical nurses across four medical centres on a 24x7",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to fill a requested shift within 24 hours of the request 95 percent of the time.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall fill a requested shift within 24 hours of the request 95 percent of",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to verify licensure, immunisation and credentialing for every clinician before the first shift.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must verify licensure, immunisation and credentialing for every clinician before the first",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to provide a single point of contact reachable 24 hours a day for scheduling escalations.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall provide a single point of contact reachable 24 hours a day for scheduling",
+          "confidence": 0.9
+        },
+        {
+          "text": "Capability statements may not exceed 8 pages including the cover page.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Capability statements shall not exceed 8 pages including the cover",
+          "confidence": 0.9
+        },
+        {
+          "text": "Submit the capability statement as a single PDF named CompanyName_36C10B26SS0113.pdf.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Submit the capability statement as a single PDF named",
+          "confidence": 0.9
+        },
+        {
+          "text": "Responses must be emailed to nco10.marketresearch@va.example.gov by 3:00 PM Central Time on 21 October 2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Responses must be emailed to nco10.marketresearch@va.example.gov by 3:00 PM Central Time on 21 October",
+          "confidence": 0.9
+        },
+        {
+          "text": "Respondents shall state their UEI, CAGE code, socio-economic status and the medical centres they can serve.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Respondents shall state their UEI, CAGE code, socio-economic status and the medical centres they can",
+          "confidence": 0.9
+        },
+        {
+          "text": "The buyer will review responses to determine whether adequate SDVOSB capability exists to support a set-aside.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The Government will review responses to determine whether adequate SDVOSB capability exists to support a",
+          "confidence": 0.9
+        },
+        {
+          "text": "The buyer will consider demonstrated experience staffing at least 25 clinicians on a single federal contract.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The Government will consider demonstrated experience staffing at least 25 clinicians on a single federal",
+          "confidence": 0.9
+        },
+        {
+          "text": "The Government will not pay for any information received in response to this notice.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The Government will not pay for any information received in response to this notice",
+          "confidence": 0.7
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

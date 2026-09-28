@@ -1,0 +1,168 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 0,
+    "missed_labels": [
+      "L-09"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder is required to have a minimum average annual turnover of Rs. 6,00,00,000 during the last three financial years.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 6,00,00,000 during the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to remit an EMD of Rs. 12,00,000 online or furnish a bank guarantee valid for 120 days.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall remit an EMD of Rs. 12,00,000 online or furnish a bank guarantee valid",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to have at least 5 years of experience executing rural water supply schemes.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall have at least 5 years of experience executing rural water supply",
+          "confidence": 0.9
+        },
+        {
+          "text": "MSEs registered under Udyam are exempted from the EMD on production of a valid certificate.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "MSEs registered under Udyam are exempted from the EMD on production of a valid",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to be registered as a Class I contractor with the Tamil Nadu Public Works Department.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall be registered as a Class I contractor with the Tamil Nadu Public Works",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to lay 96 kilometres of distribution mains and construct four overhead tanks.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall lay 96 kilometres of distribution mains and construct four overhead",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to complete the entire scheme within 24 months from the date of agreement.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall complete the entire scheme within 24 months from the date of",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to use pipes bearing an ISI mark and produce test certificates for every consignment.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must use pipes bearing an ISI mark and produce test certificates for every",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to maintain the scheme for a defect liability period of 24 months after completion.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall maintain the scheme for a defect liability period of 24 months after",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor should engage local labour to the extent available at the work site.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The contractor should engage local labour to the extent available at the work",
+          "confidence": 0.9
+        },
+        {
+          "text": "All documents shall be uploaded in PDF format; each file may not exceed 10 MB.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "All documents shall be uploaded in PDF format; each file shall not exceed 10",
+          "confidence": 0.9
+        },
+        {
+          "text": "Bids shall be uploaded on the Tamil Nadu tenders portal before 03:00 PM IST on 27-11-2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Bids shall be uploaded on the Tamil Nadu tenders portal before 03:00 PM IST on",
+          "confidence": 0.9
+        },
+        {
+          "text": "The technical and price covers shall be digitally signed with a Class 3 Digital Signature Certificate.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The technical and price covers shall be digitally signed with a Class 3 Digital Signature",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to upload the PWD registration certificate, the PAN card and the GST registration.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall upload the PWD registration certificate, the PAN card and the GST",
+          "confidence": 0.9
+        },
+        {
+          "text": "Price covers of technically qualified bidders alone will be opened and the lowest quote accepted.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Price covers of technically qualified bidders alone will be opened and the lowest quote",
+          "confidence": 0.9
+        },
+        {
+          "text": "The board will verify completion certificates for at least two rural water supply schemes of similar value.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The board will verify completion certificates for at least two rural water supply schemes of similar",
+          "confidence": 0.9
+        },
+        {
+          "text": "The tender is invited in two-cover system through the Tamil Nadu tenders portal.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The tender is invited in two-cover system through the Tamil Nadu tenders portal",
+          "confidence": 0.7
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

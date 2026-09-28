@@ -1,0 +1,176 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 0,
+    "missed_labels": [
+      "L-10"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder is required to have a minimum average annual turnover of Rs. 31,20,00,000 in the last three financial years.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 31,20,00,000 in the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to submit an EMD of Rs. 62,40,000 by RTGS or a bank guarantee valid for 180 days.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall submit an EMD of Rs. 62,40,000 by RTGS or a bank guarantee valid",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to have at least 5 years of experience executing highway strengthening works of similar nature.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall have at least 5 years of experience executing highway strengthening works of similar",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to be enrolled on the Central Public Procurement Portal with a valid Class 3 Digital Signature Certificate.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall be enrolled on the Central Public Procurement Portal with a valid Class 3",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to not be under any debarment or blacklisting by NHAI, MoRTH or any state PWD on the bid due date.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall not be under any debarment or blacklisting by NHAI, MoRTH or any state",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to strengthen 48.6 km of the existing carriageway including shoulders and cross drainage works.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall strengthen 48.6 km of the existing carriageway including shoulders and cross drainage",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to complete the work within 18 months of the appointed date.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall complete the work within 18 months of the appointed",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to establish a field laboratory at site and test materials at the frequency in the MoRTH specifications.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must establish a field laboratory at site and test materials at the frequency in",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to maintain the completed work during a defect liability period of 60 months.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shall maintain the completed work during a defect liability period of 60",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor should submit a monthly safety report covering incidents, near misses and corrective actions.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The contractor should submit a monthly safety report covering incidents, near misses and corrective",
+          "confidence": 0.9
+        },
+        {
+          "text": "Each uploaded file shall be in PDF format and may not exceed 25 MB.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Each uploaded file shall be in PDF format and shall not exceed 25",
+          "confidence": 0.9
+        },
+        {
+          "text": "Technical and financial bids shall be uploaded on the CPP Portal before 03:00 PM IST on 11-12-2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Technical and financial bids shall be uploaded on the CPP Portal before 03:00 PM IST on",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to digitally sign both covers with a Class 3 DSC issued to the authorised signatory.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall digitally sign both covers with a Class 3 DSC issued to the authorised",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to upload an affidavit of non-blacklisting and a power of attorney for the signatory.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall upload an affidavit of non-blacklisting and a power of attorney for the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The original bank guarantee towards EMD shall reach the Regional Office before the bid opening date.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The original bank guarantee towards EMD shall reach the Regional Office before the bid opening",
+          "confidence": 0.9
+        },
+        {
+          "text": "Financial bids of technically qualified bidders only will be opened and the lowest evaluated bid will be considered.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Financial bids of technically qualified bidders only will be opened and the lowest evaluated bid will",
+          "confidence": 0.9
+        },
+        {
+          "text": "Technical evaluation will assess completed similar works, bid capacity and the deployment of key personnel.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Technical evaluation will assess completed similar works, bid capacity and the deployment of key",
+          "confidence": 0.9
+        },
+        {
+          "text": "The estimated cost put to tender is Rs. 62,40,00,000.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The estimated cost put to tender is Rs. 62,40,00,000",
+          "confidence": 0.7
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

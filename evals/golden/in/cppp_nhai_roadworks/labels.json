@@ -1,0 +1,124 @@
+{
+  "source": "synthetic CPPP (eProcure) NHAI works tender (evals/golden/in/cppp_nhai_roadworks)",
+  "notice_id": "NHAI/RO-JAI/2026/EE/0117",
+  "region": "in",
+  "notice_type": "tender",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 31,20,00,000 in the last three financial years.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "The bidder shall submit an EMD of Rs. 62,40,000 by RTGS or a bank guarantee valid for 180 days.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "The bidder shall have at least 5 years of experience executing highway strengthening works of similar nature.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "The bidder shall be enrolled on the Central Public Procurement Portal with a valid Class 3 Digital Signature Certificate.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "The bidder shall not be under any debarment or blacklisting by NHAI, MoRTH or any state PWD on the bid due date.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-06",
+      "text": "6.1 The contractor shall strengthen 48.6 km of the existing carriageway including shoulders and cross drainage works.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "6.2 The contractor shall complete the work within 18 months of the appointed date.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "6.3 The contractor must establish a field laboratory at site and test materials at the frequency in the MoRTH specifications.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-09",
+      "text": "6.4 The contractor shall maintain the completed work during a defect liability period of 60 months.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-10",
+      "text": "6.5 The contractor shall deploy the key personnel named in the bid and seek written approval before any replacement.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-11",
+      "text": "6.6 The contractor should submit a monthly safety report covering incidents, near misses and corrective actions.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-12",
+      "text": "Each uploaded file shall be in PDF format and shall not exceed 25 MB.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-13",
+      "text": "Technical and financial bids shall be uploaded on the CPP Portal before 03:00 PM IST on 11-12-2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "The bidder shall digitally sign both covers with a Class 3 DSC issued to the authorised signatory.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-15",
+      "text": "The bidder shall upload an affidavit of non-blacklisting and a power of attorney for the signatory.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-16",
+      "text": "The original bank guarantee towards EMD shall reach the Regional Office before the bid opening date.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-17",
+      "text": "Financial bids of technically qualified bidders only will be opened and the lowest evaluated bid will be considered.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-18",
+      "text": "Technical evaluation will assess completed similar works, bid capacity and the deployment of key personnel.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "min_avg_turnover_inr": "312000000",
+    "emd_amount_inr": "6240000",
+    "min_experience_years": 5,
+    "mse_exemption_allowed": false,
+    "startup_exemption_allowed": false,
+    "requires_cppp_enrolment": true
+  }
+}

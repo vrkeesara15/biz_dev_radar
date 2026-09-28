@@ -1,0 +1,107 @@
+{
+  "source": "synthetic city RFP (evals/golden/us/sled_city_rfp)",
+  "notice_id": "COA-IFB-2026-0447",
+  "region": "us",
+  "notice_type": "rfp",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "Proposers must hold a current Texas Professional Engineer licence for the engineer of record.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "Proposers must be registered as a vendor in the City's electronic procurement system before submitting.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "Proposers must document a good-faith effort toward the 15 percent minority and woman-owned business participation goal.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "Proposers must carry professional liability insurance of at least $1,000,000 per claim.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "4.1 The consultant shall prepare hydrologic and hydraulic models for 14 watersheds using the City's adopted methodology.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-06",
+      "text": "4.2 The consultant shall deliver 30 percent, 60 percent and 90 percent design submittals for each project.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "4.3 The consultant must attend monthly progress meetings at the Watershed Protection offices.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-08",
+      "text": "4.4 The consultant shall provide construction phase services including submittal review and site visits.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-09",
+      "text": "4.5 The consultant should identify opportunities for green stormwater infrastructure in each design.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-10",
+      "text": "Proposals shall not exceed 25 pages, excluding required forms and resumes.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-11",
+      "text": "Submit one PDF file named VendorName-COA-IFB-2026-0447.pdf; paper copies will not be accepted.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-12",
+      "text": "Proposals must be uploaded to the City's electronic bidding portal before 2:00 PM Central Time on 28 October 2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-13",
+      "text": "Proposers shall complete the non-discrimination certification and the conflict-of-interest questionnaire.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "Proposals will be scored on experience 30 points, project approach 30 points, team qualifications 25 points and cost 15 points.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-15",
+      "text": "The evaluation committee may shortlist proposers for interviews before making a recommendation.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "set_aside": "none",
+    "local_preference": "MBE/WBE participation goal 15 percent",
+    "sam_registration_required": false,
+    "eligibility_keywords": [
+      "Texas Professional Engineer",
+      "15 percent"
+    ]
+  }
+}

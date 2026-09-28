@@ -1,0 +1,85 @@
+{
+  "source": "synthetic scanned RFP, OCR-quality text (evals/golden/us/scanned_rfp)",
+  "notice_id": "N0018926R0077",
+  "region": "us",
+  "notice_type": "rfp",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "Offerors must be registered and active in SAM.gov under NAICS 336611 at the time of offer.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "Offerors must hold a Master Ship Repair Agreement or an Agreement for Boat Repair with the Navy.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "Offerors must provide evidence of an ISO 9O01 certified quality management system.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "The contractor shaII overhaul 96 shipboard valves in accordance with the applicable technical repair standard.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-05",
+      "text": "The contractor shaII retum each overhauled valve to the shipyard within 45 calendar days of receipt.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-06",
+      "text": "The contractor must perform hydrostatic testing on every valve and provide the certified test record.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-07",
+      "text": "The contractor shaII tag and package each valve in accordance with military packaging requirements.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "Offers shaII be submitted on the Standard Form 1449 provided with this solicitation.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-09",
+      "text": "Offers must be received at the Norfolk Naval Shipyard contracting office by 11:O0 AM Eastem Time on 7 December 2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-10",
+      "text": "Offerors shaII submit a completed pricing schedule for all 96 valves.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-11",
+      "text": "Award wiII be made to the responsible offeror whose offer represents the lowest evaluated price.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-12",
+      "text": "The Govemment wiII verify the offeror's repair facility capacity before award.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "naics": "336611",
+    "set_aside": "none",
+    "sam_registration_required": true
+  }
+}

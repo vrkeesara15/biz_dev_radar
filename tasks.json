@@ -1697,7 +1697,7 @@
       "Pass bars enforced: recall >= 90%, precision >= 85%, eligibility exact match >= 90%, zero fabrications, 100% citations",
       "Eval runs with recorded LLM responses by default; ANTHROPIC_API_KEY switches to live"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M5-16",

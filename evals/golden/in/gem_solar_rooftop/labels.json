@@ -1,0 +1,112 @@
+{
+  "source": "synthetic GeM bid for rooftop solar (evals/golden/in/gem_solar_rooftop)",
+  "notice_id": "GEM/2026/B/4560114",
+  "region": "in",
+  "notice_type": "bid",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 8,00,00,000 in each of the last three financial years.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "The bidder shall furnish an EMD of Rs. 15,00,000 through the online gateway before the bid end date.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "The bidder shall have at least 7 years of experience commissioning grid-connected rooftop solar plants.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "Recognised startups are exempted from the EMD; MSE exemption is not available under this bid.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "The bidder shall be empanelled with the state distribution company for net metering work.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-06",
+      "text": "5.1 The contractor shall design, supply, install and commission 2.4 MW of rooftop solar capacity within 180 days.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "5.2 The contractor shall guarantee a minimum plant availability of 97 percent over the five-year operation period.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "5.3 The contractor must use modules and inverters listed in the Approved List of Models and Manufacturers.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-09",
+      "text": "5.4 The contractor shall obtain net metering approval from the distribution company before commissioning.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-10",
+      "text": "5.5 The contractor shall operate and maintain the plants for five years after commissioning.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-11",
+      "text": "5.6 The contractor should provide a remote monitoring portal with daily generation reports.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-12",
+      "text": "The technical cover shall not exceed 60 pages excluding datasheets.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-13",
+      "text": "Bids shall be submitted on the GeM portal before 03:00 PM IST on 22-12-2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "The bidder shall digitally sign all covers with a Class 3 DSC and upload the empanelment letter.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-15",
+      "text": "Evaluation will be on the lowest levelised cost per kWh over the five-year operation period.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-16",
+      "text": "The buyer will verify commissioning certificates for at least 5 MW of completed rooftop capacity.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "min_avg_turnover_inr": "80000000",
+    "emd_amount_inr": "1500000",
+    "min_experience_years": 7,
+    "mse_exemption_allowed": false,
+    "startup_exemption_allowed": true,
+    "requires_gem_registration": true
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 1,
+    "duplicates_removed": 0,
+    "missed_labels": [
+      "L-03"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "Offerors are required to be registered and active in SAM.gov under NAICS 336611 at the time of offer.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must be registered and active in SAM.gov under NAICS 336611 at the time of",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors are required to hold a Master Ship Repair Agreement or an Agreement for Boat Repair with the Navy.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "Offerors must hold a Master Ship Repair Agreement or an Agreement for Boat Repair with the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor shaII overhaul 96 shipboard valves in accordance with the applicable technical repair standard.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shaII overhaul 96 shipboard valves in accordance with the applicable technical repair",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor shaII retum each overhauled valve to the shipyard within 45 calendar days of receipt.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shaII retum each overhauled valve to the shipyard within 45 calendar days of",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor is required to perform hydrostatic testing on every valve and provide the certified test record.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The contractor must perform hydrostatic testing on every valve and provide the certified test",
+          "confidence": 0.9
+        },
+        {
+          "text": "The contractor shaII tag and package each valve in accordance with military packaging requirements.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The contractor shaII tag and package each valve in accordance with military packaging",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offers shaII be submitted on the Standard Form 1449 provided with this solicitation.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "Offers shaII be submitted on the Standard Form 1449 provided with this",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offers must be received at the Norfolk Naval Shipyard contracting office by 11:O0 AM Eastem Time on 7 December 2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Offers must be received at the Norfolk Naval Shipyard contracting office by 11:O0 AM Eastem Time",
+          "confidence": 0.9
+        },
+        {
+          "text": "Offerors shaII submit a completed pricing schedule for all 96 valves.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Offerors shaII submit a completed pricing schedule for all 96",
+          "confidence": 0.9
+        },
+        {
+          "text": "Award wiII be made to the responsible offeror whose offer represents the lowest evaluated price.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Award wiII be made to the responsible offeror whose offer represents the lowest evaluated",
+          "confidence": 0.9
+        },
+        {
+          "text": "The Govemment wiII verify the offeror's repair facility capacity before award.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The Govemment wiII verify the offeror's repair facility capacity before",
+          "confidence": 0.9
+        },
+        {
+          "text": "Naval Sea Systems Command, Norfolk Naval Shipyard.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Naval Sea Systems Command, Norfolk Naval Shipyard",
+          "confidence": 0.7
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

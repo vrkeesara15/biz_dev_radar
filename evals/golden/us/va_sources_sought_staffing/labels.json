@@ -1,0 +1,98 @@
+{
+  "source": "synthetic VA sources-sought notice (evals/golden/us/va_sources_sought_staffing)",
+  "notice_id": "36C10B26SS0113",
+  "region": "us",
+  "notice_type": "sources_sought",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "The Department intends to consider a set-aside for service-disabled veteran-owned small businesses verified in SBA VetCert.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "Respondents must be registered and active in SAM.gov with NAICS 621399 and a size standard of $9 million.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "Respondents must hold a current Joint Commission accreditation or describe an equivalent quality programme.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "2.1 The contractor shall provide 42 licensed practical nurses across four medical centres on a 24x7 rotation.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-05",
+      "text": "2.2 The contractor shall fill a requested shift within 24 hours of the request 95 percent of the time.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-06",
+      "text": "2.3 The contractor must verify licensure, immunisation and credentialing for every clinician before the first shift.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-07",
+      "text": "2.4 The contractor shall provide a single point of contact reachable 24 hours a day for scheduling escalations.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "2.5 Respondents should describe their approach to clinician retention and the turnover rate achieved on similar contracts.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-09",
+      "text": "Capability statements shall not exceed 8 pages including the cover page.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-10",
+      "text": "Submit the capability statement as a single PDF named CompanyName_36C10B26SS0113.pdf.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-11",
+      "text": "Responses must be emailed to nco10.marketresearch@va.example.gov by 3:00 PM Central Time on 21 October 2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-12",
+      "text": "Respondents shall state their UEI, CAGE code, socio-economic status and the medical centres they can serve.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-13",
+      "text": "The Government will review responses to determine whether adequate SDVOSB capability exists to support a set-aside.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-14",
+      "text": "The Government will consider demonstrated experience staffing at least 25 clinicians on a single federal contract.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "naics": "621399",
+    "set_aside": "sdvosb",
+    "sam_registration_required": true,
+    "size_standard_usd": 9000000
+  }
+}

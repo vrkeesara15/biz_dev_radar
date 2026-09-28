@@ -1,0 +1,160 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 0,
+    "missed_labels": [
+      "L-06"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder is required to have a minimum average annual turnover of Rs. 5,00,00,000 over the preceding three financial years.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 5,00,00,000 over the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to submit an EMD of Rs. 9,60,000 online before the bid end date.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall submit an EMD of Rs. 9,60,000 online before the bid end",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to have at least 5 years of experience in supplying ambulances fabricated to AIS-125 standards.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall have at least 5 years of experience in supplying ambulances fabricated to AIS-125",
+          "confidence": 0.9
+        },
+        {
+          "text": "MSEs registered under Udyam are exempted from the EMD; startup exemption is not available for this bid.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "MSEs registered under Udyam are exempted from the EMD; startup exemption is not available for this",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to hold a valid type approval certificate from a notified testing agency for the offered vehicle.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall hold a valid type approval certificate from a notified testing agency for the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The supplier is required to provide three years of comprehensive warranty covering the chassis and the medical equipment.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The supplier shall provide three years of comprehensive warranty covering the chassis and the medical",
+          "confidence": 0.9
+        },
+        {
+          "text": "The supplier must ensure every vehicle carries the medical equipment list specified in Annexure II at handover.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The supplier must ensure every vehicle carries the medical equipment list specified in Annexure II at",
+          "confidence": 0.9
+        },
+        {
+          "text": "The supplier is required to establish an authorised service point within 100 kilometres of each district headquarters.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The supplier shall establish an authorised service point within 100 kilometres of each district",
+          "confidence": 0.9
+        },
+        {
+          "text": "The supplier should train two drivers and two paramedics per district on the installed equipment.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The supplier should train two drivers and two paramedics per district on the installed",
+          "confidence": 0.9
+        },
+        {
+          "text": "All certificates shall be uploaded as PDF files of not more than 15 MB each.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "All certificates shall be uploaded as PDF files of not more than 15 MB",
+          "confidence": 0.9
+        },
+        {
+          "text": "Bids shall be submitted on the GeM portal before 05:00 PM IST on 15-12-2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Bids shall be submitted on the GeM portal before 05:00 PM IST on",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to sign the technical and financial covers with a Class 3 Digital Signature Certificate.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall sign the technical and financial covers with a Class 3 Digital Signature",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to upload the AIS-125 type approval certificate and the Udyam certificate where applicable.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall upload the AIS-125 type approval certificate and the Udyam certificate where",
+          "confidence": 0.9
+        },
+        {
+          "text": "Bids will be evaluated on the lowest price per vehicle among technically qualified bidders.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Bids will be evaluated on the lowest price per vehicle among technically qualified",
+          "confidence": 0.9
+        },
+        {
+          "text": "A physical inspection of a sample vehicle may be required before award.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "A physical inspection of a sample vehicle may be required before",
+          "confidence": 0.9
+        },
+        {
+          "text": "The estimated bid value is Rs. 4,80,00,000 inclusive of all taxes.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The estimated bid value is Rs. 4,80,00,000 inclusive of all taxes",
+          "confidence": 0.7
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}

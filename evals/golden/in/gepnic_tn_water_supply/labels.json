@@ -1,0 +1,118 @@
+{
+  "source": "synthetic Tamil Nadu GePNIC tender (evals/golden/in/gepnic_tn_water_supply)",
+  "notice_id": "TWAD/CBE/2026/WS/0091",
+  "region": "in",
+  "notice_type": "tender",
+  "requirements": [
+    {
+      "id": "L-01",
+      "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 6,00,00,000 during the last three financial years.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-02",
+      "text": "The bidder shall remit an EMD of Rs. 12,00,000 online or furnish a bank guarantee valid for 120 days.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-03",
+      "text": "The bidder shall have at least 5 years of experience executing rural water supply schemes.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-04",
+      "text": "MSEs registered under Udyam are exempted from the EMD on production of a valid certificate.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-05",
+      "text": "The bidder shall be registered as a Class I contractor with the Tamil Nadu Public Works Department.",
+      "page": 1,
+      "type": "eligibility"
+    },
+    {
+      "id": "L-06",
+      "text": "9.1 The contractor shall lay 96 kilometres of distribution mains and construct four overhead tanks.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-07",
+      "text": "9.2 The contractor shall complete the entire scheme within 24 months from the date of agreement.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-08",
+      "text": "9.3 The contractor must use pipes bearing an ISI mark and produce test certificates for every consignment.",
+      "page": 2,
+      "type": "must"
+    },
+    {
+      "id": "L-09",
+      "text": "9.4 The contractor shall restore all road cuttings to the satisfaction of the concerned local body.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-10",
+      "text": "9.5 The contractor shall maintain the scheme for a defect liability period of 24 months after completion.",
+      "page": 2,
+      "type": "shall"
+    },
+    {
+      "id": "L-11",
+      "text": "9.6 The contractor should engage local labour to the extent available at the work site.",
+      "page": 2,
+      "type": "should"
+    },
+    {
+      "id": "L-12",
+      "text": "All documents shall be uploaded in PDF format; each file shall not exceed 10 MB.",
+      "page": 3,
+      "type": "format"
+    },
+    {
+      "id": "L-13",
+      "text": "Bids shall be uploaded on the Tamil Nadu tenders portal before 03:00 PM IST on 27-11-2026.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-14",
+      "text": "The technical and price covers shall be digitally signed with a Class 3 Digital Signature Certificate.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-15",
+      "text": "The bidder shall upload the PWD registration certificate, the PAN card and the GST registration.",
+      "page": 3,
+      "type": "submission"
+    },
+    {
+      "id": "L-16",
+      "text": "Price covers of technically qualified bidders alone will be opened and the lowest quote accepted.",
+      "page": 3,
+      "type": "evaluation"
+    },
+    {
+      "id": "L-17",
+      "text": "The board will verify completion certificates for at least two rural water supply schemes of similar value.",
+      "page": 3,
+      "type": "evaluation"
+    }
+  ],
+  "eligibility": {
+    "min_avg_turnover_inr": "60000000",
+    "emd_amount_inr": "1200000",
+    "min_experience_years": 5,
+    "mse_exemption_allowed": true,
+    "startup_exemption_allowed": false,
+    "requires_cppp_enrolment": false
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "model_class": "opus",
+  "expected": {
+    "rejected": 2,
+    "duplicates_removed": 1,
+    "missed_labels": [
+      "L-07"
+    ]
+  },
+  "batches": [
+    {
+      "requirements": [
+        {
+          "text": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder is required to have a minimum average annual turnover of Rs. 2,50,00,000 in the last three financial years.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "\u092a\u093e\u0924\u094d\u0930\u0924\u093e \u092e\u093e\u0928\u0926\u0902\u0921: The bidder shall have a minimum average annual turnover of Rs. 2,50,00,000 in the",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to pay an EMD of Rs. 5,00,000 online through the Maharashtra tenders portal.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall pay an EMD of Rs. 5,00,000 online through the Maharashtra tenders",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to have at least 3 years of experience operating a tier III or higher data centre.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall have at least 3 years of experience operating a tier III or higher",
+          "confidence": 0.9
+        },
+        {
+          "text": "MSEs and recognised startups are exempted from the EMD on submission of the relevant certificate.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "MSEs and recognised startups are exempted from the EMD on submission of the relevant",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to hold a valid ISO 27001 certificate covering data centre operations.",
+          "page": 1,
+          "type": "eligibility",
+          "volume": "Eligibility",
+          "quote": "The bidder shall hold a valid ISO 27001 certificate covering data centre",
+          "confidence": 0.9
+        },
+        {
+          "text": "The service provider is required to operate the state data centre on a 24x7 basis with a minimum of 18 deployed engineers.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The service provider shall operate the state data centre on a 24x7 basis with a minimum",
+          "confidence": 0.9
+        },
+        {
+          "text": "The service provider must conduct a vulnerability assessment every quarter and close critical findings within 15 days.",
+          "page": 2,
+          "type": "must",
+          "volume": "Technical",
+          "quote": "The service provider must conduct a vulnerability assessment every quarter and close critical findings within 15",
+          "confidence": 0.9
+        },
+        {
+          "text": "The service provider is required to provide a monthly service level report within five working days of month end.",
+          "page": 2,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "The service provider shall provide a monthly service level report within five working days of month",
+          "confidence": 0.9
+        },
+        {
+          "text": "The service provider should propose automation that reduces manual operational effort year on year.",
+          "page": 2,
+          "type": "should",
+          "volume": "Technical",
+          "quote": "The service provider should propose automation that reduces manual operational effort year on",
+          "confidence": 0.9
+        },
+        {
+          "text": "The technical cover may not exceed 80 pages excluding annexures.",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "The technical cover shall not exceed 80 pages excluding",
+          "confidence": 0.9
+        },
+        {
+          "text": "Bids shall be uploaded on the Maharashtra tenders portal before 05:00 PM IST on 08-12-2026.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Bids shall be uploaded on the Maharashtra tenders portal before 05:00 PM IST on",
+          "confidence": 0.9
+        },
+        {
+          "text": "Both covers shall be digitally signed with a Class 3 DSC issued to the authorised signatory.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Both covers shall be digitally signed with a Class 3 DSC issued to the authorised",
+          "confidence": 0.9
+        },
+        {
+          "text": "The bidder is required to upload the ISO 27001 certificate and three client reference letters.",
+          "page": 3,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "The bidder shall upload the ISO 27001 certificate and three client reference",
+          "confidence": 0.9
+        },
+        {
+          "text": "Evaluation will follow a quality and cost based selection with 70 percent weight on technical score.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "Evaluation will follow a quality and cost based selection with 70 percent weight on technical",
+          "confidence": 0.9
+        },
+        {
+          "text": "The technical score will consider relevant experience, the proposed team and the transition plan.",
+          "page": 3,
+          "type": "evaluation",
+          "volume": "Technical",
+          "quote": "The technical score will consider relevant experience, the proposed team and the transition",
+          "confidence": 0.9
+        },
+        {
+          "text": "Maharashtra Information Technology Corporation, Pune.",
+          "page": 1,
+          "type": "submission",
+          "volume": "Submission Package",
+          "quote": "Maharashtra Information Technology Corporation, Pune",
+          "confidence": 0.7
+        },
+        {
+          "text": "The technical cover may not exceed 80 pages excluding annexures. (restated in the summary)",
+          "page": 3,
+          "type": "format",
+          "volume": "Submission Package",
+          "quote": "The technical cover shall not exceed 80 pages excluding",
+          "confidence": 0.8
+        },
+        {
+          "text": "The contractor shall staff a programme office at the buyer's premises.",
+          "page": 7,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "staff a programme office at the buyer's premises",
+          "confidence": 1.0
+        },
+        {
+          "text": "The contractor shall provide unlimited onsite support at every location.",
+          "page": 1,
+          "type": "shall",
+          "volume": "Technical",
+          "quote": "unlimited onsite support at every location nationwide",
+          "confidence": 1.0
+        }
+      ]
+    }
+  ]
+}
