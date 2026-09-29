@@ -1,0 +1,160 @@
+{
+  "$comment": "M7-14 (SPEC 12). One entry per row of docs/acceptance.md. `nodes` are pytest node ids run from backend/ by scripts/acceptance.py; a row with no nodes is not automatable and prints MANUAL with the runbook that carries the steps. Keep this file and docs/acceptance.md in the same order: tests/unit/test_docs_links.py fails the build when a row here is missing from the page.",
+  "rows": [
+    {
+      "id": "box-1-sam-60-minutes",
+      "group": "Acceptance criteria for MVP",
+      "box": "A new SAM.gov notice matching the internal profile appears in the app and in Slack within 60 minutes",
+      "nodes": [
+        "tests/unit/test_acceptance_budgets.py::test_the_sam_poll_plus_the_notify_flush_fits_the_60_minute_box",
+        "tests/integration/test_ingest_match_notify.py::test_ingest_to_match_to_notify_end_to_end"
+      ],
+      "manual": "Observe one real SAM.gov notice: portal posting time -> opportunities.created_at -> the bell, the email and the Slack post. Needs SAM_API_KEY and a deployed environment.",
+      "owner": "Backend / QA"
+    },
+    {
+      "id": "box-2-india-6-hours",
+      "group": "Acceptance criteria for MVP",
+      "box": "A new CPPP or GeM tender matching an India test profile appears within 6 hours",
+      "nodes": [
+        "tests/unit/test_acceptance_budgets.py::test_the_indian_portal_polls_fit_the_6_hour_box",
+        "tests/integration/test_india_checklist.py"
+      ],
+      "manual": "docs/runbooks/india-testing.md, row \"A new CPPP or GeM tender ... within 6 hours\": three (portal time, ingest time, notify time) triples across CPPP, GeM and one GePNIC state on staging-in.",
+      "owner": "Backend / QA"
+    },
+    {
+      "id": "box-3-pursue-package",
+      "group": "Acceptance criteria for MVP",
+      "box": "Clicking Pursue produces a compliance matrix + full draft + bid/no-bid scorecard within 30 minutes, with page citations",
+      "nodes": [
+        "tests/integration/test_matrix.py::test_matrix_maps_every_requirement_and_extracts_rules_and_checklist",
+        "tests/integration/test_drafters.py::test_one_drafter_per_volume_writes_grounded_versions",
+        "tests/integration/test_bid_no_bid.py::test_scorecard_is_stored_weighted_and_pauses_at_gate_one",
+        "tests/integration/test_pursuit_artifacts_api.py::test_list_returns_the_latest_version_of_every_kind"
+      ],
+      "manual": "The 30-minute wall clock is only observable against a real model: time one pipeline run end to end on a deployed environment and record the agent_runs row.",
+      "owner": "Agents / QA"
+    },
+    {
+      "id": "box-4-reminders-and-calendar",
+      "group": "Acceptance criteria for MVP",
+      "box": "Deadline reminders fire on the ladder in the user's time zone; calendar events created",
+      "nodes": [
+        "tests/integration/test_reminders.py::test_the_ladder_is_generated_and_fires_rung_by_rung",
+        "tests/integration/test_reminders.py::test_a_us_reader_and_an_ist_reader_are_reminded_at_the_same_instant",
+        "tests/integration/test_reminders.py::test_the_ladder_survives_the_2026_11_01_fall_back",
+        "tests/integration/test_calendar_api.py::test_the_feed_is_issued_rotated_and_serves_the_users_dates",
+        "tests/integration/test_calendar_api.py::test_google_push_creates_updates_and_deletes"
+      ],
+      "manual": "Subscribe a real Google/Outlook calendar to the .ics feed and confirm the invite lands; part of the India pilot runs.",
+      "owner": "QA"
+    },
+    {
+      "id": "box-5-exports-open-cleanly",
+      "group": "Acceptance criteria for MVP",
+      "box": "DOCX/PDF/XLSX/ZIP exports open cleanly in Word, Acrobat and Excel",
+      "nodes": [
+        "tests/integration/test_exports.py::test_the_docx_opens_in_word_and_carries_the_draft_footer",
+        "tests/integration/test_exports.py::test_the_pdf_opens_in_acrobat_and_carries_the_footer",
+        "tests/integration/test_exports.py::test_the_xlsx_opens_in_excel_with_matrix_checklist_and_pricing",
+        "tests/integration/test_exports.py::test_the_zip_uses_the_solicitations_file_naming_rule",
+        "tests/integration/test_exports.py::test_a_final_package_drops_the_draft_footer_but_keeps_the_disclaimer"
+      ],
+      "manual": "Open each of the four files in Microsoft Word, Adobe Acrobat and Microsoft Excel (not a viewer). The tests parse them with python-docx / pypdf / openpyxl, which proves well-formedness, not Office rendering.",
+      "owner": "QA"
+    },
+    {
+      "id": "box-6-cross-tenant-and-audit",
+      "group": "Acceptance criteria for MVP",
+      "box": "Cross-tenant test suite passes; audit log records every draft access",
+      "nodes": [
+        "tests/isolation",
+        "tests/unit/test_route_table.py",
+        "tests/integration/test_workspace_api.py::test_list_and_read_drafts_with_their_grounding_counts",
+        "tests/integration/test_pursuit_artifacts_api.py::test_scorecard_and_red_team_reads_are_audited_and_the_rest_are_not",
+        "tests/integration/test_audit.py"
+      ],
+      "manual": "None. The harness enumerates app.openapi() and fails on any route without a factory, so a new route cannot skip the probe.",
+      "owner": "Backend"
+    },
+    {
+      "id": "box-7-india-checklist",
+      "group": "Acceptance criteria for MVP",
+      "box": "India checklist above passes in staging-in",
+      "nodes": ["tests/integration/test_india_checklist.py"],
+      "manual": "docs/runbooks/india-testing.md: 16 of its 30 rows are manual-pending (WhatsApp templates, SES Mumbai deliverability, Razorpay test payment, live residency, ISP latency, the two pilot bids). staging-in has never been deployed.",
+      "owner": "Ops / Pilot / Infra"
+    },
+    {
+      "id": "plan-unit-coverage",
+      "group": "Test plan",
+      "box": "Unit: every normalizer, scorer, date/time-zone function, eligibility rule; >= 85% line coverage on core/",
+      "nodes": [],
+      "make": "make test",
+      "manual": "Run `make test` -- the gate is `--cov=app/core --cov-fail-under=85`. Not re-run here because a coverage figure measured over a subset of the suite would be a lie.",
+      "owner": "Backend"
+    },
+    {
+      "id": "plan-adapter-contracts",
+      "group": "Test plan",
+      "box": "Adapter contract tests: recorded fixtures for each source (including a malformed page and a layout change) parse to the canonical schema",
+      "nodes": ["tests/adapters"],
+      "manual": "None.",
+      "owner": "Backend"
+    },
+    {
+      "id": "plan-live-smoke",
+      "group": "Test plan",
+      "box": "Live smoke (nightly): each adapter fetches >= 1 record from the real source; failure pages the admin channel",
+      "nodes": ["tests/unit/test_smoke_job.py", "tests/unit/test_nightly_smoke_config.py"],
+      "make": "make smoke (BIDRADAR_LIVE=1)",
+      "manual": "The nightly workflow has never run: it needs SAM_API_KEY and network egress, and SPEC 13.6 asks for three green nights in a row. `make smoke` exits 0 without touching the network unless BIDRADAR_LIVE=1.",
+      "owner": "Ops"
+    },
+    {
+      "id": "plan-integration-ingest",
+      "group": "Test plan",
+      "box": "Integration: ingest -> match -> notify end-to-end on the local stack with Mailpit asserting the email",
+      "nodes": ["tests/integration/test_ingest_match_notify.py"],
+      "manual": "The rendered email is asserted in-process; the Mailpit leg (tests/integration/test_notify_email.py) skips when Mailpit is not reachable, so bring the compose stack up to exercise it.",
+      "owner": "Backend"
+    },
+    {
+      "id": "plan-tenant-isolation",
+      "group": "Test plan",
+      "box": "Tenant isolation: two tenants, every endpoint probed cross-tenant; any 200 with foreign data fails the build",
+      "nodes": ["tests/isolation"],
+      "manual": "None.",
+      "owner": "Backend"
+    },
+    {
+      "id": "plan-agent-evals",
+      "group": "Test plan",
+      "box": "Agent evals: 10 US + 10 India golden notices; recall >= 90%, precision >= 85%, zero fabricated facts, every requirement cites a page, eligibility exact match >= 90%",
+      "nodes": ["tests/evals"],
+      "make": "make eval",
+      "manual": "The bars are measured against replayed answers, not a live model (docs/evals.md). Run the set against the real model before launch.",
+      "owner": "Agents"
+    },
+    {
+      "id": "plan-ui-playwright-axe",
+      "group": "Test plan",
+      "box": "UI: Playwright flows for onboarding, search, pursue, review, export; axe accessibility check",
+      "nodes": [],
+      "make": "cd frontend && pnpm e2e",
+      "e2e": true,
+      "manual": "Run with ACCEPTANCE_WITH_E2E=1 (it needs a Next dev server and Chromium). E2E_REQUIRE_BROWSER=1 makes a missing browser a failure instead of a skip.",
+      "owner": "Frontend"
+    },
+    {
+      "id": "plan-load",
+      "group": "Test plan",
+      "box": "Load: 50k opportunities, 200 profiles scored in < 10 min; search p95 < 500 ms",
+      "nodes": ["tests/unit/test_load_scripts.py"],
+      "make": "make load-smoke / make load-full",
+      "manual": "The measured run and its extrapolation are in scripts/load/README.md. Not re-run here: `make load-full` needs its own database and about half an hour.",
+      "owner": "Backend"
+    }
+  ]
+}

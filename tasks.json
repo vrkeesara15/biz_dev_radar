@@ -2226,7 +2226,7 @@
       "make acceptance runs the automated subset and prints the checklist",
       "All automated boxes green; manual boxes marked with instructions"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-15",

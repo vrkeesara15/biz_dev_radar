@@ -9,9 +9,13 @@ multi-tenant SaaS whose first external market is India. A human always submits t
 BidRadar never logs in to a portal, never solves a CAPTCHA and never auto-submits
 (SPEC [§1](SPEC.md)).
 
-> **Status: under construction.** This repository is built by an autonomous Claude Code
-> loop against [SPEC.md](SPEC.md) and [tasks.json](tasks.json). 79 of 112 tasks are done;
-> matching, the agent pipeline and the pursuit board are partly or not yet built. See
+> **Status: feature-complete, never deployed.** This repository is built by an
+> autonomous Claude Code loop against [SPEC.md](SPEC.md) and [tasks.json](tasks.json).
+> **113 of 113 tasks are done** and the automated half of the SPEC 12 acceptance
+> checklist is green — but nothing here has ever run against a live portal, a real
+> mailbox, a payment page or a cloud project. What is left is a list of things only a
+> person can do: see **[Definition of done](#definition-of-done-spec-136)** and
+> [docs/acceptance.md](docs/acceptance.md). Read
 > [What works today](#what-works-today) before you believe any sentence below implies a
 > finished product.
 
@@ -187,9 +191,11 @@ or Redis.
 | `make lint` | `ruff format --check`, `ruff check`, `mypy` over `app tests migrations` |
 | `make format` | `ruff format` + `ruff check --fix` |
 | `make test` | `alembic upgrade head`, then pytest with `--cov=app/core --cov-fail-under=85` |
-| `make eval` | the agent evals in `backend/tests/evals` against the golden set in `evals/golden/` (partial — the full set is M5-15) |
+| `make eval` | the agent evals in `backend/tests/evals` against the 20 golden notices in `evals/golden/` (10 US, 10 India) |
 | `make isolation` | the cross-tenant suite: two tenants, every endpoint, any 200 with foreign data fails |
 | `make smoke` | the live adapter smoke; a no-op unless `BIDRADAR_LIVE=1` |
+| `make acceptance` | the automated subset of the SPEC 12 MVP checklist, printed row by row, non-zero on any red row. `ACCEPTANCE_WITH_E2E=1` adds the Playwright + axe flows. See [docs/acceptance.md](docs/acceptance.md) |
+| `make india-check` | the automated subset of the SPEC 12 India checklist ([docs/runbooks/india-testing.md](docs/runbooks/india-testing.md)) |
 | `make db-reset` / `db-reset-dev` | drop and recreate `bidradar_test` / `bidradar` with the extensions |
 | `make load-db` / `make load-smoke` | create `bidradar_load`, then seed + score + search it at 10% of the SPEC 12 size |
 
@@ -443,6 +449,7 @@ likely to want:
 | Page | When |
 | --- | --- |
 | [docs/adapters.md](docs/adapters.md) | adding a source, the politeness and compliance rules, fixtures, the smoke |
+| [docs/acceptance.md](docs/acceptance.md) | **is it done?** — every SPEC 12 acceptance box mapped to its test, the last measured number, and what a human still owns |
 | [docs/runbooks/broken-source.md](docs/runbooks/broken-source.md) | a portal changed its layout or an API started erroring |
 | [docs/runbooks/deploy.md](docs/runbooks/deploy.md) | shipping, promoting, rolling back |
 | [docs/runbooks/observability.md](docs/runbooks/observability.md) | "what happened to this request?" |
@@ -458,7 +465,7 @@ This repository is built by Claude Code running headless against the spec
 (SPEC §13). Three files drive it and are the fastest way to understand where the
 project is:
 
-- **[tasks.json](tasks.json)** — 112 tasks across M0–M7, each with `depends_on` and
+- **[tasks.json](tasks.json)** — 113 tasks across M0–M7, each with `depends_on` and
   testable `acceptance` lines. The loop takes the first `todo` whose dependencies are
   all `done`.
 - **[PROGRESS.md](PROGRESS.md)** — an append-only log (task · what changed · how
@@ -474,9 +481,9 @@ secret, never add CAPTCHA solving or portal login — are in
 
 ## What works today
 
-Counted from [tasks.json](tasks.json) when this was written — the number moves, the file
-is the truth: **79 of 112 tasks done**. Milestones M4–M6 are still being built in
-parallel worktrees, so their counts here lag the branches.
+Counted from [tasks.json](tasks.json): **113 of 113 tasks done**. Every milestone is
+complete, and the automated half of the SPEC 12 acceptance checklist is green
+([docs/acceptance.md](docs/acceptance.md)).
 
 | Milestone | Done | Todo | State |
 | --- | --- | --- | --- |
@@ -484,40 +491,80 @@ parallel worktrees, so their counts here lag the branches.
 | M1 company profile, knowledge base, onboarding wizard | 13 | 0 | complete |
 | M2 ingestion: adapters, normalize, dedupe, versions, search | 18 | 0 | complete |
 | M3 India: CPPP, GeM, GePNIC, dates, money, Hindi OCR | 10 | 0 | complete |
-| M4 matching and alerts | 8 | 8 | partial |
-| M5 agent pipeline | 7 | 11 | partial |
-| M6 pursuits, deadlines, exports, pipeline board | 1 | 9 | barely started |
-| M7 hardening, deploy, billing, privacy, admin, docs | 9 | 5 | partial |
+| M4 matching and alerts | 16 | 0 | complete |
+| M5 agent pipeline, exports and evals | 18 | 0 | complete |
+| M6 pursuits, deadlines, calendar, pipeline board | 10 | 0 | complete |
+| M7 hardening, deploy, billing, privacy, admin, docs, acceptance | 15 | 0 | complete |
 
 **Built and tested.** The ingestion path end to end: nine enabled adapters (SAM.gov
 opportunities and awards, USAspending, Grants.gov, CPPP, GeM, GePNIC Tamil Nadu / Uttar
 Pradesh / central) plus documented stubs and paid-feed shells, polite HTTP with
 robots/rate-limit/quota/raw-archive, normalization, dedupe, amendment versions, and
-full-text plus vector search. Also: the company profile, knowledge base and onboarding
-wizard; tenant isolation with RLS and the cross-tenant suite; hard filters, the weighted
-fit score and the eligibility signal; the notification core with the email, Slack, Teams,
-in-app and web-push channels, quiet hours and the digest; the agent runtime with its cost
-guard and agents 1, 2, 3 and 7 (documents, requirements with page citations, compliance
-matrix, pricing template); the Docker image, four Terraform environments, the deploy
-pipeline with preview environments; rate limiting and dependency/secret scanning; billing
-webhooks; the DPDP privacy endpoints; the admin console; and observability.
+full-text plus vector search. Matching: hard filters, the weighted fit score, semantic
+similarity, the eligibility signal, the LLM rationale, the batch scoring job, feedback,
+saved searches and alert rules. Alerts: email, Slack, Teams, WhatsApp, in-app and web
+push, with quiet hours, the digest and the event router. Agents: all eight, behind one
+runner with a cost guard, two human gates, a grounding validator, prompt-injection evals
+and the DOCX/PDF/XLSX/ZIP exports. Pursuits: stages, the deadline ladder, calendar and
+iCal, recurring credential checks, tasks and comments, the dashboard KPIs and the Kanban
+board. Frontend: sign-in, the seven-step onboarding wizard, search and notice detail, the
+home dashboard, the alerts inbox, the pursuit workspace, the pipeline board and calendar,
+settings and the admin console. Platform: RLS with the cross-tenant suite, the Docker
+image, four Terraform environments, the deploy pipeline with preview environments, rate
+limiting, dependency and secret scanning, billing webhooks, the DPDP privacy endpoints
+and observability.
 
-**Not yet built** — do not read anything above as a claim that these work:
+**What "done" does not mean.** Every claim above is a claim about tests on a developer
+machine. This code has never been deployed, never fetched a live SAM.gov or CPPP page
+with a real key, never delivered a real email or WhatsApp message, and never taken a
+payment. The MVP is **not** accepted; see below.
 
-- **Matching:** semantic similarity / BM25 / past-performance signals, the stage-3 LLM
-  rationale, the batch scoring job, match feedback, saved searches and alert rules.
-- **Alerts:** the event router that decides which event goes to which channel, and the
-  ingest → match → notify integration test.
-- **Agents:** bid/no-bid, outline and win themes, section drafters, red-team review, the
-  grounding validator, the prompt-injection evals, and the DOCX/PDF/XLSX/ZIP exports.
-  The golden-set evals are partial; `make eval` runs what exists, not the full SPEC 12
-  set of 10 US + 10 Indian notices.
-- **Pursuits:** stages, key dates, the reminder ladder, calendar and iCal, WhatsApp,
-  recurring checks, tasks and comments, dashboard KPIs, the Kanban board.
-- **Frontend:** everything past onboarding and the opportunity screens — the home
-  dashboard, alerts inbox, pursuit workspace, settings and the pipeline board.
-- **Verification:** load tests, the automated India checklist, the Playwright and
-  accessibility flows, and the MVP acceptance checklist that maps SPEC 12 to tests.
+## Definition of done (SPEC 13.6)
+
+SPEC 13.6 asks for five things. Where each one stands, in full detail in
+[docs/acceptance.md](docs/acceptance.md):
+
+| Clause | State |
+| --- | --- |
+| All tasks done **or explicitly deferred by a human** | **done** — 113/113 in [tasks.json](tasks.json); everything a task could not finish is an open question in [PROGRESS.md](PROGRESS.md), not a silent gap |
+| Section 12 acceptance boxes ticked | **partly** — 6 of 7 boxes are automated-green and none has been observed live; the seventh (the India checklist in staging-in) is 14 of 30 rows |
+| CI green on main | **unproven** — the workflow runs lint, tests with the coverage gate, the isolation suite, the frontend gates including Playwright + axe, both Docker builds, Terraform validate and the security scan, but it has never executed on a hosted runner |
+| Nightly smoke green 3 nights running | **not started** — zero nights; it needs `SAM_API_KEY` and network egress |
+| README with setup, env vars, adapter guide and a runbook for a broken source | **done** — this file, [docs/adapters.md](docs/adapters.md), [docs/runbooks/broken-source.md](docs/runbooks/broken-source.md) |
+
+### Deferred to a human
+
+Nothing in this list can be closed by the build loop. Each needs a credential, a
+deployment, an install, a person or a lawyer.
+
+1. **Deploy anything at all.** There is no GCP project. Every "not observed live" box,
+   CI-on-a-runner and the nightly smoke all wait on this.
+2. **The SAM.gov API key** (OQ-3) — absent locally; the 60-minute box and the live smoke
+   need it.
+3. **Three green nights of the live smoke** (SPEC 13.6). Needs 1 and 2.
+4. **The India checklist in staging-in** — the 16 manual rows of
+   [docs/runbooks/india-testing.md](docs/runbooks/india-testing.md): WhatsApp templates
+   approved and delivered, SES Mumbai SPF/DKIM/DMARC, a Razorpay test payment with a GST
+   invoice, live bucket and database residency, Jio/Airtel latency, and two pilot users
+   running a real GeM bid and a CPPP tender end to end.
+5. **The restore drill** (OQ-83) — the script has only been run with `--dry-run`; the
+   drill log in [docs/runbooks/restore-drill.md](docs/runbooks/restore-drill.md) is
+   empty, so SPEC §11's "restore drill before launch" is not satisfied.
+6. **Open the four exports in real Word, Acrobat and Excel.** The tests prove the files
+   are well-formed, not that Office renders them.
+7. **Run the eval set against the live model** ([docs/evals.md](docs/evals.md)); today's
+   bars are measured over replayed answers.
+8. **`NEXT_PUBLIC_API_BASE_URL` is baked in at build time** (OQ-77) — the one place the
+   "same image everywhere" rule leaks.
+9. **Legal and finance** (SPEC §14): counsel on commercial use of Indian portal data and
+   DPDP, the terms of service and the privacy policy ([docs/legal.md](docs/legal.md));
+   a CA on the GST treatment (OQ-59).
+10. **Source attribution** (OQ-64) — the per-source attribution strings in the UI and
+    exports are our reading of each portal's terms, not a reviewed one.
+11. **Product decisions** (SPEC §14): the name and domain (OQ-1), the company profile
+    that seeds the internal tenant (OQ-2), and confirming the three Indian state portals
+    actually shipped — Tamil Nadu, Uttar Pradesh and central GePNIC rather than the
+    proposed Telangana/Karnataka/Maharashtra (OQ-14).
 
 ### Open questions that need a human
 

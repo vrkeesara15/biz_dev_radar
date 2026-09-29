@@ -15,10 +15,10 @@ LOAD_REPORT_DIR ?= load-report
 LOAD_ENV := DATABASE_URL="$(LOAD_DATABASE_URL)" DATABASE_URL_OWNER="$(LOAD_DATABASE_URL_OWNER)"
 
 
-.PHONY: help lint format test eval up down db-reset db-reset-dev seed migrate smoke acceptance isolation load-db load-smoke load-full
+.PHONY: help lint format test eval up down db-reset db-reset-dev seed migrate smoke acceptance india-check isolation load-db load-smoke load-full
 
 help:
-	@echo "targets: lint format test eval up down db-reset seed migrate smoke acceptance isolation load-db load-smoke load-full"
+	@echo "targets: lint format test eval up down db-reset seed migrate smoke acceptance india-check isolation load-db load-smoke load-full"
 
 lint:
 	cd $(BACKEND) && $(UV) run ruff format --check app tests migrations
@@ -67,8 +67,18 @@ isolation:
 smoke:
 	cd $(BACKEND) && $(UV) run python -m app.jobs.smoke
 
-acceptance:
-	@echo "acceptance: placeholder until SPEC section 12 boxes are automated"
+# M7-14 (SPEC 12 "Acceptance criteria for MVP"): run the automated subset of the
+# checklist and print it, one row per box, exit non-zero on any red row. The
+# row -> pytest node id map is scripts/acceptance.json; docs/acceptance.md is
+# the same table in prose with the manual steps.
+# ACCEPTANCE_WITH_E2E=1 also runs the frontend Playwright + axe flows.
+acceptance: migrate
+	cd $(BACKEND) && $(UV) run python ../scripts/acceptance.py
+
+# The SPEC 12 India checklist, automated subset (M7-11). The manual rows and
+# their evidence fields are in docs/runbooks/india-testing.md.
+india-check:
+	cd $(BACKEND) && $(UV) run pytest tests/integration/test_india_checklist.py
 
 # --- load tests (M7-10, SPEC 12) -------------------------------------------------------
 # `make load-db` needs the compose Postgres; CI creates bidradar_load with psql instead.
