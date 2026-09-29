@@ -509,6 +509,17 @@ FACTORIES: dict[tuple[str, str], Factory] = {
     ("GET", "/api/v1/pursuits/{pursuit_id}/packet"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]}
     ),
+    # M7-14 (OQ-147): the stored agent outputs. Any member of A may read them; B must
+    # not learn that A's scorecard or red-team report exists, by list or by id.
+    ("GET", "/api/v1/pursuits/{pursuit_id}/artifacts"): lambda ctx: RouteCall(
+        path_params={"pursuit_id": ctx.a.ids["pursuit"]}, params={"kind": "red_team"}
+    ),
+    ("GET", "/api/v1/pursuits/{pursuit_id}/artifacts/{artifact_id}"): lambda ctx: RouteCall(
+        path_params={
+            "pursuit_id": ctx.a.ids["pursuit"],
+            "artifact_id": ctx.a.ids["pursuit_artifact"],
+        }
+    ),
     # --- exports (M5-13)
     ("POST", "/api/v1/pursuits/{pursuit_id}/export"): lambda ctx: RouteCall(
         path_params={"pursuit_id": ctx.a.ids["pursuit"]},
@@ -1008,6 +1019,7 @@ async def build_context(database: Database) -> IsolationContext:
                 "rate_card_category": "Alpha Architect",
                 "notification_prefs": str(prefs.id),
                 "pursuit": str(pursuit.id),
+                "pursuit_artifact": str(red_team.id),
                 "match": str(match.id),
                 "match_feedback": str(feedback.id),
                 "keyword_suggestion": str(keyword_suggestion.id),

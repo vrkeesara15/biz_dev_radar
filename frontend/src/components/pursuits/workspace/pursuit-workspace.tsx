@@ -44,7 +44,7 @@ import {
   getProfile,
   listDrafts,
   listExports,
-  probeArtifact,
+  latestArtifact,
   type ChecklistItem,
   type DraftSummary,
   type Export,
@@ -174,11 +174,11 @@ export function PursuitWorkspace({ pursuitId, role }: { pursuitId: string; role:
         })
         .catch(() => setExports([]));
     }
-    void probeArtifact(pursuitId, "scorecard", controller.signal).then((payload) =>
-      setScorecard(readScorecard(payload)),
+    void latestArtifact(pursuitId, "scorecard", controller.signal).then((row) =>
+      setScorecard(readScorecard(row)),
     );
-    void probeArtifact(pursuitId, "pricing_template", controller.signal).then((payload) =>
-      setPricing(readPricing(payload)),
+    void latestArtifact(pursuitId, "pricing_template", controller.signal).then((row) =>
+      setPricing(readPricing(row)),
     );
     return () => controller.abort();
   }, [pursuitId, reloadToken, role, mayReadDrafts, mayExport]);

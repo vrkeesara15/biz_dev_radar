@@ -40,7 +40,9 @@
     "id": "5f000000-0000-4000-8000-000000000001",
     "region": "us",
     "legal_name": "Acme Federal Systems LLC",
-    "required_approver_roles": ["bid_manager"]
+    "required_approver_roles": [
+      "bid_manager"
+    ]
   },
   "matrix": {
     "pursuit_id": "9a000000-0000-4000-8000-000000000001",
@@ -51,7 +53,7 @@
         "req_id": "R-001",
         "text": "The offeror shall describe its approach to migrating 40 workloads to a FedRAMP High environment.",
         "type": "technical",
-        "volume": "Volume I — Technical",
+        "volume": "Volume I \u2014 Technical",
         "document_id": "d0c00000-0000-4000-8000-000000000001",
         "page": 12,
         "quote": "The offeror shall describe its approach to migrating 40 workloads.",
@@ -67,7 +69,7 @@
         "req_id": "R-002",
         "text": "Submit three past-performance references of similar size and scope within the last three years.",
         "type": "past_performance",
-        "volume": "Volume II — Past performance",
+        "volume": "Volume II \u2014 Past performance",
         "document_id": "d0c00000-0000-4000-8000-000000000001",
         "page": 14,
         "quote": "Submit three past-performance references of similar size and scope.",
@@ -83,13 +85,18 @@
       "font": "Times New Roman",
       "font_size_pt": 12,
       "margins": "1 inch",
-      "file_types": ["pdf", "docx"],
+      "file_types": [
+        "pdf",
+        "docx"
+      ],
       "file_naming": "{solicitation}_{volume}_{company}.pdf",
       "copies": 1,
       "portal": "SAM.gov",
       "submission_method": "portal_upload",
       "email": null,
-      "sources": { "page_limit": "RFP-36C24825R0042.pdf p. 9" }
+      "sources": {
+        "page_limit": "RFP-36C24825R0042.pdf p. 9"
+      }
     },
     "format_rules_version": 1,
     "checklist": [],
@@ -110,18 +117,26 @@
           "label": "Technical volume",
           "destination": "SAM.gov contract opportunity response",
           "file_name": "36C24825R0042_VolI_Acme.pdf",
-          "formats": ["pdf"],
+          "formats": [
+            "pdf"
+          ],
           "note": "30 page limit",
-          "source_req_ids": ["R-001"]
+          "source_req_ids": [
+            "R-001"
+          ]
         },
         {
           "order": 2,
           "label": "Past performance volume",
           "destination": "SAM.gov contract opportunity response",
           "file_name": "36C24825R0042_VolII_Acme.pdf",
-          "formats": ["pdf"],
+          "formats": [
+            "pdf"
+          ],
           "note": null,
-          "source_req_ids": ["R-002"]
+          "source_req_ids": [
+            "R-002"
+          ]
         }
       ],
       "signatures": [
@@ -155,7 +170,9 @@
         "category": "eligibility",
         "required": true,
         "note": "Expires 2027-03-01",
-        "source_req_ids": ["R-003"]
+        "source_req_ids": [
+          "R-003"
+        ]
       },
       {
         "key": "past_performance_refs",
@@ -163,7 +180,9 @@
         "category": "attachments",
         "required": true,
         "note": null,
-        "source_req_ids": ["R-002"]
+        "source_req_ids": [
+          "R-002"
+        ]
       },
       {
         "key": "sf33",
@@ -182,12 +201,15 @@
       "id": "d1000000-0000-4000-8000-000000000001",
       "section_id": "past-performance",
       "title": "Past performance",
-      "volume": "Volume II — Past performance",
+      "volume": "Volume II \u2014 Past performance",
       "status": "in_review",
       "approved_by": null,
       "approved_at": null,
       "updated_at": "2026-09-26T09:40:00Z",
-      "versions": [1, 2],
+      "versions": [
+        1,
+        2
+      ],
       "comments": 0,
       "current": {
         "id": "d2000000-0000-4000-8000-000000000001",
@@ -234,7 +256,11 @@
                 "fix_suggestion": "Only two references are described; Section L.4 asks for three."
               }
             ],
-            "page_estimate": { "pages": 4, "limit": 30, "over": false }
+            "page_estimate": {
+              "pages": 4,
+              "limit": 30,
+              "over": false
+            }
           }
         },
         "author": "agent",
@@ -248,12 +274,14 @@
       "id": "d1000000-0000-4000-8000-000000000002",
       "section_id": "technical-approach",
       "title": "Technical approach",
-      "volume": "Volume I — Technical",
+      "volume": "Volume I \u2014 Technical",
       "status": "in_review",
       "approved_by": null,
       "approved_at": null,
       "updated_at": "2026-09-26T09:42:00Z",
-      "versions": [1],
+      "versions": [
+        1
+      ],
       "comments": 0,
       "current": {
         "id": "d2000000-0000-4000-8000-000000000002",
@@ -262,7 +290,11 @@
         "body_text": "We will migrate the 40 workloads in three waves.",
         "citations": [],
         "needs_input": [],
-        "flags": { "flags": [], "supported_count": 1, "unsupported_count": 0 },
+        "flags": {
+          "flags": [],
+          "supported_count": 1,
+          "unsupported_count": 0
+        },
         "author": "agent",
         "author_user_id": null,
         "model": "claude-sonnet-4-5",
@@ -294,8 +326,10 @@
     }
   ],
   "scorecard": {
+    "id": "aa000000-0000-4000-8000-000000000001",
     "kind": "scorecard",
     "version": 1,
+    "created_by": "agent",
     "created_at": "2026-09-26T09:30:00Z",
     "data": {
       "scorecard": {
@@ -324,7 +358,14 @@
           "The response window is 11 weeks, which fits the drafting capacity"
         ]
       },
-      "weights": { "fit": 30, "eligibility": 25, "capacity": 15, "competition": 10, "value": 10, "win_probability": 10 },
+      "weights": {
+        "fit": 30,
+        "eligibility": 25,
+        "capacity": 15,
+        "competition": 10,
+        "value": 10,
+        "win_probability": 10
+      },
       "weighted_score": "71.9",
       "suggested_recommendation": "bid",
       "requirements": 24,
@@ -333,8 +374,11 @@
     }
   },
   "pricing": {
+    "id": "aa000000-0000-4000-8000-000000000002",
     "kind": "pricing_template",
     "version": 1,
+    "created_by": "agent",
+    "created_at": "2026-09-26T09:30:00Z",
     "data": {
       "storage_key": "tenants/t/pursuits/p/pricing/v1.xlsx",
       "file_name": "36C24825R0042_pricing_v1.xlsx",
@@ -343,7 +387,9 @@
       "labor_rows": 6,
       "rate_card_rows": 12,
       "placeholder_cells": 3,
-      "warnings": ["Two labour categories are not on the rate card"],
+      "warnings": [
+        "Two labour categories are not on the rate card"
+      ],
       "version": 1
     }
   }

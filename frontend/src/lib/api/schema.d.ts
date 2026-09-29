@@ -1525,6 +1525,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pursuits/{pursuit_id}/artifacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Artifacts
+         * @description The pursuit's stored agent outputs: the LATEST version of each kind, or of `kind`
+         *     alone (one item, or none at all — an empty list, never a 404, so a panel that probes
+         *     for a scorecard that has not been generated renders its empty state).
+         *
+         *     Any member of the tenant may read them; RLS keeps the list inside the tenant and
+         *     `pursuit_id` inside the pursuit. Reading a scorecard or a red-team report writes an
+         *     audit row (SPEC 11). Older versions are reachable by id (OQ-147, OQ-151).
+         */
+        get: operations["list_artifacts_api_v1_pursuits__pursuit_id__artifacts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pursuits/{pursuit_id}/artifacts/{artifact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Artifact
+         * @description One stored version by id — how an older version of a re-run agent's output is
+         *     read back. 404 when the id belongs to another pursuit or another tenant.
+         */
+        get: operations["get_artifact_api_v1_pursuits__pursuit_id__artifacts__artifact_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pursuits/{pursuit_id}/comments": {
         parameters: {
             query?: never;
@@ -5006,6 +5053,47 @@ export interface components {
             /** Created */
             created: boolean;
             pursuit: components["schemas"]["PursuitOut"];
+        };
+        /** PursuitArtifactListOut */
+        PursuitArtifactListOut: {
+            /** Count */
+            count: number;
+            /** Items */
+            items: components["schemas"]["PursuitArtifactOut"][];
+            /** Kind */
+            kind?: string | null;
+            /**
+             * Pursuit Id
+             * Format: uuid
+             */
+            pursuit_id: string;
+        };
+        /**
+         * PursuitArtifactOut
+         * @description One stored `pursuit_artifacts` row (SPEC 8: every agent output is stored and
+         *     versioned). `data` is the agent's own JSON payload, unwrapped.
+         */
+        PursuitArtifactOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: string;
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Version */
+            version: number;
         };
         /** PursuitCreateIn */
         PursuitCreateIn: {
@@ -10428,6 +10516,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApprovePackageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_artifacts_api_v1_pursuits__pursuit_id__artifacts_get: {
+        parameters: {
+            query?: {
+                kind?: string | null;
+            };
+            header?: never;
+            path: {
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitArtifactListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_artifact_api_v1_pursuits__pursuit_id__artifacts__artifact_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifact_id: string;
+                pursuit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PursuitArtifactOut"];
                 };
             };
             /** @description Validation Error */

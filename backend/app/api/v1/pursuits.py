@@ -8,6 +8,8 @@ and the budget approval that resumes a run the cost guard paused.
     PATCH /api/v1/pursuits/{pursuit_id}                    {stage?, owner_user_id?} (409 rules)
     GET  /api/v1/pursuits/{pursuit_id}/matrix              matrix + format rules + checklist
     GET  /api/v1/pursuits/{pursuit_id}/packet              uploads, portal, signatures, deadline
+    GET  /api/v1/pursuits/{pursuit_id}/artifacts           latest stored agent output per kind
+    GET  /api/v1/pursuits/{pursuit_id}/artifacts/{art_id}  one stored version by id
     POST /api/v1/pursuits/{pursuit_id}/agents/run          {step: collect|...|all}
     POST /api/v1/pursuits/{pursuit_id}/agents/approve-budget {additional_usd, reason?}
     POST /api/v1/pursuits/{pursuit_id}/decision            {decision: bid|no_bid, note?}
@@ -21,6 +23,7 @@ and a refusal always answers 409 with the reason the board shows.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated, Any
@@ -41,7 +44,9 @@ from app.core import pursuit_stages as stages
 from app.core.compliance import (
     ARTIFACT_CHECKLIST,
     ARTIFACT_FORMAT_RULES,
+    ARTIFACT_KINDS,
     ARTIFACT_RED_TEAM,
+    ARTIFACT_SCORECARD,
     ChecklistItem,
     FormatRules,
 )
@@ -58,6 +63,7 @@ from app.models import (
     ComplianceItem,
     Opportunity,
     Pursuit,
+    PursuitArtifact,
     Requirement,
     User,
 )
@@ -65,7 +71,7 @@ from app.models.agents import RUN_NEEDS_APPROVAL, RUN_PAUSED, RUN_QUEUED
 from app.services import drafts as draft_svc
 from app.services import key_dates as key_date_svc
 from app.services import pursuits as pursuit_svc
-from app.services.audit import AuditHint
+from app.services.audit import AuditHint, audit
 from app.services.drafts import DraftsSummary
 from app.services.events import PURSUIT_DECIDED, get_event_bus
 from app.services.plan import PlanService
@@ -83,6 +89,12 @@ WRITER_ROLES = (Role.TENANT_OWNER, Role.BID_MANAGER, Role.WRITER)
 ManagerDep = Annotated[CurrentUser, Depends(require_role(*MANAGER_ROLES))]
 WriterDep = Annotated[CurrentUser, Depends(require_role(*WRITER_ROLES))]
 ReaderDep = Annotated[CurrentUser, Depends(require_role(*TENANT_ROLES))]
+
+# SPEC 11: reading generated content is audited. The scorecard is a judgement about the
+# tenant and the red-team report is the criticism of their own draft, so both are logged
+# like a draft read; the mechanical artifacts (rules, checklist, packet) are not.
+AUDIT_ARTIFACT_READ = "pursuit_artifact.read"
+AUDITED_ARTIFACT_KINDS: frozenset[str] = frozenset({ARTIFACT_SCORECARD, ARTIFACT_RED_TEAM})
 
 MAX_LIST_PAGE_SIZE = 200
 DEFAULT_LIST_PAGE_SIZE = 50
@@ -217,6 +229,25 @@ class PursuitPacketOut(BaseModel):
     checklist: list[ChecklistItem]
     checklist_version: int | None
     generated_at: datetime | None
+
+
+class PursuitArtifactOut(BaseModel):
+    """One stored `pursuit_artifacts` row (SPEC 8: every agent output is stored and
+    versioned). `data` is the agent's own JSON payload, unwrapped."""
+
+    id: uuid.UUID
+    kind: str
+    version: int
+    data: dict[str, Any]
+    created_by: str  # agent | user
+    created_at: datetime
+
+
+class PursuitArtifactListOut(BaseModel):
+    pursuit_id: uuid.UUID
+    items: list[PursuitArtifactOut]
+    count: int
+    kind: str | None = None  # echoes the filter, so a cached body names what it holds
 
 
 class RunAgentsIn(BaseModel):
@@ -670,6 +701,83 @@ async def get_packet(
         checklist_version=checklist_version,
         generated_at=generated,
     )
+
+
+def _artifact_out(row: PursuitArtifact) -> PursuitArtifactOut:
+    return PursuitArtifactOut(
+        id=row.id,
+        kind=row.kind,
+        version=row.version,
+        data=row.data or {},
+        created_by=row.created_by,
+        created_at=row.created_at,
+    )
+
+
+async def _audit_artifact_reads(
+    session: AsyncSession, pursuit: Pursuit, rows: Sequence[PursuitArtifact], user: CurrentUser
+) -> None:
+    """SPEC 11 audits the reading of generated content, not the listing of file names:
+    the scorecard (a bid/no-bid judgement about the tenant) and the red-team report (the
+    criticism of their own draft) are logged per row read. Format rules, the checklist,
+    the packet, the outline and the pricing template are mechanical and are not."""
+    for row in rows:
+        if row.kind not in AUDITED_ARTIFACT_KINDS:
+            continue
+        await audit(
+            session,
+            AUDIT_ARTIFACT_READ,
+            row,
+            user_id=user.id,
+            meta={"pursuit_id": str(pursuit.id), "kind": row.kind, "version": row.version},
+        )
+    await session.commit()
+
+
+@router.get("/{pursuit_id}/artifacts", response_model=PursuitArtifactListOut)
+async def list_artifacts(
+    pursuit_id: uuid.UUID,
+    session: TenantSessionDep,
+    user: ReaderDep,
+    kind: Annotated[str | None, Query(max_length=32)] = None,
+) -> PursuitArtifactListOut:
+    """The pursuit's stored agent outputs: the LATEST version of each kind, or of `kind`
+    alone (one item, or none at all — an empty list, never a 404, so a panel that probes
+    for a scorecard that has not been generated renders its empty state).
+
+    Any member of the tenant may read them; RLS keeps the list inside the tenant and
+    `pursuit_id` inside the pursuit. Reading a scorecard or a red-team report writes an
+    audit row (SPEC 11). Older versions are reachable by id (OQ-147, OQ-151).
+    """
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    if kind is not None and kind not in ARTIFACT_KINDS:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"unknown artifact kind {kind!r}; one of {list(ARTIFACT_KINDS)}",
+        )
+    rows = await pursuit_svc.latest_artifacts(session, pursuit.id, kind)
+    await _audit_artifact_reads(session, pursuit, rows, user)
+    return PursuitArtifactListOut(
+        pursuit_id=pursuit.id,
+        items=[_artifact_out(row) for row in rows],
+        count=len(rows),
+        kind=kind,
+    )
+
+
+@router.get("/{pursuit_id}/artifacts/{artifact_id}", response_model=PursuitArtifactOut)
+async def get_artifact(
+    pursuit_id: uuid.UUID,
+    artifact_id: uuid.UUID,
+    session: TenantSessionDep,
+    user: ReaderDep,
+) -> PursuitArtifactOut:
+    """One stored version by id — how an older version of a re-run agent's output is
+    read back. 404 when the id belongs to another pursuit or another tenant."""
+    pursuit = await pursuit_svc.get_pursuit(session, pursuit_id)
+    row = await pursuit_svc.get_artifact(session, pursuit.id, artifact_id)
+    await _audit_artifact_reads(session, pursuit, [row], user)
+    return _artifact_out(row)
 
 
 @router.post(

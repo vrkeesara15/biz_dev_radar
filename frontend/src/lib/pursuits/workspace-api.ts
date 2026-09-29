@@ -1,7 +1,7 @@
 /**
- * The pursuit-workspace routes (M5-16, M5-13, M5-14, M5-10): drafts,
- * compliance matrix, submission packet, agent runs, the two gates and the
- * exports. Everything but the scorecard probe is in the generated OpenAPI
+ * The pursuit-workspace routes (M5-16, M5-13, M5-14, M5-10, M7-14): drafts,
+ * compliance matrix, submission packet, the stored agent artifacts, agent runs,
+ * the two gates and the exports. Every one of them is in the generated OpenAPI
  * schema and goes through `browserApi` and the same-origin proxy.
  */
 import { browserApi, type Schemas } from "@/lib/api/browser";
@@ -185,27 +185,59 @@ export const getProfile = (profileId: string, signal?: AbortSignal) =>
     }),
   );
 
-// --- the bid/no-bid scorecard artifact (not in the schema yet, OQ-147) -------------
+// --- the stored agent artifacts (M7-14; OQ-147 closed) ---------------------------
+
+export type Artifact = Schemas["PursuitArtifactOut"];
+export type ArtifactList = Schemas["PursuitArtifactListOut"];
+
+/** The kinds `pursuit_artifacts` holds, in `app.core.compliance.ARTIFACT_KINDS` order. */
+export const ARTIFACT_KINDS = [
+  "format_rules",
+  "checklist",
+  "packet",
+  "scorecard",
+  "outline",
+  "pricing_template",
+  "red_team",
+] as const;
+export type ArtifactKind = (typeof ARTIFACT_KINDS)[number];
 
 /**
- * `pursuit_artifacts` rows of kind `scorecard` are written by agent 4 but no
- * route serves them, so this is an untyped probe of the route the backend is
- * expected to grow (`GET /pursuits/{id}/artifacts?kind=scorecard`). Anything
- * other than a 200 with a readable body is treated as "no scorecard yet" and
- * the tab says so: the workspace never fails because of it.
+ * `GET /pursuits/{id}/artifacts?kind=` — the LATEST stored version of each kind, or of
+ * one kind. An agent that has not run yet is an empty list, not a 404, so a panel that
+ * asks for a scorecard renders its empty state rather than an error.
  */
-export async function probeArtifact(
+export const listArtifacts = (pursuitId: string, kind?: ArtifactKind, signal?: AbortSignal) =>
+  unwrap(
+    browserApi.GET("/api/v1/pursuits/{pursuit_id}/artifacts", {
+      params: { path: path(pursuitId), query: kind ? { kind } : {} },
+      signal,
+    }),
+  );
+
+/** One stored version by id — how an older version of a re-run agent is read back. */
+export const getArtifact = (pursuitId: string, artifactId: string, signal?: AbortSignal) =>
+  unwrap(
+    browserApi.GET("/api/v1/pursuits/{pursuit_id}/artifacts/{artifact_id}", {
+      params: { path: { ...path(pursuitId), artifact_id: artifactId } },
+      signal,
+    }),
+  );
+
+/**
+ * The latest artifact of one kind, or null. The bid/no-bid and pricing panels are
+ * decoration on a workspace that must still load without them, so a failed read (an old
+ * backend without the route, a dropped connection, an aborted navigation) is "no
+ * artifact yet" rather than an error the whole screen has to carry.
+ */
+export async function latestArtifact(
   pursuitId: string,
-  kind: string,
+  kind: ArtifactKind,
   signal?: AbortSignal,
-): Promise<unknown | null> {
+): Promise<Artifact | null> {
   try {
-    const response = await fetch(
-      `/api/v1/pursuits/${encodeURIComponent(pursuitId)}/artifacts?kind=${encodeURIComponent(kind)}`,
-      { headers: { Accept: "application/json" }, cache: "no-store", signal },
-    );
-    if (!response.ok) return null;
-    return (await response.json()) as unknown;
+    const list = await listArtifacts(pursuitId, kind, signal);
+    return list.items[0] ?? null;
   } catch {
     return null;
   }

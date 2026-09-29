@@ -334,7 +334,12 @@ export class MockApi {
     if (actionMatch && method === "POST") {
       if (!this.options.pipelineActions) return json(404, { detail: "Not Found" });
       const [, opportunityId, action] = actionMatch;
-      return json(201, { id: this.nextId("pursuit"), opportunity_id: opportunityId, action, ...(body as Json) });
+      // The real route is idempotent per (profile, opportunity): a second Pursue
+      // returns the pursuit that already exists (services.pursuits.get_or_create),
+      // which is the one the board and the workspace then open.
+      const existing = this.pursuits.find((row) => row.opportunity_id === opportunityId);
+      const id = existing ? String(existing.id) : this.nextId("pursuit");
+      return json(201, { id, opportunity_id: opportunityId, action, ...(body as Json) });
     }
     const opportunityMatch = pathname.match(/^\/api\/v1\/opportunities\/([^/]+)$/);
     if (opportunityMatch && method === "GET") {
@@ -725,6 +730,17 @@ export class MockApi {
 
   // --- M5-18 pursuit workspace: matrix, packet, drafts, gates, exports -------
 
+  /** `app.core.compliance.ARTIFACT_KINDS`: anything else is the route's 422. */
+  static readonly ARTIFACT_KINDS: readonly string[] = [
+    "format_rules",
+    "checklist",
+    "packet",
+    "scorecard",
+    "outline",
+    "pricing_template",
+    "red_team",
+  ];
+
   /** The 409 the PUT answers on a stale base_version (api/v1/drafts.py). */
   static staleDraft(sectionId: string, current: number, base: number): string {
     return (
@@ -783,11 +799,25 @@ export class MockApi {
     if (rest === "matrix" && method === "GET") return json(200, this.workspace.matrix);
     if (rest === "packet" && method === "GET") return json(200, this.workspace.packet);
 
+    // GET /pursuits/{id}/artifacts?kind= -- the same envelope the real route serves
+    // (M7-14): the LATEST version of each kind, and an empty list rather than a 404
+    // when the agent that writes that kind has not run.
     if (rest === "artifacts" && method === "GET") {
       const kind = params.get("kind");
-      if (kind === "scorecard") return json(200, this.workspace.scorecard);
-      if (kind === "pricing_template") return json(200, this.workspace.pricing);
-      return json(404, { detail: "no such artifact" });
+      const stored = [this.workspace.scorecard, this.workspace.pricing];
+      if (kind !== null && !MockApi.ARTIFACT_KINDS.includes(kind)) {
+        return json(422, { detail: `unknown artifact kind '${kind}'` });
+      }
+      const items = stored.filter((row) => kind === null || (row as Json).kind === kind);
+      return json(200, { pursuit_id: pursuitId, items, count: items.length, kind });
+    }
+
+    const artifactMatch = rest.match(/^artifacts\/([^/]+)$/);
+    if (artifactMatch && method === "GET") {
+      const row = [this.workspace.scorecard, this.workspace.pricing].find(
+        (item) => (item as Json).id === artifactMatch[1],
+      );
+      return row ? json(200, row) : json(404, { detail: "artifact not found" });
     }
 
     if (rest === "drafts" && method === "GET") {

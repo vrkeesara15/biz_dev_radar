@@ -171,6 +171,41 @@ async def latest_artifact(
     ).scalar_one_or_none()
 
 
+async def latest_artifacts(
+    session: AsyncSession, pursuit_id: uuid.UUID, kind: str | None = None
+) -> list[PursuitArtifact]:
+    """The LATEST version of each artifact kind this pursuit has, in `ARTIFACT_KINDS`
+    order; `kind` narrows it to that one (so the caller gets a list of 0 or 1).
+
+    Older versions are never returned here: the history is reachable one row at a time
+    through `get_artifact`, and a reader that wants "the scorecard" wants the current one
+    (OQ-147). Unknown kinds answer an empty list rather than raising, because the filter
+    comes from a query string.
+    """
+    if kind is not None and kind not in ARTIFACT_KINDS:
+        return []
+    stmt = select(PursuitArtifact).where(PursuitArtifact.pursuit_id == pursuit_id)
+    if kind is not None:
+        stmt = stmt.where(PursuitArtifact.kind == kind)
+    rows = (await session.execute(stmt.order_by(PursuitArtifact.version.desc()))).scalars().all()
+    newest: dict[str, PursuitArtifact] = {}
+    for row in rows:  # version desc, so the first row of a kind is its latest
+        newest.setdefault(row.kind, row)
+    order = {name: index for index, name in enumerate(ARTIFACT_KINDS)}
+    return sorted(newest.values(), key=lambda row: order.get(row.kind, len(order)))
+
+
+async def get_artifact(
+    session: AsyncSession, pursuit_id: uuid.UUID, artifact_id: uuid.UUID
+) -> PursuitArtifact:
+    """One stored artifact version by id. 404 when it belongs to another pursuit (or,
+    under RLS, another tenant), so a guessed id never leaks a kind or a version number."""
+    row = await session.get(PursuitArtifact, artifact_id)
+    if row is None or row.pursuit_id != pursuit_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="artifact not found")
+    return row
+
+
 # --- M6-01: stages, pursue / watch / pass, listing ------------------------------------------
 
 
