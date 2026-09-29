@@ -61,8 +61,52 @@ def test_frontend_job(repo_root: Path) -> None:
     assert "hashFiles('frontend/package.json')" in job["if"]
     assert job["defaults"]["run"]["working-directory"] == "frontend"
     text = _steps_text(job)
-    for cmd in ("pnpm install --frozen-lockfile", "pnpm lint", "pnpm typecheck", "pnpm build"):
+    for cmd in (
+        "pnpm install --frozen-lockfile",
+        "pnpm lint",
+        "pnpm typecheck",
+        "pnpm test",
+        "pnpm build",
+    ):
         assert cmd in text
+
+
+def test_frontend_job_runs_playwright_with_a_browser(repo_root: Path) -> None:
+    """M7-13 acceptance: the SPEC 12 UI flows and the axe check run in CI.
+
+    `pnpm e2e` skips itself (exit 0) when Chromium is missing, so the job must
+    both install the browser and set E2E_REQUIRE_BROWSER, or a green CI would
+    mean nothing.
+    """
+    job = _workflow(repo_root)["jobs"]["frontend-lint-build"]
+    steps = job["steps"]
+    text = _steps_text(job)
+    assert "playwright install --with-deps chromium" in text
+    e2e_steps = [step for step in steps if str(step.get("run", "")).strip() == "pnpm e2e"]
+    assert e2e_steps, "the frontend job must run `pnpm e2e`"
+    assert str(e2e_steps[0].get("env", {}).get("E2E_REQUIRE_BROWSER")) == "1"
+
+    # The browser must be installed BEFORE the run that needs it.
+    order = [str(step.get("run", "")) for step in steps]
+    install_at = next(i for i, run in enumerate(order) if "playwright install" in run)
+    e2e_at = next(i for i, run in enumerate(order) if run.strip() == "pnpm e2e")
+    assert install_at < e2e_at
+
+
+def test_frontend_job_uploads_the_playwright_report_on_failure(repo_root: Path) -> None:
+    """A red axe check is unreadable without the trace and the report."""
+    job = _workflow(repo_root)["jobs"]["frontend-lint-build"]
+    uploads = [
+        step
+        for step in job["steps"]
+        if "upload-artifact" in str(step.get("uses", ""))
+        and "playwright" in str(step.get("with", {}).get("name", ""))
+    ]
+    assert uploads, "the frontend job must upload the Playwright report"
+    step = uploads[0]
+    assert step.get("if") == "failure()"
+    path = str(step["with"]["path"])
+    assert "playwright-report" in path and "test-results" in path
 
 
 def test_makefile_test_target_is_the_gate(repo_root: Path) -> None:

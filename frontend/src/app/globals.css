@@ -60,10 +60,22 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /* M7-13 (SPEC 12 axe check): the shadcn default oklch(0.556 0 0) is
+     #737373, which is 4.34:1 on `bg-muted` (#f5f5f5) -- under WCAG AA --
+     and the muted chip (a closed notice, a pending document, an unknown
+     eligibility check, a low fit band) is exactly that pairing. Deepened to
+     #6c6c6c: 4.84:1 on the muted tint and 5.28:1 on white. */
+  --muted-foreground: oklch(0.53 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  /* M7-13 (SPEC 12 axe check): the shadcn default oklch(0.577 0.245 27.325)
+     is #e7000b, which is only 3.98:1 against its own `bg-destructive/10`
+     tint -- below WCAG AA 4.5:1 -- and every "fail"/"urgent"/"cancelled"
+     badge in the app is that pairing. Deepened to #b70000, which is 5.8:1 on
+     the /10 tint, 4.7:1 on the /20 hover tint and 7.0:1 on white. Nothing
+     renders text ON solid --destructive (only a progress-bar fill), so this
+     is safe to darken. */
+  --destructive: oklch(0.47 0.22 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);

@@ -62,31 +62,40 @@ export function AdminScreen() {
         </p>
       </header>
 
-      <nav aria-label="Admin sections" className="flex flex-wrap gap-1 border-b">
-        {TABS.map((item) => {
-          const active = item.id === tab;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              data-testid={`admin-tab-${item.id}`}
-              onClick={() => setParams({ tab: item.id })}
-              className={cn(
-                "-mb-px border-b-2 px-3 py-2 text-sm transition-colors",
-                active
-                  ? "border-primary font-medium text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {item.label}
-            </button>
-          );
-        })}
+      {/* M7-13: role="tab" needs a role="tablist" parent, and each tab needs to
+          name the panel it controls — without them a screen reader announces
+          five loose buttons and a panel with no owner (axe
+          `aria-required-parent`). Every tab stays in the natural tab order
+          rather than using a roving tabindex, so no tab becomes unreachable. */}
+      <nav aria-label="Admin sections" className="border-b">
+        <div role="tablist" aria-label="Admin sections" className="flex flex-wrap gap-1">
+          {TABS.map((item) => {
+            const active = item.id === tab;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                id={`admin-tab-${item.id}`}
+                aria-selected={active}
+                aria-controls={active ? "admin-tabpanel" : undefined}
+                data-testid={`admin-tab-${item.id}`}
+                onClick={() => setParams({ tab: item.id })}
+                className={cn(
+                  "-mb-px border-b-2 px-3 py-2 text-sm transition-colors",
+                  active
+                    ? "border-primary font-medium text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
       </nav>
 
-      <div role="tabpanel" aria-label={TABS.find((t) => t.id === tab)?.label}>
+      <div role="tabpanel" id="admin-tabpanel" aria-labelledby={`admin-tab-${tab}`}>
         {tab === "sources" ? (
           <SourcesTab
             onOpenRuns={(sourceId) => setParams({ tab: "runs", source: sourceId })}

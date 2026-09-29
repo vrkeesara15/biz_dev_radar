@@ -21,8 +21,14 @@ test("home shows high-fit matches, this week's dates, the KPI row and the alerts
   await expect(page.getByRole("heading", { level: 1, name: "Home" })).toBeVisible();
 
   // High-fit today: the API is asked for the scored, still-biddable notices only.
+  // Polled, not read once: the card fetches after the heading paints, and under
+  // a loaded dev server that read can land after this line (M7-13).
+  await expect
+    .poll(() =>
+      api.requests.find((r) => r.method === "GET" && r.path === "/api/v1/opportunities")?.search,
+    )
+    .toContain("min_score=70");
   const search = api.requests.find((r) => r.method === "GET" && r.path === "/api/v1/opportunities");
-  expect(search?.search).toContain("min_score=70");
   expect(search?.search).toContain("status=open%2Cclosing_soon");
   const highFit = page.getByTestId("high-fit-card");
   await expect(highFit.getByTestId("high-fit-list").getByRole("listitem")).toHaveCount(2);

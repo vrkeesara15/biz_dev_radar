@@ -2203,7 +2203,7 @@
       "axe-core check on each flow page with zero serious/critical violations",
       "Runs in CI on the frontend job"
     ],
-    "status": "todo"
+    "status": "done"
   },
   {
     "id": "M7-14",

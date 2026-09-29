@@ -35,12 +35,21 @@ export function ScorecardPanel({ scorecard }: { scorecard: Scorecard }) {
           {SCORECARD_CRITERIA.map((criterion) => {
             const value = scorecard[criterion.key] as number;
             return (
-              <div key={criterion.key} data-testid="scorecard-criterion" data-criterion={criterion.key}>
-                <div className="flex items-baseline justify-between text-sm">
-                  <dt>{criterion.label}</dt>
-                  <dd className="tabular-nums font-medium">{value}</dd>
-                </div>
-                <Progress value={value} label={`${criterion.label} score`} className="mt-1" />
+              // M7-13: a <dl> may hold <div> groups, but each group must contain
+              // only <dt>/<dd> — a wrapper div or a bare progressbar inside one
+              // breaks the list for a screen reader (axe `definition-list`). The
+              // bar is therefore a second <dd> of the same term.
+              <div
+                key={criterion.key}
+                data-testid="scorecard-criterion"
+                data-criterion={criterion.key}
+                className="grid grid-cols-[1fr_auto] items-baseline gap-x-2 text-sm"
+              >
+                <dt>{criterion.label}</dt>
+                <dd className="tabular-nums font-medium">{value}</dd>
+                <dd className="col-span-2">
+                  <Progress value={value} label={`${criterion.label} score`} className="mt-1" />
+                </dd>
               </div>
             );
           })}
