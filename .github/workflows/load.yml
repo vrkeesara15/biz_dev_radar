@@ -56,8 +56,8 @@ jobs:
       LOAD_SCALE: ${{ github.event.inputs.scale || '0.1' }}
       LOAD_WORKERS: ${{ github.event.inputs.workers || '2' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
@@ -80,7 +80,7 @@ jobs:
         run: make load-smoke
       - name: Upload the load report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: load-report
           path: load-report/
