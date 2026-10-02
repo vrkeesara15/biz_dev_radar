@@ -36,6 +36,7 @@ matching `app/core/config.py`.
 | [runbooks/broken-source.md](runbooks/broken-source.md) | A portal changed its layout, an API started erroring, the nightly smoke went red, or `adapter.failing` fired |
 | [runbooks/deploy.md](runbooks/deploy.md) | Shipping to dev, promoting a tag to staging and production, deploying by hand, rolling back |
 | [runbooks/india-testing.md](runbooks/india-testing.md) | **The SPEC 12 India checklist.** Every item with its owner, the automated test id or the step-by-step manual procedure (WhatsApp templates, SES Mumbai, Razorpay GST, residency, ISP latency, the two pilot bids), and the evidence to capture |
+| [runbooks/railway.md](runbooks/railway.md) | **The cheap demo deployment.** The Railway topology (Postgres, Redis, api, worker, beat, frontend; migrate as api's pre-deploy), the per-service settings and env tables, the `railway up` bring-up, pgvector on Railway's Postgres 18, and the four things it cannot do — no object store, the OQ-11 membership stub, US only, no WhatsApp/Razorpay |
 | [runbooks/observability.md](runbooks/observability.md) | Turning traces, errors and LLM traces on, and answering "what happened to this request?" |
 | [runbooks/restore-drill.md](runbooks/restore-drill.md) | Backups, PITR, the restore drill, and the real restore when the day comes |
 

@@ -443,6 +443,12 @@ Full procedure, hand-deploy, rollback and the first-deploy secret bootstrap:
 generated from the adapter registry
 ([infra/cloudrun/README.md](infra/cloudrun/README.md)).
 
+**Railway** is the cheap alternative for a demo: one Postgres, one Redis and four
+services (api, worker, beat, frontend) built from `backend/` and `frontend/` with
+`railway up`, the schema migration running as api's pre-deploy hook. Step by step,
+with the env tables and what it cannot do (no object store, OQ-11 membership stub):
+**[docs/runbooks/railway.md](docs/runbooks/railway.md)**.
+
 ## Documentation
 
 Everything is indexed in **[docs/index.md](docs/index.md)**. The pages you are most
