@@ -1,11 +1,16 @@
 import { SignJWT } from "jose";
 import NextAuth, { type NextAuthConfig } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import Nodemailer from "next-auth/providers/nodemailer";
 
 import { authConfig } from "@/auth.config";
 import { createMemoryAdapter } from "@/lib/auth-adapter";
+import {
+  DEV_LOGIN_PROVIDER_ID,
+  authorizeDevLogin,
+} from "@/lib/auth-dev-login";
 import { getProviderAvailability } from "@/lib/auth-providers";
 
 /**
@@ -27,6 +32,19 @@ function buildProviders(): NextAuthConfig["providers"] {
   }
   if (available.google) providers.push(Google);
   if (available.microsoft) providers.push(MicrosoftEntraID);
+  // Demo only, and only when AUTH_DEV_LOGIN=1 AND AUTH_DEV_LOGIN_EMAILS is non-empty.
+  // Unset, the provider is not registered at all, so the callback route 404s rather
+  // than relying on `authorize` to say no (it says no anyway — belt and braces).
+  if (available.devLogin) {
+    providers.push(
+      Credentials({
+        id: DEV_LOGIN_PROVIDER_ID,
+        name: "Demo sign-in",
+        credentials: { email: { label: "Email", type: "email" } },
+        authorize: (credentials) => authorizeDevLogin(credentials),
+      }),
+    );
+  }
   return providers;
 }
 

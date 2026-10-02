@@ -11,7 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getProviderAvailability } from "@/lib/auth-providers";
 
-import { signInWithEmail, signInWithGoogle, signInWithMicrosoft } from "./actions";
+import {
+  signInWithDevLogin,
+  signInWithEmail,
+  signInWithGoogle,
+  signInWithMicrosoft,
+} from "./actions";
 
 export const metadata: Metadata = { title: "Sign in" };
 export const dynamic = "force-dynamic";
@@ -23,6 +28,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: "You do not have access to this workspace.",
   Configuration: "Sign-in is not configured. Contact your administrator.",
   Verification: "That sign-in link has expired or was already used.",
+  CredentialsSignin: "That email is not on the demo allowlist.",
 };
 
 type SignInPageProps = {
@@ -55,6 +61,33 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             >
               {errorMessage}
             </p>
+          ) : null}
+
+          {available.devLogin ? (
+            <form action={signInWithDevLogin} className="grid gap-3">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                  Demo mode
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  no password, allowlisted addresses only
+                </span>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="dev-email">Demo email</Label>
+                <Input
+                  id="dev-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Sign in (demo)
+              </Button>
+            </form>
           ) : null}
 
           <form action={signInWithEmail} className="grid gap-3">

@@ -25,9 +25,11 @@ All are listed with placeholders in `.env.example`; none are committed.
 | `EMAIL_SERVER`, `EMAIL_FROM` | SMTP URL and sender for magic-link sign-in (Mailpit locally: `smtp://localhost:1025`) |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth |
 | `AUTH_MICROSOFT_ENTRA_ID_ID`, `AUTH_MICROSOFT_ENTRA_ID_SECRET`, `AUTH_MICROSOFT_ENTRA_ID_ISSUER` | Microsoft Entra ID OAuth (issuer optional; omit for multi-tenant) |
+| `AUTH_DEV_LOGIN` | **Demo only.** `1` registers an Auth.js Credentials provider (`dev-login`) that issues a session to an allowlisted address with **no password and no proof the person owns it**. Anything else, including unset, registers nothing and the form is not rendered. Never set it in front of real data; use Google or Microsoft OAuth instead |
+| `AUTH_DEV_LOGIN_EMAILS` | Comma-separated addresses `dev-login` accepts, matched exactly and case-insensitively. Empty or unset means nobody — the provider is not registered at all, so the flag alone does nothing |
 | `BIDRADAR_DEV_TENANT_ID`, `BIDRADAR_DEV_ROLE` | Dev-only fallback for the `tenant_id` / `role` JWT claims until `resolveMembership()` calls the backend |
-| `NEXT_PUBLIC_API_URL` | Backend base URL used by the API client (default `http://localhost:8000`) |
-| `API_URL` | Spec source for `pnpm gen:api` when `../backend/openapi.json` is absent |
+| `API_URL` | **Backend base URL, read at runtime and preferred over `NEXT_PUBLIC_API_URL`** (OQ-77). Server-side only: the browser calls `/api/v1/...` on this origin and `src/app/api/v1/[...path]/route.ts` proxies it. A plain variable rather than a `NEXT_PUBLIC_*` one so a single image serves several environments without a rebuild. Also the spec source for `pnpm gen:api` when `../backend/openapi.json` is absent. Default `http://localhost:8000` |
+| `NEXT_PUBLIC_API_URL` | Build-time fallback for the above, inlined into the bundle by `next build`; used only when `API_URL` is unset. The Docker build arg of the same name sets it (`NEXT_PUBLIC_API_BASE_URL` is the deprecated alias). Default `http://localhost:8000` |
 | `NEXT_PUBLIC_REGION` | `US` (default) or `IN`; shown as the region badge in the top bar |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | _Optional._ RFC 8292 VAPID public key; the browser reads the key from `GET /api/v1/me/push-config` at runtime (M7-15) and only falls back to this build-time value when that route answers 404. Without either, the web-push button says push is not configured |
 
@@ -43,6 +45,14 @@ that method as disabled.
 - `src/auth.ts` – full config with Nodemailer, Google and Microsoft Entra ID
   providers, plus `getApiToken()`: signs a 15-minute HS256 JWT
   `{sub, email, tenant_id, role, iat, exp}` with `AUTH_SECRET` for the backend.
+- `src/lib/auth-dev-login.ts` – **demo-only credentials provider** (`dev-login`),
+  registered only when `AUTH_DEV_LOGIN=1` *and* `AUTH_DEV_LOGIN_EMAILS` is non-empty.
+  It issues a session to an allowlisted address with **no password and no proof of
+  ownership**, so it exists purely for a deployment that has neither an OAuth client
+  nor SMTP (a fresh Railway project, say) and would otherwise have no way in. The
+  sign-in page shows a **demo mode** badge whenever it is live, and
+  `resolveMembership()` then hands that user the one configured tenant and role
+  (OQ-11). Turn it off and configure Google or Microsoft before anything real.
 - `src/types/next-auth.d.ts` – `Session.user` / `JWT` type augmentation.
 - `src/lib/auth-adapter.ts` – **dev-only in-memory adapter**. Auth.js requires
   an adapter for magic-link tokens even with JWT sessions; it is attached only
@@ -58,9 +68,12 @@ pnpm gen:api    # ../backend/openapi.json if present, else $API_URL/openapi.json
 
 Writes `src/lib/api/schema.d.ts` (openapi-typescript). The committed file is a
 hand-written placeholder covering only `GET /healthz` and is overwritten by the
-script. `src/lib/api/client.ts` exports `api`, an `openapi-fetch` client with
-base URL `NEXT_PUBLIC_API_URL` and a middleware that attaches the bearer token
-from `getApiToken()` (server-side use).
+script. `src/lib/api/client.ts` exports `api`, an `openapi-fetch` client whose
+base URL comes from `resolveApiBaseUrl()` — `API_URL ?? NEXT_PUBLIC_API_URL ??
+http://localhost:8000`, resolved at runtime (OQ-77) — and a middleware that attaches
+the bearer token from `getApiToken()` (server-side use). The same-origin proxy at
+`src/app/api/v1/[...path]/route.ts` calls `resolveApiBaseUrl()` per request, so a
+deployment can repoint the API with a variable and no rebuild.
 
 ```ts
 import { api } from "@/lib/api/client";
