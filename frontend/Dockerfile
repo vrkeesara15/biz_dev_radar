@@ -11,7 +11,7 @@
 # deps (pnpm install), builder (next build -> .next/standalone), runtime (node, non-root).
 
 # ---------------------------------------------------------------- deps
-FROM node:22-alpine AS deps
+FROM node:26-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
@@ -19,7 +19,7 @@ RUN \
     pnpm config set store-dir /pnpm-store && pnpm install --frozen-lockfile
 
 # ---------------------------------------------------------------- builder
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -42,7 +42,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
 RUN pnpm build
 
 # ---------------------------------------------------------------- runtime
-FROM node:22-alpine AS runtime
+FROM node:26-alpine AS runtime
 # AT RUNTIME, `API_URL` wins (src/lib/api/client.ts resolves
 # API_URL ?? NEXT_PUBLIC_API_URL ?? http://localhost:8000). Set it per environment — on
 # Railway `API_URL=http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080` — and the image needs no
