@@ -16,6 +16,9 @@ node_modules/
 .next/
 out/
 coverage/
+# filled-in Railway variable files; infra/railway/env/*.env.example are the templates
+infra/railway/env/*.env
+!infra/railway/env/*.env.example
 # loop logs
 logs/*.jsonl
 # terraform

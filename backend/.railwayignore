@@ -1,0 +1,24 @@
+# What `railway up` must NOT upload from backend/ (the upload root for api, worker and
+# beat). The image's own build context is trimmed by .dockerignore; this file is about
+# the tarball that crosses the wire — .venv alone is ~390 MB and is rebuilt in the
+# image from uv.lock anyway, so leaving it out is the difference between a minute and
+# ten. railway.json, Dockerfile, docker/, app/, migrations/, alembic.ini, pyproject.toml
+# and uv.lock must all stay.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.storage/
+logs/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store

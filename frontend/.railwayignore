@@ -1,0 +1,16 @@
+# What `railway up` must NOT upload from frontend/ (the upload root for the web
+# service). node_modules (~990 MB) is installed inside the image from pnpm-lock.yaml and
+# .next (~685 MB) is a host build cache that must never reach the builder. railway.json,
+# Dockerfile, package.json, pnpm-lock.yaml, src/, public/ and the config files stay.
+node_modules/
+.next/
+out/
+.turbo/
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
