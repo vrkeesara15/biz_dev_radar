@@ -66,7 +66,7 @@ def test_backend_has_a_healthcheck_on_healthz(backend_dockerfile: str) -> None:
 
 
 def test_backend_entrypoint_supports_every_mode(entrypoint: str) -> None:
-    for mode in ("api)", "worker)", "beat)", "job:*)", "migrate)", "smoke)"):
+    for mode in ("api)", "worker)", "beat)", "job:*)", "migrate)", "seed)", "smoke)"):
         assert mode in entrypoint, f"entrypoint.sh has no {mode} branch"
     assert "uvicorn app.main:app" in entrypoint
     assert "celery -A app.celery_app worker" in entrypoint
@@ -74,6 +74,69 @@ def test_backend_entrypoint_supports_every_mode(entrypoint: str) -> None:
     assert "app.jobs.run_source" in entrypoint
     assert "alembic upgrade head" in entrypoint
     assert "app.jobs.smoke" in entrypoint
+    assert "app.seed" in entrypoint
+
+
+def _run_migrations_body(entrypoint: str) -> str:
+    """The body of the `run_migrations()` shell function, comments and all."""
+    start = entrypoint.index("run_migrations() {")
+    end = entrypoint.index("\n}\n", start)
+    return entrypoint[start:end]
+
+
+def _command_line(body: str, command: str) -> int:
+    """Line number of the line that *runs* `command` (not one that mentions it)."""
+    for number, line in enumerate(body.splitlines()):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        if stripped.startswith(command):
+            return number
+    raise AssertionError(f"no line runs {command!r}")
+
+
+def _case_branch(entrypoint: str, mode: str) -> str:
+    """One `case` arm of the entrypoint, from `  <mode>)` to its `    ;;`."""
+    start = entrypoint.index(f"\n  {mode})\n")
+    return entrypoint[start : entrypoint.index("\n    ;;", start)]
+
+
+def test_migrate_bootstraps_a_managed_database_before_the_schema(entrypoint: str) -> None:
+    """Railway prep: a managed Postgres has no initdb hook, so the extensions and the
+    non-owner app role are created before alembic, and the seed after it."""
+    body = _run_migrations_body(entrypoint)
+    assert 'BOOTSTRAP_DB:-1}" = "1"' in body, "BOOTSTRAP_DB must default to on"
+    # Match the COMMANDS, not the prose: the comments name alembic too.
+    bootstrap_at = _command_line(body, "python -m app.jobs.bootstrap_db")
+    alembic_at = _command_line(body, "alembic upgrade head")
+    seed_at = _command_line(body, "python -m app.seed")
+    assert bootstrap_at < alembic_at < seed_at, "order must be bootstrap -> migrate -> seed"
+
+
+def test_only_the_schema_owner_migrates(entrypoint: str) -> None:
+    """Every backend service shares one railway.json and therefore one
+    preDeployCommand, so the gate is a variable: without RUN_MIGRATIONS=1 the function
+    returns 0 immediately. Two concurrent `alembic upgrade head` runs would race."""
+    body = _run_migrations_body(entrypoint)
+    gate = body.index('RUN_MIGRATIONS:-0}" != "1"')
+    ddl = body.index("python -m app.jobs.bootstrap_db")
+    assert gate < ddl, "the RUN_MIGRATIONS gate must come before any DDL"
+    assert "return 0" in body[gate:ddl], "the gate must return, not fall through"
+    for mode in ("worker", "beat"):
+        assert "run_migrations" not in _case_branch(entrypoint, mode), f"{mode} must never migrate"
+
+
+def test_api_migrates_on_start_as_well_as_in_the_pre_deploy_hook(entrypoint: str) -> None:
+    """Railway does not reliably run railway.json's preDeployCommand for a CLI-uploaded
+    service, and a deploy that silently skips the migration fails later with
+    `password authentication failed for user "bidradar_app"`. The api branch therefore
+    calls the same idempotent function itself, still behind RUN_MIGRATIONS=1."""
+    api = _case_branch(entrypoint, "api")
+    assert "run_migrations" in api
+    assert 'RUN_MIGRATIONS:-0}" = "1"' in api
+    assert api.index("run_migrations") < api.index("exec uvicorn"), (
+        "the schema must be current before the server accepts a request"
+    )
 
 
 def test_entrypoint_starts_clamd_only_when_configured(entrypoint: str) -> None:
@@ -100,6 +163,21 @@ def test_frontend_builds_a_standalone_bundle(repo_root: Path, frontend_dockerfil
     assert "/app/.next/standalone" in frontend_dockerfile
     assert "/app/.next/static" in frontend_dockerfile
     assert 'CMD ["node", "server.js"]' in frontend_dockerfile
+
+
+def test_frontend_api_url_is_a_runtime_variable(frontend_dockerfile: str, repo_root: Path) -> None:
+    """OQ-77: `NEXT_PUBLIC_*` is inlined at BUILD time, so one image could not serve two
+    environments. The server-side proxy now reads plain `API_URL` at runtime; the build
+    arg is only the fallback baked into the bundle."""
+    assert "ARG NEXT_PUBLIC_API_URL" in frontend_dockerfile
+    assert "ENV NEXT_PUBLIC_API_URL" in frontend_dockerfile
+    # the old name stays as a deprecated alias so an existing pipeline keeps building
+    assert "NEXT_PUBLIC_API_BASE_URL" in frontend_dockerfile
+    assert "API_URL" in frontend_dockerfile.split("AS runtime", 1)[1], (
+        "the runtime stage must document that API_URL wins at runtime"
+    )
+    client = (repo_root / "frontend" / "src" / "lib" / "api" / "client.ts").read_text()
+    assert "process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL" in client
 
 
 def test_frontend_runs_as_non_root_on_port_3000(frontend_dockerfile: str) -> None:

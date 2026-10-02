@@ -10,6 +10,7 @@ attributes (internal, enterprise, us).
 from __future__ import annotations
 
 import asyncio
+import json
 import sys
 from dataclasses import dataclass
 
@@ -29,9 +30,32 @@ INTERNAL_NAME = "BidRadar (internal)"
 class SeedResult:
     tenant_id: str
     user_id: str
+    admin_email: str
     created_tenant: bool
     created_user: bool
     created_membership: bool
+
+    def as_json(self) -> str:
+        """One machine-readable line for a deploy script.
+
+        The frontend's `BIDRADAR_DEV_TENANT_ID` (the OQ-11 membership stub) has to be
+        the internal tenant's uuid, which only exists after this seed runs. Printing it
+        as JSON on stdout means the Railway runbook can do
+        `railway logs --service api | grep internal_tenant_id` instead of asking a
+        human to copy a uuid out of prose. The key is `internal_tenant_id` rather than
+        `tenant_id` so it is greppable in a log line that also mentions other ids.
+        """
+        return json.dumps(
+            {
+                "internal_tenant_id": self.tenant_id,
+                "user_id": self.user_id,
+                "admin_email": self.admin_email,
+                "created_tenant": self.created_tenant,
+                "created_user": self.created_user,
+                "created_membership": self.created_membership,
+            },
+            sort_keys=True,
+        )
 
     def summary(self) -> str:
         return (
@@ -89,6 +113,7 @@ async def seed(database: Database, admin_email: str) -> SeedResult:
         return SeedResult(
             tenant_id=str(tenant.id),
             user_id=str(user.id),
+            admin_email=email,
             created_tenant=created_tenant,
             created_user=created_user,
             created_membership=created_membership,
@@ -102,7 +127,10 @@ async def run(settings: Settings | None = None, database: Database | None = None
 
 def main() -> int:
     result = asyncio.run(run())
-    sys.stdout.write(result.summary() + "\n")
+    # stdout is the JSON line a script parses; the prose goes to stderr so a pipe
+    # into `jq` stays clean.
+    sys.stderr.write(result.summary() + "\n")
+    sys.stdout.write(result.as_json() + "\n")
     return 0
 
 

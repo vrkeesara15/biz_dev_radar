@@ -169,6 +169,7 @@ variable "secret_settings" {
   default = [
     "database_url",
     "database_url_owner",
+    "app_db_password",
     "redis_url",
     "auth_secret",
     "field_encryption_key",

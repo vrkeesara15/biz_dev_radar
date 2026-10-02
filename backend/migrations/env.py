@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
 from logging.config import fileConfig
 
 import app.models  # noqa: F401  (registers every table on Base.metadata)
@@ -21,12 +20,12 @@ target_metadata = Base.metadata
 
 
 def _url() -> str:
-    url = os.environ.get("DATABASE_URL_OWNER")
-    if not url:
-        from app.core.config import get_settings
+    # Settings reads DATABASE_URL_OWNER itself and normalizes managed-Postgres URLs
+    # (postgres:// / postgresql:// -> postgresql+asyncpg://, sslmode -> ssl), so the
+    # async engine never falls back to the psycopg driver that the image omits.
+    from app.core.config import get_settings
 
-        url = get_settings().database_url_owner
-    return url
+    return get_settings().database_url_owner
 
 
 def run_migrations_offline() -> None:

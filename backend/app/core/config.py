@@ -10,6 +10,7 @@ import json
 from enum import StrEnum
 from functools import lru_cache
 from typing import Annotated, Any
+from urllib.parse import parse_qsl, urlencode
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -66,6 +67,7 @@ DEFAULT_LLM_PRICES: dict[str, dict[str, float]] = {
 SECRET_SETTINGS: tuple[str, ...] = (
     "database_url",
     "database_url_owner",
+    "app_db_password",
     "redis_url",
     "auth_secret",
     "field_encryption_key",
@@ -92,6 +94,53 @@ SECRET_SETTINGS: tuple[str, ...] = (
 )
 
 
+ASYNCPG_SCHEME = "postgresql+asyncpg"
+# Schemes a managed provider hands out that mean "Postgres, pick a driver yourself".
+PLAIN_POSTGRES_SCHEMES = frozenset({"postgres", "postgresql"})
+
+
+def normalize_database_url(value: str) -> str:
+    """Make a managed-Postgres DSN usable by SQLAlchemy's asyncpg dialect.
+
+    Railway (`${{Postgres.DATABASE_URL}}`), Heroku, Neon and RDS all emit libpq DSNs:
+
+        postgres://user:pw@host:5432/db
+        postgresql://user:pw@host/db?sslmode=require
+
+    Two things are wrong with those for us. The scheme carries no driver, so
+    `create_async_engine` picks psycopg2 and fails; and `sslmode` is a libpq keyword
+    that SQLAlchemy forwards verbatim to `asyncpg.connect()`, which raises
+    ``TypeError: unexpected keyword argument 'sslmode'``. asyncpg spells the same
+    thing ``ssl`` and accepts the identical vocabulary (disable / allow / prefer /
+    require / verify-ca / verify-full), so the rename is lossless.
+
+    Railway's **internal** hostnames (`postgres.railway.internal`) sit on the project's
+    private IPv6 network and need no TLS at all — their DSN carries no `sslmode` and
+    none should be added. Only the public `*.proxy.rlwy.net` host needs it, and its DSN
+    already says so.
+
+    A DSN that already names a driver (`postgresql+asyncpg://`, `postgresql+psycopg://`)
+    is left alone apart from the `sslmode` rename, which only applies to asyncpg.
+    """
+    if not value or "://" not in value:
+        return value
+    scheme, _, rest = value.partition("://")
+    lowered = scheme.lower()
+    if lowered in PLAIN_POSTGRES_SCHEMES:
+        scheme = ASYNCPG_SCHEME
+    elif not lowered.startswith("postgres"):
+        return value
+    base, question, query = rest.partition("?")
+    if not question or scheme != ASYNCPG_SCHEME:
+        return f"{scheme}://{rest}"
+    pairs = [
+        ("ssl" if key == "sslmode" else key, val)
+        for key, val in parse_qsl(query, keep_blank_values=True)
+    ]
+    rebuilt = urlencode(pairs)
+    return f"{scheme}://{base}?{rebuilt}" if rebuilt else f"{scheme}://{base}"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -112,6 +161,16 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://bidradar_app:bidradar_app@localhost:5433/bidradar"
     database_url_owner: str = "postgresql+asyncpg://bidradar:bidradar@localhost:5433/bidradar"
     redis_url: str = "redis://localhost:6380/0"
+    # Managed Postgres bootstrap (app/jobs/bootstrap_db.py). The compose stack runs
+    # infra/postgres/sql/{roles,extensions}.sql at initdb time; a managed provider has no
+    # initdb hook and gives you exactly one owner role, so the non-owner `bidradar_app`
+    # role that every RLS policy depends on has to be created at DEPLOY time instead.
+    # APP_DB_PASSWORD is that role's password and the one DATABASE_URL must carry.
+    app_db_password: str = ""
+    # `docker/entrypoint.sh migrate` runs the bootstrap before `alembic upgrade head`
+    # when this is on. Turn it off once the role and extensions exist and the deploy
+    # role no longer has (or should have) CREATE ROLE.
+    bootstrap_db: bool = True
     # Celery (SPEC 10.1): eager mode runs tasks inline (tests, single-process dev); the
     # admin "run now" endpoint falls back to inline when the broker is unreachable within
     # this many seconds.
@@ -365,6 +424,12 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return json.loads(value) if value.strip() else {}
         return value
+
+    @field_validator("database_url", "database_url_owner", mode="before")
+    @classmethod
+    def _normalize_dsn(cls, value: Any) -> Any:
+        """Accept the DSN a managed provider actually hands out (see the docstring)."""
+        return normalize_database_url(value) if isinstance(value, str) else value
 
     @field_validator("embedding_dim")
     @classmethod

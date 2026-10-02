@@ -1,4 +1,9 @@
-# BidRadar front end (SPEC 10.1: Next.js 15 App Router) for Cloud Run.
+# BidRadar front end (SPEC 10.1: Next.js 15 App Router) for Cloud Run and Railway.
+#
+# The build CONTEXT is frontend/, not the repo root — every COPY below is relative to
+# it (`docker build -f frontend/Dockerfile .` fails on `COPY package.json
+# pnpm-lock.yaml`). On Railway that means `railway up` is run from frontend/, which is
+# also where railway.json lives.
 #
 #   docker build -t bidradar-frontend frontend
 #
@@ -10,7 +15,7 @@ FROM node:22-alpine AS deps
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,target=/pnpm-store \
+RUN \
     pnpm config set store-dir /pnpm-store && pnpm install --frozen-lockfile
 
 # ---------------------------------------------------------------- builder
@@ -19,15 +24,29 @@ RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# NEXT_PUBLIC_* are inlined at build time; the deploy workflow passes the env's API URL.
+# OQ-77. `NEXT_PUBLIC_*` is INLINED INTO THE BUNDLE at build time, which is why one
+# image could not serve two environments. It is now only a fallback: the server reads
+# the plain, runtime `API_URL` first (src/lib/api/client.ts), and nothing in the browser
+# needs the backend origin at all because client components go through the same-origin
+# proxy at src/app/api/v1/[...path]/route.ts.
+#
+# NEXT_PUBLIC_API_BASE_URL is the DEPRECATED spelling, kept so an existing pipeline
+# (infra/cloudrun, .github/workflows/deploy.yml) keeps building; it only supplies the
+# default for NEXT_PUBLIC_API_URL.
 ARG NEXT_PUBLIC_API_BASE_URL="http://localhost:8000"
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
+ARG NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_BASE_URL"
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
 RUN pnpm build
 
 # ---------------------------------------------------------------- runtime
 FROM node:22-alpine AS runtime
+# AT RUNTIME, `API_URL` wins (src/lib/api/client.ts resolves
+# API_URL ?? NEXT_PUBLIC_API_URL ?? http://localhost:8000). Set it per environment — on
+# Railway `API_URL=http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080` — and the image needs no
+# rebuild and no build argument, which `railway up` cannot pass anyway.
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \

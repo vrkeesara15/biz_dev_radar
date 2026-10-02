@@ -1,8 +1,13 @@
 # BidRadar backend image (SPEC 10.1 / 12). ONE image for api, worker, beat and every
-# per-adapter Cloud Run job; `docker/entrypoint.sh` picks the mode, REGION picks the
-# residency bucket and DB. Build from the repo root OR from backend/:
+# per-adapter Cloud Run job; `docker/entrypoint.sh` picks the mode (argument, else
+# $BIDRADAR_MODE), REGION picks the residency bucket and DB.
+#
+# The build CONTEXT is backend/, not the repo root — every COPY below is relative to it:
 #
 #   docker build -t bidradar-backend backend
+#
+# (`docker build -f backend/Dockerfile .` fails on `COPY docker ./docker`. On Railway
+# that means `railway up` is run from backend/, which is also where railway.json lives.)
 #
 # Stages: builder resolves the uv lockfile into /opt/venv, runtime carries only the venv
 # plus the parsing/scanning binaries the app shells out to (SPEC 10.1 Parsing row).
@@ -16,20 +21,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/opt/venv
 
-RUN --mount=type=cache,target=/root/.cache/pip \
+RUN \
     pip install --no-cache-dir "uv==0.11.14"
 
 WORKDIR /app
 
 # Dependency layer: unchanged application code must not re-resolve the lockfile.
 COPY pyproject.toml uv.lock README.md ./
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN \
     uv sync --frozen --no-dev --no-install-project
 
 COPY app ./app
 COPY migrations ./migrations
 COPY alembic.ini ./
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN \
     uv sync --frozen --no-dev
 
 # ---------------------------------------------------------------- runtime
@@ -103,5 +108,9 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD curl -fsS "http://127.0.0.1:${PORT}/healthz" || exit 1
 
+# No default argument: the mode comes from $1 when a platform passes one (Cloud Run's
+# args) and otherwise from $BIDRADAR_MODE, which is how Railway's api/worker/beat
+# services share one image, one railway.json and no startCommand. `CMD ["api"]` would
+# pin $1 and make that variable dead.
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
-CMD ["api"]
+CMD []

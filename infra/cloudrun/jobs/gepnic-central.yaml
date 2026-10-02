@@ -59,6 +59,11 @@ spec:
                 secretKeyRef:
                   name: ${SECRET_PREFIX}-database-url-owner
                   key: latest
+            - name: APP_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ${SECRET_PREFIX}-app-db-password
+                  key: latest
             - name: REDIS_URL
               valueFrom:
                 secretKeyRef:

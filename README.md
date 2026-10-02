@@ -296,6 +296,8 @@ credential-looking field is added without listing it, and
 | `CORS_ORIGINS` | Origins the API accepts (comma list or JSON array). | `["http://localhost:3000"]` | yes | - |
 | `DATABASE_URL` | Application role DSN — non-owner, RLS enforced. Async (`postgresql+asyncpg://`). | `postgresql+asyncpg://bidradar_app:bidradar_app@localhost:5433/bidradar` | yes | **yes** |
 | `DATABASE_URL_OWNER` | Owner role DSN: migrations and the admin bypass path. | `postgresql+asyncpg://bidradar:bidradar@localhost:5433/bidradar` | yes | **yes** |
+| `APP_DB_PASSWORD` | Password `app/jobs/bootstrap_db.py` creates the non-owner `bidradar_app` role with on a managed Postgres, which must match the one `DATABASE_URL` carries. Empty locally: the compose stack creates the role at initdb time. | _(empty)_ | managed db only | **yes** |
+| `BOOTSTRAP_DB` | Run the managed-Postgres bootstrap (`CREATE EXTENSION vector, pg_trgm`, the `bidradar_app` role and its grants) in `docker/entrypoint.sh migrate` before `alembic upgrade head`. Idempotent. | `true` | - | - |
 | `REDIS_URL` | Celery broker/result backend and the rate-limit token buckets. | `redis://localhost:6380/0` | yes | **yes** |
 | `CELERY_TASK_ALWAYS_EAGER` | Run Celery tasks inline instead of through the broker (tests, single-process dev). | `false` | - | - |
 | `CELERY_BROKER_CONNECT_TIMEOUT` | Seconds the admin "run now" endpoint waits for the broker before running inline. | `2.0` | - | - |
