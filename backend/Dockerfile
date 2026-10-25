@@ -13,7 +13,7 @@
 # plus the parsing/scanning binaries the app shells out to (SPEC 10.1 Parsing row).
 
 # ---------------------------------------------------------------- builder
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.15-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -38,7 +38,7 @@ RUN \
     uv sync --frozen --no-dev
 
 # ---------------------------------------------------------------- runtime
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.15-slim-bookworm AS runtime
 
 # Tesseract eng+hin for scanned pages (SPEC 12 India checklist), ClamAV for the upload
 # scan (SPEC 11), libmagic for content sniffing, poppler for pdftoppm/pdftotext.
